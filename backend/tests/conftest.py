@@ -5,7 +5,7 @@ os.environ["ENVIRONMENT"] = "test"
 os.environ.setdefault("JWT_SECRET_KEY", "test-only-secret-key-with-at-least-32-characters")
 
 import pytest
-from app import main as main_module
+from app.routers import auth as auth_router
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -36,7 +36,7 @@ from app.main import app
 
 @pytest.fixture(autouse=True)
 def bypass_external_recaptcha_service(monkeypatch):
-    monkeypatch.setattr(main_module, "verify_recaptcha", lambda _token: None)
+    monkeypatch.setattr(auth_router, "verify_recaptcha", lambda _token: None)
 
 
 @pytest.fixture(scope="function")

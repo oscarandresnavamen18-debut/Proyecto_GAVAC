@@ -37,7 +37,7 @@ def register_user(client):
 def request_code(client, monkeypatch):
     sent = []
     monkeypatch.setattr(
-        "app.main.send_password_reset_email",
+        "app.routers.auth.send_password_reset_email",
         lambda recipient, code: sent.append((recipient, code)),
     )
     response = client.post("/api/v1/auth/password-reset/request", json={"email": EMAIL})
@@ -102,7 +102,7 @@ def test_verified_alternate_email_can_receive_and_confirm_password_reset(client,
 
     sent = []
     monkeypatch.setattr(
-        "app.main.send_password_reset_email",
+        "app.routers.auth.send_password_reset_email",
         lambda recipient, code: sent.append((recipient, code)),
     )
     response = client.post(
@@ -142,7 +142,7 @@ def test_unverified_alternate_email_cannot_request_password_reset(client, db_ses
 
     sent = []
     monkeypatch.setattr(
-        "app.main.send_password_reset_email",
+        "app.routers.auth.send_password_reset_email",
         lambda recipient, code: sent.append((recipient, code)),
     )
     response = client.post(
@@ -159,7 +159,7 @@ def test_authenticated_user_must_verify_alternate_email_before_use(client, monke
     headers = {"Authorization": f"Bearer {token}"}
     sent = []
     monkeypatch.setattr(
-        "app.main.send_alternate_email_verification",
+        "app.routers.auth.send_alternate_email_verification",
         lambda recipient, code: sent.append((recipient, code)),
     )
 
@@ -199,7 +199,7 @@ def test_authenticated_user_must_verify_alternate_email_before_use(client, monke
 def test_alternate_email_verification_limits_invalid_codes(client, monkeypatch):
     token = register_user(client)
     headers = {"Authorization": f"Bearer {token}"}
-    monkeypatch.setattr("app.main.send_alternate_email_verification", lambda *_: None)
+    monkeypatch.setattr("app.routers.auth.send_alternate_email_verification", lambda *_: None)
     client.post(
         "/api/v1/auth/alternate-email/request",
         json={"email": "respaldo@ganadera.com"},
@@ -220,7 +220,7 @@ def test_password_reset_request_does_not_disclose_unknown_accounts(client, monke
     register_user(client)
     sent = []
     monkeypatch.setattr(
-        "app.main.send_password_reset_email",
+        "app.routers.auth.send_password_reset_email",
         lambda recipient, code: sent.append((recipient, code)),
     )
 
@@ -239,7 +239,7 @@ def test_password_reset_request_is_throttled_per_account(client, monkeypatch):
     register_user(client)
     sent = []
     monkeypatch.setattr(
-        "app.main.send_password_reset_email",
+        "app.routers.auth.send_password_reset_email",
         lambda recipient, code: sent.append((recipient, code)),
     )
 
@@ -301,7 +301,7 @@ def test_email_delivery_failure_is_logged_and_reset_request_remains_generic(
     def fail_delivery(_recipient, _code):
         raise RuntimeError("SMTP unavailable")
 
-    monkeypatch.setattr("app.main.send_password_reset_email", fail_delivery)
+    monkeypatch.setattr("app.routers.auth.send_password_reset_email", fail_delivery)
     response = client.post("/api/v1/auth/password-reset/request", json={"email": EMAIL})
 
     assert response.status_code == 202

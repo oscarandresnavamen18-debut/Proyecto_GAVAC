@@ -1,6 +1,6 @@
 import pytest
 
-from app import main as main_module
+from app.routers import auth as auth_router
 
 
 def test_register_and_login(client):
@@ -37,7 +37,7 @@ def test_native_login_does_not_require_recaptcha(client, monkeypatch):
     def fail_if_recaptcha_is_checked(_token):
         pytest.fail("Native login must not require reCAPTCHA")
 
-    monkeypatch.setattr(main_module, "verify_recaptcha", fail_if_recaptcha_is_checked)
+    monkeypatch.setattr(auth_router, "verify_recaptcha", fail_if_recaptcha_is_checked)
     registration = client.post(
         "/api/v1/auth/register",
         json={
