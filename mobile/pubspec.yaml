@@ -1,0 +1,30 @@
+name: gestion_ganadera
+description: A new Flutter project.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Dependencias que mencionaste o que son comunes:
+  google_fonts: ^9.0.0
+  http: ^1.2.1 # <-- Agregando la dependencia HTTP
+  
+  # Otros paquetes que podrías tener:
+  provider: ^6.1.1
+  # ... otros paquetes
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/imagenes/

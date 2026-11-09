@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="gestion_ganadera">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>gestion_ganadera</title>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <script>
+    (function () {
+      const pending = new Map();
+      const widgets = new Map();
+
+      function publish(name, detail) {
+        window.dispatchEvent(new CustomEvent(name, { detail: JSON.stringify(detail) }));
+      }
+
+      function findRecaptchaElement(viewId) {
+        const targetId = "gavac-recaptcha-" + viewId;
+
+        // 1. Búsqueda directa en document
+        let el = document.getElementById(targetId);
+        if (el) return el;
+
+        // 2. Búsqueda dentro del Shadow Root de Flutter Web (flt-glass-pane)
+        const shadowHosts = document.querySelectorAll("flt-glass-pane, flutter-view");
+        for (let i = 0; i < shadowHosts.length; i++) {
+          if (shadowHosts[i].shadowRoot) {
+            el = shadowHosts[i].shadowRoot.getElementById(targetId) ||
+                  shadowHosts[i].shadowRoot.querySelector("#" + targetId);
+            if (el) return el;
+          }
+        }
+
+        // 3. Query selector global
+        return document.querySelector("#" + targetId);
+      }
+
+      function render(viewId) {
+        const element = findRecaptchaElement(viewId);
+        const options = pending.get(viewId);
+        if (!element || !options || !window.grecaptcha || widgets.has(viewId)) return;
+
+        widgets.set(viewId, window.grecaptcha.render(element, {
+          sitekey: options.siteKey,
+          callback: function (token) {
+            publish("gavacRecaptchaToken", { viewId: viewId, token: token });
+          },
+          "expired-callback": function () {
+            publish("gavacRecaptchaExpired", { viewId: viewId });
+          },
+          "error-callback": function () {
+            publish("gavacRecaptchaError", { viewId: viewId });
+          }
+        }));
+      }
+
+      window.gavacRecaptchaApiReady = function () {
+        pending.forEach(function (_, viewId) { render(viewId); });
+      };
+
+      window.gavacRenderRecaptcha = function (viewId, siteKey) {
+        pending.set(viewId, { siteKey: siteKey });
+        let attempts = 0;
+        function tryRender() {
+          const el = findRecaptchaElement(viewId);
+          if (el && window.grecaptcha && window.grecaptcha.render) {
+            render(viewId);
+          } else if (attempts++ < 15) {
+            setTimeout(tryRender, 100);
+          }
+        }
+        tryRender();
+      };
+
+      window.gavacResetRecaptcha = function (viewId) {
+        const widgetId = widgets.get(viewId);
+        if (window.grecaptcha && widgetId !== undefined) {
+          window.grecaptcha.reset(widgetId);
+        }
+      };
+    })();
+  </script>
+
+  <script src="https://www.google.com/recaptcha/api.js?onload=gavacRecaptchaApiReady&render=explicit" async defer></script>
+  
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

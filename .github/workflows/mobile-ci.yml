@@ -1,0 +1,46 @@
+name: Mobile CI
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "mobile/**"
+      - ".github/workflows/mobile-ci.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "mobile/**"
+      - ".github/workflows/mobile-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Analyze, test and build Flutter
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+          pub-cache-key: ${{ runner.os }}-pub-${{ hashFiles('mobile/pubspec.lock') }}
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze Reproduction screen
+        run: flutter analyze lib/features/auth/presentation/screens/reproduccion_screen.dart
+
+      - name: Run Flutter tests
+        run: flutter test
+
+      - name: Build Flutter Web
+        run: flutter build web --release

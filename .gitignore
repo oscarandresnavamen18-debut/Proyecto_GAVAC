@@ -1,0 +1,45 @@
+# Entornos y variables
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+ENV/
+oracleJdk*/
+
+# Python / Pytest / Cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.alembic/
+
+# IDEs y editores
+.idea/
+.vscode/
+.run/
+*.swp
+*.swo
+
+# Archivos de respaldo y temporales
+*.backup-*
+*.tmp
+archivo.csv
+.artifacts/
+build_web/
+
+# Flutter / Mobile
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.pub-cache/
+mobile/.pub/
+mobile/build/
+
+# Sistema
+.DS_Store
+Thumbs.db
+node_modules/
+package-lock.json
