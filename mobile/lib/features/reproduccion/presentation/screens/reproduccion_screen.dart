@@ -41,8 +41,9 @@ class ReproduccionScreen extends StatefulWidget {
 class _ReproduccionScreenState extends State<ReproduccionScreen> {
   // Colores Oficiales GAVAC Design System
   static const Color primaryColor = Color(0xFF1A3A32); // Deep Forest Green
-  static const Color accentColor = Color(0xFF2E5A4D);  // Dark Emerald Accent
-  static const Color backgroundColor = Color(0xFFF7F9F7); // Soft Clean Off-White
+  static const Color accentColor = Color(0xFF2E5A4D); // Dark Emerald Accent
+  static const Color backgroundColor =
+      Color(0xFFF7F9F7); // Soft Clean Off-White
   static const Color cardColor = Color(0xFFFFFFFF);
   static const Color borderColor = Color(0xFFF1F5F9);
   static const Color textMuted = Color(0xFF94A3B8);
@@ -56,40 +57,41 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
   @override
   void initState() {
     super.initState();
-    _listaRegistros = widget.registros ?? const [
-      ReproduccionRecord(
-        id: '1',
-        chapeta: 'CH-1024',
-        evento: 'Preñez',
-        fecha: '15/01/2026',
-        detalleAdicional: 'Diagnóstico positivo por palpación',
-        estadoActual: 'Gestante',
-      ),
-      ReproduccionRecord(
-        id: '2',
-        chapeta: 'CH-1025',
-        evento: 'Inseminación',
-        fecha: '10/02/2026',
-        detalleAdicional: 'Semen Toro Brahman TR-08',
-        estadoActual: 'Inseminada',
-      ),
-      ReproduccionRecord(
-        id: '3',
-        chapeta: 'CH-1026',
-        evento: 'Celo',
-        fecha: '20/02/2026',
-        detalleAdicional: 'Se detecta celo activo en corral',
-        estadoActual: 'Disponible',
-      ),
-      ReproduccionRecord(
-        id: '4',
-        chapeta: 'CH-1020',
-        evento: 'Parto',
-        fecha: '01/03/2026',
-        detalleAdicional: 'Cría hembra nacida sin novedad',
-        estadoActual: 'Lactancia',
-      ),
-    ];
+    _listaRegistros = widget.registros ??
+        const [
+          ReproduccionRecord(
+            id: '1',
+            chapeta: 'CH-1024',
+            evento: 'Preñez',
+            fecha: '15/01/2026',
+            detalleAdicional: 'Diagnóstico positivo por palpación',
+            estadoActual: 'Gestante',
+          ),
+          ReproduccionRecord(
+            id: '2',
+            chapeta: 'CH-1025',
+            evento: 'Inseminación',
+            fecha: '10/02/2026',
+            detalleAdicional: 'Semen Toro Brahman TR-08',
+            estadoActual: 'Inseminada',
+          ),
+          ReproduccionRecord(
+            id: '3',
+            chapeta: 'CH-1026',
+            evento: 'Celo',
+            fecha: '20/02/2026',
+            detalleAdicional: 'Se detecta celo activo en corral',
+            estadoActual: 'Disponible',
+          ),
+          ReproduccionRecord(
+            id: '4',
+            chapeta: 'CH-1020',
+            evento: 'Parto',
+            fecha: '01/03/2026',
+            detalleAdicional: 'Cría hembra nacida sin novedad',
+            estadoActual: 'Lactancia',
+          ),
+        ];
 
     _searchController.addListener(() {
       setState(() {
@@ -168,13 +170,15 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
             backgroundColor: primaryColor,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             elevation: 2,
           ),
           icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
           label: Text(
             'Registrar Evento',
-            style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700),
+            style: GoogleFonts.plusJakartaSans(
+                fontSize: 14, fontWeight: FontWeight.w700),
           ),
         );
         if (constraints.maxWidth < 850) {
@@ -193,29 +197,68 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
   // Tarjetas de Métricas KPI basadas en los criterios
   Widget _buildKpiMetricsRow() {
     final celos = _listaRegistros.where((r) => r.evento == 'Celo').length;
-    final inseminaciones = _listaRegistros.where((r) => r.evento == 'Inseminación').length;
+    final inseminaciones =
+        _listaRegistros.where((r) => r.evento == 'Inseminación').length;
     final preneces = _listaRegistros.where((r) => r.evento == 'Preñez').length;
     final partos = _listaRegistros.where((r) => r.evento == 'Parto').length;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 1100 ? 4 : constraints.maxWidth >= 650 ? 2 : 1;
+        final columns = constraints.maxWidth >= 1100
+            ? 4
+            : constraints.maxWidth >= 650
+                ? 2
+                : 1;
         const spacing = 16.0;
-        final cardWidth = (constraints.maxWidth - spacing * (columns - 1)) / columns;
+        final cardWidth =
+            (constraints.maxWidth - spacing * (columns - 1)) / columns;
         return Wrap(
           spacing: spacing,
           runSpacing: spacing,
           children: [
-            SizedBox(width: cardWidth, child: _buildKpiCard('Celos Registrados', '$celos', 'Detección en campo', Icons.notifications_active_outlined, const Color(0xFFEFF6FF), const Color(0xFF2563EB))),
-            SizedBox(width: cardWidth, child: _buildKpiCard('Inseminaciones', '$inseminaciones', 'Servicios aplicados', Icons.science_outlined, const Color(0xFFECFDF5), const Color(0xFF059669))),
-            SizedBox(width: cardWidth, child: _buildKpiCard('Preñeces', '$preneces', 'Diagnósticos positivos', Icons.favorite_rounded, const Color(0xFFFEE2E2), const Color(0xFFEF4444))),
-            SizedBox(width: cardWidth, child: _buildKpiCard('Partos', '$partos', 'Nacimientos registrados', Icons.cake_outlined, const Color(0xFFFEF3C7), const Color(0xFFD97706))),
+            SizedBox(
+                width: cardWidth,
+                child: _buildKpiCard(
+                    'Celos Registrados',
+                    '$celos',
+                    'Detección en campo',
+                    Icons.notifications_active_outlined,
+                    const Color(0xFFEFF6FF),
+                    const Color(0xFF2563EB))),
+            SizedBox(
+                width: cardWidth,
+                child: _buildKpiCard(
+                    'Inseminaciones',
+                    '$inseminaciones',
+                    'Servicios aplicados',
+                    Icons.science_outlined,
+                    const Color(0xFFECFDF5),
+                    const Color(0xFF059669))),
+            SizedBox(
+                width: cardWidth,
+                child: _buildKpiCard(
+                    'Preñeces',
+                    '$preneces',
+                    'Diagnósticos positivos',
+                    Icons.favorite_rounded,
+                    const Color(0xFFFEE2E2),
+                    const Color(0xFFEF4444))),
+            SizedBox(
+                width: cardWidth,
+                child: _buildKpiCard(
+                    'Partos',
+                    '$partos',
+                    'Nacimientos registrados',
+                    Icons.cake_outlined,
+                    const Color(0xFFFEF3C7),
+                    const Color(0xFFD97706))),
           ],
         );
       },
     );
   }
 
-  Widget _buildKpiCard(String title, String value, String subtitle, IconData icon, Color iconBgColor, Color iconColor) {
+  Widget _buildKpiCard(String title, String value, String subtitle,
+      IconData icon, Color iconBgColor, Color iconColor) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -239,12 +282,17 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
               Expanded(
                 child: Text(
                   title,
-                  style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: textMuted),
+                  style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: textMuted),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: iconBgColor, borderRadius: BorderRadius.circular(14)),
+                decoration: BoxDecoration(
+                    color: iconBgColor,
+                    borderRadius: BorderRadius.circular(14)),
                 child: Icon(icon, color: iconColor, size: 20),
               ),
             ],
@@ -252,12 +300,14 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: GoogleFonts.plusJakartaSans(fontSize: 32, fontWeight: FontWeight.w900, color: primaryColor),
+            style: GoogleFonts.plusJakartaSans(
+                fontSize: 32, fontWeight: FontWeight.w900, color: primaryColor),
           ),
           const SizedBox(height: 2),
           Text(
             subtitle,
-            style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w500, color: textMuted),
+            style: GoogleFonts.plusJakartaSans(
+                fontSize: 11, fontWeight: FontWeight.w500, color: textMuted),
           ),
         ],
       ),
@@ -290,7 +340,10 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
             builder: (context, constraints) {
               final title = Text(
                 'Historial de Eventos Reproductivos',
-                style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: primaryColor),
+                style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: primaryColor),
               );
               final search = SizedBox(
                 width: constraints.maxWidth < 900 ? constraints.maxWidth : 300,
@@ -298,20 +351,31 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
                   controller: _searchController,
                   decoration: InputDecoration(
                     hintText: 'Filtrar por chapeta (ej. CH-1024)...',
-                    hintStyle: GoogleFonts.plusJakartaSans(fontSize: 13, color: textMuted),
-                    prefixIcon: const Icon(Icons.search_rounded, color: primaryColor, size: 20),
+                    hintStyle: GoogleFonts.plusJakartaSans(
+                        fontSize: 13, color: textMuted),
+                    prefixIcon: const Icon(Icons.search_rounded,
+                        color: primaryColor, size: 20),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear_rounded, size: 18, color: textMuted),
+                            icon: const Icon(Icons.clear_rounded,
+                                size: 18, color: textMuted),
                             onPressed: () => _searchController.clear(),
                           )
                         : null,
                     filled: true,
                     fillColor: const Color(0xFFF8FAFC),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: borderColor)),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: borderColor)),
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 16),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: const BorderSide(color: borderColor)),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: const BorderSide(color: borderColor)),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide:
+                            const BorderSide(color: primaryColor, width: 1.5)),
                   ),
                 ),
               );
@@ -323,7 +387,11 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
               }
               return Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [Expanded(child: title), const SizedBox(width: 16), search],
+                children: [
+                  Expanded(child: title),
+                  const SizedBox(width: 16),
+                  search
+                ],
               );
             },
           ),
@@ -331,51 +399,66 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
           registrosMostrados.isEmpty
               ? _buildEmptyState()
               : SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              headingRowColor: WidgetStateProperty.all(backgroundColor),
-              dataRowMinHeight: 64,
-              dataRowMaxHeight: 64,
-              columns: [
-                DataColumn(label: _buildTableHeader('CHAPETA ÚNICA')),
-                DataColumn(label: _buildTableHeader('EVENTO REGISTRADO')),
-                DataColumn(label: _buildTableHeader('FECHA')),
-                DataColumn(label: _buildTableHeader('DETALLE ADICIONAL')),
-                DataColumn(label: _buildTableHeader('ESTADO ACTUAL')),
-                DataColumn(label: _buildTableHeader('ACCIONES')),
-              ],
-              rows: registrosMostrados.map((item) {
-                return DataRow(
-                  cells: [
-                    DataCell(
-                      Text(
-                        item.chapeta,
-                        style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: primaryColor),
-                      ),
-                    ),
-                    DataCell(_buildEventoBadge(item.evento)),
-                    DataCell(Text(item.fecha, style: GoogleFonts.plusJakartaSans(fontSize: 14))),
-                    DataCell(Text(item.detalleAdicional, style: GoogleFonts.plusJakartaSans(fontSize: 14, color: textMuted))),
-                    DataCell(Text(item.estadoActual, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w600, color: primaryColor))),
-                    DataCell(
-                      IconButton(
-                        icon: const Icon(Icons.visibility_outlined, color: primaryColor, size: 20),
-                        tooltip: 'Ver Detalle',
-                        onPressed: () => _mostrarModalDetalle(context, item),
-                      ),
-                    ),
-                  ],
-                );
-              }).toList(),
-            ),
-          ),
+                  scrollDirection: Axis.horizontal,
+                  child: DataTable(
+                    headingRowColor: WidgetStateProperty.all(backgroundColor),
+                    dataRowMinHeight: 64,
+                    dataRowMaxHeight: 64,
+                    columns: [
+                      DataColumn(label: _buildTableHeader('CHAPETA ÚNICA')),
+                      DataColumn(label: _buildTableHeader('EVENTO REGISTRADO')),
+                      DataColumn(label: _buildTableHeader('FECHA')),
+                      DataColumn(label: _buildTableHeader('DETALLE ADICIONAL')),
+                      DataColumn(label: _buildTableHeader('ESTADO ACTUAL')),
+                      DataColumn(label: _buildTableHeader('ACCIONES')),
+                    ],
+                    rows: registrosMostrados.map((item) {
+                      return DataRow(
+                        cells: [
+                          DataCell(
+                            Text(
+                              item.chapeta,
+                              style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: primaryColor),
+                            ),
+                          ),
+                          DataCell(_buildEventoBadge(item.evento)),
+                          DataCell(Text(item.fecha,
+                              style:
+                                  GoogleFonts.plusJakartaSans(fontSize: 14))),
+                          DataCell(Text(item.detalleAdicional,
+                              style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 14, color: textMuted))),
+                          DataCell(Text(item.estadoActual,
+                              style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: primaryColor))),
+                          DataCell(
+                            IconButton(
+                              icon: const Icon(Icons.visibility_outlined,
+                                  color: primaryColor, size: 20),
+                              tooltip: 'Ver Detalle',
+                              onPressed: () =>
+                                  _mostrarModalDetalle(context, item),
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                ),
         ],
       ),
     );
   }
 
   Widget _buildTableHeader(String title) {
-    return Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w800, color: textMuted));
+    return Text(title,
+        style: GoogleFonts.plusJakartaSans(
+            fontSize: 12, fontWeight: FontWeight.w800, color: textMuted));
   }
 
   Widget _buildEmptyState() {
@@ -387,8 +470,11 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
             const Icon(Icons.search_off_rounded, size: 48, color: textMuted),
             const SizedBox(height: 12),
             Text(
-              _searchQuery.isEmpty ? 'No hay eventos registrados' : 'No se encontraron registros para la chapeta "$_searchQuery"',
-              style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w600, color: textMuted),
+              _searchQuery.isEmpty
+                  ? 'No hay eventos registrados'
+                  : 'No se encontraron registros para la chapeta "$_searchQuery"',
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14, fontWeight: FontWeight.w600, color: textMuted),
             ),
           ],
         ),
@@ -421,10 +507,12 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+      decoration:
+          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
       child: Text(
         evento,
-        style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: fg),
+        style: GoogleFonts.plusJakartaSans(
+            fontSize: 12, fontWeight: FontWeight.w700, color: fg),
       ),
     );
   }
@@ -439,15 +527,26 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
           children: [
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(14)),
-              child: const Icon(Icons.pets_rounded, color: primaryColor, size: 24),
+              decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(14)),
+              child:
+                  const Icon(Icons.pets_rounded, color: primaryColor, size: 24),
             ),
             const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Detalle del Evento', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 18, color: primaryColor)),
-                Text('Chapeta: ${item.chapeta}', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13, color: textMuted)),
+                Text('Detalle del Evento',
+                    style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                        color: primaryColor)),
+                Text('Chapeta: ${item.chapeta}',
+                    style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: textMuted)),
               ],
             ),
           ],
@@ -459,20 +558,33 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
             children: [
               const Divider(color: borderColor),
               const SizedBox(height: 12),
-              _buildDetailRow('Tipo de Evento', item.evento, Icons.event_note_rounded),
-              _buildDetailRow('Fecha', item.fecha, Icons.calendar_today_outlined),
-              _buildDetailRow('Estado Actual', item.estadoActual, Icons.info_outline_rounded),
+              _buildDetailRow(
+                  'Tipo de Evento', item.evento, Icons.event_note_rounded),
+              _buildDetailRow(
+                  'Fecha', item.fecha, Icons.calendar_today_outlined),
+              _buildDetailRow('Estado Actual', item.estadoActual,
+                  Icons.info_outline_rounded),
               const SizedBox(height: 16),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(16)),
+                decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(16)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Detalle / Observaciones:', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 12, color: textMuted)),
+                    Text('Detalle / Observaciones:',
+                        style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                            color: textMuted)),
                     const SizedBox(height: 4),
-                    Text(item.detalleAdicional, style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 14, color: primaryColor)),
+                    Text(item.detalleAdicional,
+                        style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: primaryColor)),
                   ],
                 ),
               ),
@@ -481,9 +593,16 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
         ),
         actions: [
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
             onPressed: () => Navigator.pop(context),
-            child: Text('Cerrar', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.w700)),
+            child: Text('Cerrar',
+                style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -500,7 +619,8 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
           Expanded(
             child: Text(
               '$label:',
-              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, color: textMuted, fontSize: 14),
+              style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w600, color: textMuted, fontSize: 14),
             ),
           ),
           const SizedBox(width: 8),
@@ -508,7 +628,10 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, color: primaryColor, fontSize: 14),
+              style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800,
+                  color: primaryColor,
+                  fontSize: 14),
             ),
           ),
         ],
@@ -524,10 +647,12 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setStateModal) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
           title: Text(
             'Registrar Evento Reproductivo',
-            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, color: primaryColor),
+            style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w800, color: primaryColor),
           ),
           content: SizedBox(
             width: 400,
@@ -540,21 +665,33 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
                     labelText: 'Chapeta / Arete Único',
                     filled: true,
                     fillColor: const Color(0xFFF8FAFC),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none),
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text('Seleccione el Evento:', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13, color: textMuted)),
+                Text('Seleccione el Evento:',
+                    style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: textMuted)),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   initialValue: eventoSeleccionado,
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: const Color(0xFFF8FAFC),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none),
                   ),
                   items: ['Celo', 'Inseminación', 'Preñez', 'Parto']
-                      .map((evento) => DropdownMenuItem(value: evento, child: Text(evento, style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600))))
+                      .map((evento) => DropdownMenuItem(
+                          value: evento,
+                          child: Text(evento,
+                              style: GoogleFonts.plusJakartaSans(
+                                  fontWeight: FontWeight.w600))))
                       .toList(),
                   onChanged: (val) {
                     if (val != null) {
@@ -568,7 +705,9 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
                     labelText: 'Detalle (Toro, observaciones, cría)',
                     filled: true,
                     fillColor: const Color(0xFFF8FAFC),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none),
                   ),
                 ),
               ],
@@ -577,17 +716,28 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancelar', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: textMuted)),
+              child: Text('Cancelar',
+                  style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w700, color: textMuted)),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
               onPressed: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Evento de "$eventoSeleccionado" registrado exitosamente')),
+                  SnackBar(
+                      content: Text(
+                          'Evento de "$eventoSeleccionado" registrado exitosamente')),
                 );
               },
-              child: Text('Guardar Evento', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.w700)),
+              child: Text('Guardar Evento',
+                  style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white, fontWeight: FontWeight.w700)),
             ),
           ],
         ),

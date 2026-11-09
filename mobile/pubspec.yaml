@@ -1,5 +1,5 @@
 name: gestion_ganadera
-description: A new Flutter project.
+description: Aplicación móvil multiplataforma de GAVAC.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 version: 1.0.0+1
@@ -11,13 +11,8 @@ dependencies:
   flutter:
     sdk: flutter
   
-  # Dependencias que mencionaste o que son comunes:
   google_fonts: ^9.0.0
-  http: ^1.2.1 # <-- Agregando la dependencia HTTP
-  
-  # Otros paquetes que podrías tener:
-  provider: ^6.1.1
-  # ... otros paquetes
+  http: ^1.2.1
 
 dev_dependencies:
   flutter_test:

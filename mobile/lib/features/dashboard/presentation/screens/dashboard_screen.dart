@@ -4,17 +4,13 @@ import 'package:http/http.dart' as http;
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/gavac_colors.dart';
 import '../../../../core/utils/app_session.dart';
-import 'sanidad_screen.dart';
-import 'animales_screen.dart';
- 
-
-import 'reproduccion_screen.dart';
+import '../../../animals/presentation/screens/animales_screen.dart';
+import '../../../reproduccion/presentation/screens/reproduccion_screen.dart';
+import '../../../sanidad/presentation/screens/sanidad_screen.dart';
 import '../../../admin/presentation/screens/gestion_fincas_screen.dart';
 import '../../../admin/presentation/screens/gestion_usuarios_screen.dart';
 
 String get _apiBaseUrl => ApiClient.baseUrl;
-
- 
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -39,23 +35,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   late final List<Widget> _pages;
 
- 
-@override
-void initState() {
-  super.initState();
+  @override
+  void initState() {
+    super.initState();
 
-  _pages = [
-    _buildInicioView(),                 // 0: Inicio
-    const AnimalesScreen(),            // 1: Animales
-    const SanidadScreen(),             // 2: Sanidad
-    const ReproduccionScreen(),        // 3: Reproducción
-    _buildPlaceholder('Producción'),    // 4: Producción
-    _buildPlaceholder('Inventario'),    // 5: Inventario
-    _buildPlaceholder('Reportes'),      // 6: Reportes
-    _buildAdminHubView(),               // 7: Admin
-  ];
-}
-
+    _pages = [
+      _buildInicioView(), // 0: Inicio
+      const AnimalesScreen(), // 1: Animales
+      const SanidadScreen(), // 2: Sanidad
+      const ReproduccionScreen(), // 3: Reproducción
+      _buildPlaceholder('Producción'), // 4: Producción
+      _buildPlaceholder('Inventario'), // 5: Inventario
+      _buildPlaceholder('Reportes'), // 6: Reportes
+      _buildAdminHubView(), // 7: Admin
+    ];
+  }
 
   // Función para cerrar sesión
   void _handleLogout() {
@@ -111,8 +105,11 @@ void initState() {
                 final data = jsonDecode(response.body) as Map<String, dynamic>;
                 setDialogState(() {
                   final email = data['email'] as String?;
-                  verifiedEmail = data['verified'] == true && email != null ? email : '';
-                  if (verifiedEmail.isNotEmpty) emailController.text = verifiedEmail;
+                  verifiedEmail =
+                      data['verified'] == true && email != null ? email : '';
+                  if (verifiedEmail.isNotEmpty) {
+                    emailController.text = verifiedEmail;
+                  }
                   busy = false;
                 });
               } else if (context.mounted) {
@@ -169,7 +166,8 @@ void initState() {
                   onPressed: () async {
                     if (emailController.text.trim().isEmpty ||
                         (codeSent && codeController.text.trim().length != 8)) {
-                      _showMessage('Completa el correo y el código de verificación.');
+                      _showMessage(
+                          'Completa el correo y el código de verificación.');
                       return;
                     }
                     setDialogState(() => busy = true);
@@ -199,10 +197,12 @@ void initState() {
                           codeSent = true;
                           busy = false;
                         });
-                        _showMessage('Enviamos un código para verificar el correo.');
+                        _showMessage(
+                            'Enviamos un código para verificar el correo.');
                       } else {
                         setDialogState(() => busy = false);
-                        _showMessage('No se pudo verificar el correo. Revisa los datos e inténtalo de nuevo.');
+                        _showMessage(
+                            'No se pudo verificar el correo. Revisa los datos e inténtalo de nuevo.');
                       }
                     } on http.ClientException {
                       if (context.mounted) {
@@ -224,7 +224,8 @@ void initState() {
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -327,7 +328,8 @@ void initState() {
                       borderRadius: BorderRadius.circular(12),
                       onTap: _handleLogout,
                       child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         child: Row(
                           children: [
                             Icon(
@@ -354,7 +356,8 @@ void initState() {
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: TextButton.icon(
                     onPressed: _manageAlternateEmail,
-                    icon: const Icon(Icons.alternate_email, color: Colors.white70),
+                    icon: const Icon(Icons.alternate_email,
+                        color: Colors.white70),
                     label: const Text(
                       'Correo alternativo',
                       style: TextStyle(color: Colors.white70),
@@ -413,7 +416,8 @@ void initState() {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(30),
@@ -422,14 +426,18 @@ void initState() {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.location_on_outlined, color: GavacColors.primary, size: 20),
+                        const Icon(Icons.location_on_outlined,
+                            color: GavacColors.primary, size: 20),
                         const SizedBox(width: 8),
                         Text(
                           AppSession.farmName,
-                          style: const TextStyle(fontWeight: FontWeight.w600, color: GavacColors.textPrimary),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: GavacColors.textPrimary),
                         ),
                         const SizedBox(width: 8),
-                        Icon(Icons.keyboard_arrow_down, color: Colors.grey[600]),
+                        Icon(Icons.keyboard_arrow_down,
+                            color: Colors.grey[600]),
                       ],
                     ),
                   ),
@@ -441,7 +449,8 @@ void initState() {
                       shape: BoxShape.circle,
                       border: Border.all(color: const Color(0xFFE2E8F0)),
                     ),
-                    child: Icon(Icons.notifications_outlined, color: Colors.grey[600]),
+                    child: Icon(Icons.notifications_outlined,
+                        color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -456,7 +465,8 @@ void initState() {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
               image: const DecorationImage(
-                image: NetworkImage('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'),
+                image: NetworkImage(
+                    'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'),
                 fit: BoxFit.cover,
               ),
             ),
@@ -509,7 +519,8 @@ void initState() {
                 Icons.grid_view,
                 const Color(0xFF64748B),
                 const Color(0xFFF1F5F9),
-                onTap: () => setState(() => _selectedIndex = 1), // Conexión a Animales
+                onTap: () =>
+                    setState(() => _selectedIndex = 1), // Conexión a Animales
               ),
               const SizedBox(width: 24),
               _buildStatCard(
@@ -518,7 +529,8 @@ void initState() {
                 Icons.shield_outlined,
                 const Color(0xFF10B981),
                 const Color(0xFFD1FAE5),
-                onTap: () => setState(() => _selectedIndex = 2), // Conexión a Sanidad
+                onTap: () =>
+                    setState(() => _selectedIndex = 2), // Conexión a Sanidad
               ),
               const SizedBox(width: 24),
               _buildStatCard(
@@ -527,10 +539,12 @@ void initState() {
                 Icons.favorite_border,
                 const Color(0xFFEF4444),
                 const Color(0xFFFEE2E2),
-                onTap: () => setState(() => _selectedIndex = 3), // <-- 2. Conexión a Reproducción agregada aquí
+                onTap: () => setState(() => _selectedIndex =
+                    3), // <-- 2. Conexión a Reproducción agregada aquí
               ),
               const SizedBox(width: 24),
-              _buildStatCard('ALERTAS', '0', Icons.warning_amber_rounded, const Color(0xFFF59E0B), const Color(0xFFFEF3C7)),
+              _buildStatCard('ALERTAS', '0', Icons.warning_amber_rounded,
+                  const Color(0xFFF59E0B), const Color(0xFFFEF3C7)),
             ],
           ),
         ],
@@ -580,16 +594,21 @@ void initState() {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const GestionFincasAdminScreen()),
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                const GestionFincasAdminScreen()),
                       );
                     },
                     icon: const Icon(Icons.add, size: 18),
                     label: const Text('Nueva Finca'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: GavacColors.primary,
-                      side: const BorderSide(color: GavacColors.primary, width: 1.5),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      side: const BorderSide(
+                          color: GavacColors.primary, width: 1.5),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       textStyle: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
@@ -598,7 +617,9 @@ void initState() {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const GestionUsuariosAdminScreen()),
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                const GestionUsuariosAdminScreen()),
                       );
                     },
                     icon: const Icon(Icons.add, size: 18),
@@ -607,8 +628,10 @@ void initState() {
                       backgroundColor: const Color(0xFF0D9488),
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       textStyle: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
@@ -617,7 +640,9 @@ void initState() {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const GestionUsuariosAdminScreen()),
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                const GestionUsuariosAdminScreen()),
                       );
                     },
                     icon: const Icon(Icons.person_add_alt_1, size: 18),
@@ -626,8 +651,10 @@ void initState() {
                       backgroundColor: GavacColors.primary,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       textStyle: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
@@ -671,9 +698,28 @@ void initState() {
                       const SizedBox(height: 20),
                       const Row(
                         children: [
-                          Expanded(flex: 2, child: Text('NOMBRE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF94A3B8)))),
-                          Expanded(flex: 2, child: Text('UBICACIÓN', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF94A3B8)))),
-                          Expanded(flex: 1, child: Text('ACCIÓN', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF94A3B8)))),
+                          Expanded(
+                              flex: 2,
+                              child: Text('NOMBRE',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF94A3B8)))),
+                          Expanded(
+                              flex: 2,
+                              child: Text('UBICACIÓN',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF94A3B8)))),
+                          Expanded(
+                              flex: 1,
+                              child: Text('ACCIÓN',
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF94A3B8)))),
                         ],
                       ),
                       const Divider(height: 24),
@@ -683,7 +729,8 @@ void initState() {
                               child: Center(
                                 child: Text(
                                   'No hay fincas registradas',
-                                  style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                                  style: TextStyle(
+                                      color: Colors.grey[500], fontSize: 14),
                                 ),
                               ),
                             )
@@ -694,18 +741,34 @@ void initState() {
                               itemBuilder: (context, index) {
                                 final finca = fincasRegistradas[index];
                                 return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
                                   child: Row(
                                     children: [
-                                      Expanded(flex: 2, child: Text(finca['nombre'], style: const TextStyle(fontWeight: FontWeight.w600, color: GavacColors.textPrimary))),
-                                      Expanded(flex: 2, child: Text(finca['ubicacion'], style: const TextStyle(color: GavacColors.textSecondary))),
+                                      Expanded(
+                                          flex: 2,
+                                          child: Text(finca['nombre'],
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: GavacColors
+                                                      .textPrimary))),
+                                      Expanded(
+                                          flex: 2,
+                                          child: Text(finca['ubicacion'],
+                                              style: const TextStyle(
+                                                  color: GavacColors
+                                                      .textSecondary))),
                                       Expanded(
                                         flex: 1,
                                         child: Align(
                                           alignment: Alignment.centerRight,
                                           child: TextButton(
                                             onPressed: () {},
-                                            child: const Text('GESTIONAR', style: TextStyle(fontWeight: FontWeight.w700, color: GavacColors.primary, fontSize: 13)),
+                                            child: const Text('GESTIONAR',
+                                                style: TextStyle(
+                                                    fontWeight: FontWeight.w700,
+                                                    color: GavacColors.primary,
+                                                    fontSize: 13)),
                                           ),
                                         ),
                                       ),
@@ -750,9 +813,28 @@ void initState() {
                       const SizedBox(height: 20),
                       const Row(
                         children: [
-                          Expanded(flex: 2, child: Text('EMAIL / ROL', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF94A3B8)))),
-                          Expanded(flex: 2, child: Text('PERMISOS MÓDULOS (BLOQUEO)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF94A3B8)))),
-                          Expanded(flex: 1, child: Text('ACCIÓN', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF94A3B8)))),
+                          Expanded(
+                              flex: 2,
+                              child: Text('EMAIL / ROL',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF94A3B8)))),
+                          Expanded(
+                              flex: 2,
+                              child: Text('PERMISOS MÓDULOS (BLOQUEO)',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF94A3B8)))),
+                          Expanded(
+                              flex: 1,
+                              child: Text('ACCIÓN',
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF94A3B8)))),
                         ],
                       ),
                       const Divider(height: 24),
@@ -762,7 +844,8 @@ void initState() {
                               child: Center(
                                 child: Text(
                                   'No hay usuarios registrados',
-                                  style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                                  style: TextStyle(
+                                      color: Colors.grey[500], fontSize: 14),
                                 ),
                               ),
                             )
@@ -773,22 +856,41 @@ void initState() {
                               itemBuilder: (context, index) {
                                 final user = usuariosRegistrados[index];
                                 return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
                                   child: Row(
                                     children: [
-                                      Expanded(flex: 2, child: Text(user['email'], style: const TextStyle(fontWeight: FontWeight.w600, color: GavacColors.textPrimary))),
-                                      Expanded(flex: 2, child: Text(user['permisos'], style: const TextStyle(color: GavacColors.textSecondary))),
+                                      Expanded(
+                                          flex: 2,
+                                          child: Text(user['email'],
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: GavacColors
+                                                      .textPrimary))),
+                                      Expanded(
+                                          flex: 2,
+                                          child: Text(user['permisos'],
+                                              style: const TextStyle(
+                                                  color: GavacColors
+                                                      .textSecondary))),
                                       Expanded(
                                         flex: 1,
                                         child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.end,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.end,
                                           children: [
                                             IconButton(
-                                              icon: const Icon(Icons.edit_outlined, size: 18, color: Colors.grey),
+                                              icon: const Icon(
+                                                  Icons.edit_outlined,
+                                                  size: 18,
+                                                  color: Colors.grey),
                                               onPressed: () {},
                                             ),
                                             IconButton(
-                                              icon: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
+                                              icon: const Icon(
+                                                  Icons.delete_outline,
+                                                  size: 18,
+                                                  color: Colors.redAccent),
                                               onPressed: () {},
                                             ),
                                           ],
@@ -815,12 +917,17 @@ void initState() {
     return Center(
       child: Text(
         'Módulo de $title en desarrollo',
-        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: GavacColors.primary),
+        style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: GavacColors.primary),
       ),
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color iconColor, Color iconBg, {VoidCallback? onTap}) {
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color iconColor, Color iconBg,
+      {VoidCallback? onTap}) {
     return Expanded(
       child: InkWell(
         onTap: onTap,

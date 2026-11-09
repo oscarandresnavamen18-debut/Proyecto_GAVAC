@@ -56,13 +56,15 @@ class _SanidadScreenState extends State<SanidadScreen> {
   // Colores Oficiales GAVAC Design System
   static const Color primaryColor = Color(0xFF1A3A32); // Deep Forest Green
   // ignore: unused_field
-  static const Color accentColor = Color(0xFF2E5A4D);  // Dark Emerald Accent
-  static const Color backgroundColor = Color(0xFFF7F9F7); // Soft Clean Off-White
+  static const Color accentColor = Color(0xFF2E5A4D); // Dark Emerald Accent
+  static const Color backgroundColor =
+      Color(0xFFF7F9F7); // Soft Clean Off-White
   static const Color cardColor = Color(0xFFFFFFFF);
   static const Color borderColor = Color(0xFFF1F5F9);
   static const Color textMuted = Color(0xFF94A3B8);
 
-  String _filtroSeleccionado = 'Todos'; // 'Todos', 'Vacunas', 'Tratamientos', 'Alertas'
+  String _filtroSeleccionado =
+      'Todos'; // 'Todos', 'Vacunas', 'Tratamientos', 'Alertas'
 
   @override
   Widget build(BuildContext context) {
@@ -123,14 +125,17 @@ class _SanidadScreenState extends State<SanidadScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
                 elevation: 0,
               ),
               icon: const Icon(Icons.vaccines_rounded, size: 20),
               label: Text(
                 'Registrar Vacuna',
-                style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700),
+                style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14, fontWeight: FontWeight.w700),
               ),
             ),
             const SizedBox(width: 12),
@@ -140,13 +145,16 @@ class _SanidadScreenState extends State<SanidadScreen> {
               style: OutlinedButton.styleFrom(
                 foregroundColor: primaryColor,
                 side: const BorderSide(color: primaryColor, width: 1.5),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
               ),
               icon: const Icon(Icons.medication_liquid_rounded, size: 20),
               label: Text(
                 'Registrar Tratamiento',
-                style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700),
+                style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14, fontWeight: FontWeight.w700),
               ),
             ),
           ],
@@ -284,7 +292,8 @@ class _SanidadScreenState extends State<SanidadScreen> {
               color: const Color(0xFFF59E0B),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(Icons.notifications_active_rounded, color: Colors.white, size: 24),
+            child: const Icon(Icons.notifications_active_rounded,
+                color: Colors.white, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -359,7 +368,8 @@ class _SanidadScreenState extends State<SanidadScreen> {
                         fontWeight: FontWeight.w700,
                         fontSize: 12,
                       ),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                   );
                 }).toList(),
@@ -367,76 +377,91 @@ class _SanidadScreenState extends State<SanidadScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          if (widget.registros.isEmpty) _buildEmptyState() else SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              headingRowColor: WidgetStateProperty.all(backgroundColor),
-              // ignore: deprecated_member_use
-              dataRowHeight: 64,
-              columns: [
-                DataColumn(label: _buildTableHeader('ANIMAL / ARETE')),
-                DataColumn(label: _buildTableHeader('TIPO')),
-                DataColumn(label: _buildTableHeader('EVENTO / DIAGNÓSTICO')),
-                DataColumn(label: _buildTableHeader('APLICACIÓN')),
-                DataColumn(label: _buildTableHeader('VENCIMIENTO')),
-                DataColumn(label: _buildTableHeader('DOSIS')),
-                DataColumn(label: _buildTableHeader('VETERINARIO')),
-                DataColumn(label: _buildTableHeader('ESTADO')),
-              ],
-              rows: widget.registros.map((registro) {
-                return DataRow(
-                  cells: [
-                    DataCell(
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            registro.codigo,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: primaryColor,
+          if (widget.registros.isEmpty)
+            _buildEmptyState()
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                headingRowColor: WidgetStateProperty.all(backgroundColor),
+                // ignore: deprecated_member_use
+                dataRowHeight: 64,
+                columns: [
+                  DataColumn(label: _buildTableHeader('ANIMAL / ARETE')),
+                  DataColumn(label: _buildTableHeader('TIPO')),
+                  DataColumn(label: _buildTableHeader('EVENTO / DIAGNÓSTICO')),
+                  DataColumn(label: _buildTableHeader('APLICACIÓN')),
+                  DataColumn(label: _buildTableHeader('VENCIMIENTO')),
+                  DataColumn(label: _buildTableHeader('DOSIS')),
+                  DataColumn(label: _buildTableHeader('VETERINARIO')),
+                  DataColumn(label: _buildTableHeader('ESTADO')),
+                ],
+                rows: widget.registros.map((registro) {
+                  return DataRow(
+                    cells: [
+                      DataCell(
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              registro.codigo,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: primaryColor,
+                              ),
                             ),
+                            Text(
+                              registro.arete,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                color: textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      DataCell(
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: registro.tipo == 'Vacuna'
+                                ? const Color(0xFFECFDF5)
+                                : const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          Text(
-                            registro.arete,
+                          child: Text(
+                            registro.tipo,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
-                              color: textMuted,
+                              fontWeight: FontWeight.w700,
+                              color: registro.tipo == 'Vacuna'
+                                  ? const Color(0xFF059669)
+                                  : const Color(0xFF2563EB),
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    DataCell(
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: registro.tipo == 'Vacuna' ? const Color(0xFFECFDF5) : const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text(
-                          registro.tipo,
+                      ),
+                      DataCell(Text(registro.evento,
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: registro.tipo == 'Vacuna' ? const Color(0xFF059669) : const Color(0xFF2563EB),
-                          ),
-                        ),
-                      ),
-                    ),
-                    DataCell(Text(registro.evento, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w600))),
-                    DataCell(Text(registro.fechaAplicacion, style: GoogleFonts.plusJakartaSans(fontSize: 13))),
-                    DataCell(Text(registro.fechaVencimiento, style: GoogleFonts.plusJakartaSans(fontSize: 13))),
-                    DataCell(Text(registro.dosis, style: GoogleFonts.plusJakartaSans(fontSize: 13))),
-                    DataCell(Text(registro.veterinario, style: GoogleFonts.plusJakartaSans(fontSize: 13))),
-                    DataCell(_buildStatusBadge(registro.estado, registro.tipoEstado)),
-                  ],
-                );
-              }).toList(),
+                              fontSize: 13, fontWeight: FontWeight.w600))),
+                      DataCell(Text(registro.fechaAplicacion,
+                          style: GoogleFonts.plusJakartaSans(fontSize: 13))),
+                      DataCell(Text(registro.fechaVencimiento,
+                          style: GoogleFonts.plusJakartaSans(fontSize: 13))),
+                      DataCell(Text(registro.dosis,
+                          style: GoogleFonts.plusJakartaSans(fontSize: 13))),
+                      DataCell(Text(registro.veterinario,
+                          style: GoogleFonts.plusJakartaSans(fontSize: 13))),
+                      DataCell(_buildStatusBadge(
+                          registro.estado, registro.tipoEstado)),
+                    ],
+                  );
+                }).toList(),
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -445,7 +470,8 @@ class _SanidadScreenState extends State<SanidadScreen> {
   Widget _buildTableHeader(String title) {
     return Text(
       title,
-      style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w800, color: textMuted),
+      style: GoogleFonts.plusJakartaSans(
+          fontSize: 11, fontWeight: FontWeight.w800, color: textMuted),
     );
   }
 
@@ -459,7 +485,8 @@ class _SanidadScreenState extends State<SanidadScreen> {
             const SizedBox(height: 12),
             Text(
               'No hay registros sanitarios disponibles',
-              style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w600, color: textMuted),
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14, fontWeight: FontWeight.w600, color: textMuted),
             ),
           ],
         ),
@@ -492,10 +519,12 @@ class _SanidadScreenState extends State<SanidadScreen> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(
+          color: bgColor, borderRadius: BorderRadius.circular(10)),
       child: Text(
         text,
-        style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: textColor),
+        style: GoogleFonts.plusJakartaSans(
+            fontSize: 12, fontWeight: FontWeight.w700, color: textColor),
       ),
     );
   }
@@ -506,28 +535,45 @@ class _SanidadScreenState extends State<SanidadScreen> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        title: Text('Registrar Vacuna (HU-007)', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, color: primaryColor)),
+        title: Text('Registrar Vacuna (HU-007)',
+            style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w800, color: primaryColor)),
         content: const Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(decoration: InputDecoration(labelText: 'Código Animal / Arete', border: OutlineInputBorder())),
+            TextField(
+                decoration: InputDecoration(
+                    labelText: 'Código Animal / Arete',
+                    border: OutlineInputBorder())),
             SizedBox(height: 12),
-            TextField(decoration: InputDecoration(labelText: 'Nombre de la Vacuna (Ej: Aftosa, Brucelosis)', border: OutlineInputBorder())),
+            TextField(
+                decoration: InputDecoration(
+                    labelText: 'Nombre de la Vacuna (Ej: Aftosa, Brucelosis)',
+                    border: OutlineInputBorder())),
             SizedBox(height: 12),
-            TextField(decoration: InputDecoration(labelText: 'Dosis (ml)', border: OutlineInputBorder())),
+            TextField(
+                decoration: InputDecoration(
+                    labelText: 'Dosis (ml)', border: OutlineInputBorder())),
             SizedBox(height: 12),
-            TextField(decoration: InputDecoration(labelText: 'Fecha de Vencimiento / Próximo Ciclo', border: OutlineInputBorder())),
+            TextField(
+                decoration: InputDecoration(
+                    labelText: 'Fecha de Vencimiento / Próximo Ciclo',
+                    border: OutlineInputBorder())),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
             onPressed: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vacuna registrada correctamente')));
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Vacuna registrada correctamente')));
             },
-            child: const Text('Guardar Vacuna', style: TextStyle(color: Colors.white)),
+            child: const Text('Guardar Vacuna',
+                style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -540,28 +586,46 @@ class _SanidadScreenState extends State<SanidadScreen> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        title: Text('Registrar Tratamiento (HU-007)', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, color: primaryColor)),
+        title: Text('Registrar Tratamiento (HU-007)',
+            style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w800, color: primaryColor)),
         content: const Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(decoration: InputDecoration(labelText: 'Código Animal / Arete', border: OutlineInputBorder())),
+            TextField(
+                decoration: InputDecoration(
+                    labelText: 'Código Animal / Arete',
+                    border: OutlineInputBorder())),
             SizedBox(height: 12),
-            TextField(decoration: InputDecoration(labelText: 'Diagnóstico / Enfermedad', border: OutlineInputBorder())),
+            TextField(
+                decoration: InputDecoration(
+                    labelText: 'Diagnóstico / Enfermedad',
+                    border: OutlineInputBorder())),
             SizedBox(height: 12),
-            TextField(decoration: InputDecoration(labelText: 'Medicamento / Tratamiento', border: OutlineInputBorder())),
+            TextField(
+                decoration: InputDecoration(
+                    labelText: 'Medicamento / Tratamiento',
+                    border: OutlineInputBorder())),
             SizedBox(height: 12),
-            TextField(decoration: InputDecoration(labelText: 'Duración (Días) / Vencimiento', border: OutlineInputBorder())),
+            TextField(
+                decoration: InputDecoration(
+                    labelText: 'Duración (Días) / Vencimiento',
+                    border: OutlineInputBorder())),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
             onPressed: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tratamiento registrado correctamente')));
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Tratamiento registrado correctamente')));
             },
-            child: const Text('Guardar Tratamiento', style: TextStyle(color: Colors.white)),
+            child: const Text('Guardar Tratamiento',
+                style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

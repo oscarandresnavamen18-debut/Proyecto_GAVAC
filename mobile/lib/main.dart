@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'core/theme/gavac_theme.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
-import 'features/auth/presentation/screens/dashboard_screen.dart';
+import 'features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'features/auth/presentation/screens/register_screen.dart';
 
 void main() {
