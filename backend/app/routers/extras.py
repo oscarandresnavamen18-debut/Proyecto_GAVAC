@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.deps import current_user
-from app.models import Animal, AnimalEvent, Farm, User
+from app.models import Animal, AnimalEvent, User
+from app.routers.farms import get_authorized_farm
 from app.schemas import FarmRead
 
 router = APIRouter(prefix="/api/v1", tags=["Extras"])
@@ -18,33 +19,22 @@ class FarmSummary(BaseModel):
     total_eventos: int
 
 
-def _farm_autorizada(db: Session, user: User, farm_id: int) -> Farm:
-    farm = db.get(Farm, farm_id)
-    if farm is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Finca no encontrada")
-    if user.farm_id is None:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "No estás asociado a ninguna finca")
-    if user.farm_id != farm_id:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "No tienes acceso a esta finca")
-    return farm
-
-
 def _animal_autorizado(db: Session, user: User, animal_id: int) -> Animal:
     animal = db.get(Animal, animal_id)
     if animal is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Animal no encontrado")
-    _farm_autorizada(db, user, animal.finca_id)
+    get_authorized_farm(db, user, animal.finca_id)
     return animal
 
 
 @router.get("/farms/{farm_id}", response_model=FarmRead)
 def get_farm(farm_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
-    return _farm_autorizada(db, user, farm_id)
+    return get_authorized_farm(db, user, farm_id)
 
 
 @router.get("/farms/{farm_id}/summary", response_model=FarmSummary)
 def farm_summary(farm_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
-    _farm_autorizada(db, user, farm_id)
+    get_authorized_farm(db, user, farm_id)
 
     filas = db.execute(
         select(Animal.status, func.count(Animal.id))
