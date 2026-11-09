@@ -1,83 +1,76 @@
-# GAVAC - Sistema de Gestion Ganadera (Railway + Flutter Bloc)
+# GAVAC — Gestión Ganadera
 
-Plataforma integral para el control de inventario bovino, eventos sanitarios, trazabilidad reproductiva y reportes de campo.
+Plataforma para la gestión ganadera con una API REST y una aplicación multiplataforma. El backend usa FastAPI y PostgreSQL; el cliente está desarrollado en Flutter.
 
---------------------------------------------------------------------------------
+## Componentes
 
-## Stack Tecnológico Oficial
+- `backend/`: API, modelos, esquemas, autenticación, migraciones Alembic y pruebas.
+- `mobile/`: aplicación Flutter para Android, iOS, web y escritorio.
+- `docs/`: arquitectura, alcance, casos de uso, contrato de API y decisiones del proyecto.
+- `docker-compose.yml`: entorno local para PostgreSQL y la API.
+- `CONTRIBUTING.md`: flujo de ramas, revisiones y validaciones.
 
-- Backend: Python 3.12+ / FastAPI / SQLAlchemy 2.0 / Alembic.
-- Base de Datos: PostgreSQL 16 (Containerizado en Railway / Docker Compose).
-- Mobile App: Flutter (Dart) con Material 3 y cliente HTTP adaptativo.
-- Infraestructura: Docker Compose (Desarrollo local) y Railway (Despliegue de producción).
+## Requisitos
 
---------------------------------------------------------------------------------
+- Docker Compose.
+- Flutter SDK compatible con Dart 3.
+- Python 3.12 para ejecutar las pruebas del backend fuera de Docker.
 
-## 🚀 Mejoras y Correcciones Recientes
+## Inicio rápido
 
-1. **Corrección de Visibilidad en Pantalla de Registro (`register_screen.dart`)**:
-   - Se añadió un estilo de texto explícito (`color: GavacColors.textPrimary`) en los campos de entrada (`TextFormField`), resolviendo el problema donde las letras typed se volvían invisibles (texto blanco sobre fondo claro).
-   - Se integró `ApiClient.baseUrl` dinámico (`localhost:8001` para Web y `10.0.2.2:8001` para Emulador Android) evitando errores de tiempo de espera (`ERR_CONNECTION_TIMED_OUT`).
+1. Crea la configuración local:
 
-2. **Alineación de Modelos Backend y Pydantic (`FastAPI` + `SQLAlchemy`)**:
-   - Corrección de consultas y mapeos en el modelo `Animal` (`finca_id` en lugar de `farm_id`).
-   - Ajuste en los eventos sanitarios (`CattleEvent`) para requerir `event_date`, `performed_by_id` y evitar conflictos con nombres de columnas.
-   - Corrección de la validación reCAPTCHA (`recaptcha.py`) reemplazando el string `'isinstance'` por la función nativa `isinstance()`.
-
-3. **Suite de Pruebas Automatizadas (100% Verde)**:
-   - Actualización de los payloads de prueba (`test_animals.py`, `test_events.py`, `test_extras.py`, `test_security_isolation.py`, `test_migrations.py`) para cumplir estrictamente con los esquemas Pydantic (`AnimalCreate`, `EventCreate`).
-   - Resultado: **38/38 pruebas pasadas exitosamente con `pytest`**.
-
---------------------------------------------------------------------------------
-
-## Reglas de Desarrollo y Arquitectura
-
-1. Base de Datos Unificada: Toda la persistencia reside en la instancia PostgreSQL de Railway/Docker. Queda descartado el uso de Supabase.
-2. Inmutabilidad y Trazabilidad (Pilar I): Ningún evento crítico (animales, pesajes, tratamientos) se elimina físicamente (DELETE). Se utiliza soft-delete (`deleted_at`) o registros de ajuste.
-3. Móvil (Flutter):
-   - Separación estricta entre capa de UI (Widgets), Lógica de Negocio y Repositorios (Data/API Provider).
-4. Boveda de Documentos (Pilar II): Archivos sanitarios e impresiones de hierro se sirven mediante almacenamiento privado con enlaces firmados temporales.
-
---------------------------------------------------------------------------------
-
-## Inicio Rápido (Entorno Local)
-
-1. Crear la configuración local (no subir `.env` al repositorio):
    ```powershell
    Copy-Item .env.example .env
    ```
-   Edita `.env`: establece `POSTGRES_PASSWORD` y asigna a `JWT_SECRET_KEY` una clave secreta de al menos 32 caracteres.
 
-2. Construir y levantar los servicios:
-   ```bash
+2. Edita `.env`. Establece una contraseña para PostgreSQL y un `JWT_SECRET_KEY` aleatorio de al menos 32 caracteres. No compartas ni confirmes el archivo `.env`.
+
+3. Inicia la base de datos y la API:
+
+   ```powershell
    docker compose up -d --build
    ```
-   - API FastAPI: http://localhost:8001/docs
-   - PostgreSQL Local: localhost:5433 (usuario: `ganadero`, bd: `gestion_ganadera`).
-   - El código de `backend/` está montado en el contenedor y Uvicorn usa recarga automática al guardar cambios.
-   - Esta configuración usa el volumen nuevo `postgres_api_data`. La base antigua (puerto 5432 / volumen `postgres_data`) no se modifica ni se migra automáticamente.
 
-3. Reconstruir y recrear los contenedores después de cambios en dependencias o en Docker:
-   ```bash
-   docker compose up -d --build --force-recreate
-   ```
-   Este comando conserva el volumen `postgres_api_data`. No uses `docker compose down -v`, porque eliminaría los datos de la base nueva. La base antigua se conserva aparte. Para revisar el inicio y los errores:
-   ```bash
-   docker compose logs -f api
-   ```
+   La API está disponible en <http://localhost:8001/docs> y PostgreSQL en el puerto `5433`. Las migraciones se aplican al iniciar la API.
 
-4. Ejecutar Cliente Móvil (Flutter):
-   ```bash
-   cd mobile
+4. Inicia el cliente Flutter en otra terminal:
+
+   ```powershell
+   Set-Location mobile
    flutter pub get
    flutter run
    ```
 
---------------------------------------------------------------------------------
+   La URL de la API se configura en [api_client.dart](mobile/lib/core/network/api_client.dart). En Flutter Web puede reemplazarse con `--dart-define=API_BASE_URL=http://localhost:8001`.
 
-## Equipo y Responsabilidades
+## Validación
 
-- Jorge Botero: Backend, API, Base de Datos y Estabilidad (FastAPI / PostgreSQL / Docker / Railway)
-- Oscar Navarro: Lider / Modulo Cattle
-- Juan Herrera: Modulo Auth & Testing
-- Elian Martínez: Frontend / Adaptabilidad
+Backend:
+
+```powershell
+Set-Location backend
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
+alembic heads
+```
+
+Aplicación móvil:
+
+```powershell
+Set-Location mobile
+flutter pub get
+flutter analyze
+flutter test
+```
+
+## Datos locales
+
+Docker Compose conserva la base en el volumen `postgres_api_data`. Evita `docker compose down -v` si necesitas conservar esos datos. Para revisar los registros de la API:
+
+```powershell
+docker compose logs -f api
+```
+
+Consulta [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) para el diseño del sistema y [docs/CONTRATO_API.md](docs/CONTRATO_API.md) para el contrato de la API.
+Para publicar el proyecto en un repositorio nuevo, revisa [docs/CREAR_REPOSITORIO.md](docs/CREAR_REPOSITORIO.md).
