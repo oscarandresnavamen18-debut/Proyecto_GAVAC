@@ -7,7 +7,7 @@ from app.routers import animals, auth, events, extras, farms, social_auth
 app = FastAPI(title="Gesti\u00f3n Ganadera API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.allowed_cors_origins or ["*"],
+    allow_origins=settings.allowed_cors_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
