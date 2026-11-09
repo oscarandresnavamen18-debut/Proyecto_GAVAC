@@ -1,0 +1,29 @@
+name: Solicitar una mejora
+description: Proponer una funcionalidad o mejora para GAVAC.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Necesidad
+      description: ¿Qué necesidad o problema debería resolver esta mejora?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solución propuesta
+      description: Describe el comportamiento que esperas.
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Componente
+      options:
+        - Aplicación Flutter
+        - API backend
+        - Base de datos o migraciones
+        - Documentación
+        - Otro
+    validations:
+      required: true

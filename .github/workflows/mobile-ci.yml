@@ -36,8 +36,8 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Analyze Reproduction screen
-        run: flutter analyze lib/features/auth/presentation/screens/reproduccion_screen.dart
+      - name: Analyze Flutter project
+        run: flutter analyze
 
       - name: Run Flutter tests
         run: flutter test

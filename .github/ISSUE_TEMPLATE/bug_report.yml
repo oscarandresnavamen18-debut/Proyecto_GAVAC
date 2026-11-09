@@ -1,0 +1,47 @@
+name: Reportar un error
+description: Informar un comportamiento inesperado en GAVAC.
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Descripción
+      description: Explica qué ocurrió y qué esperabas que ocurriera.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Pasos para reproducir
+      description: Enumera los pasos mínimos para reproducir el problema.
+      placeholder: |
+        1. Iniciar sesión...
+        2. Abrir...
+        3. Observar...
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Componente
+      options:
+        - Aplicación Flutter
+        - API backend
+        - Base de datos o migraciones
+        - Documentación
+        - Otro
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Entorno
+      description: Sistema operativo, versión de Flutter/Python y navegador o dispositivo, si aplica.
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacidad
+      options:
+        - label: He eliminado contraseñas, tokens, datos personales y otra información sensible del reporte.
+          required: true

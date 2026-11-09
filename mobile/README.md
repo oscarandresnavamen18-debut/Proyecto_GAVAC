@@ -1,20 +1,31 @@
-# Aplicación Móvil — Gestión Ganadera (Flutter)
+# Aplicación móvil
 
-Módulo cliente desarrollado en Flutter con diseño adaptativo Material 3.
+Cliente multiplataforma de GAVAC desarrollado con Flutter y Material 3.
 
-## Módulos incluidos en el esqueleto
-- Panel Principal (Dashboard)
-- Gestión de Fincas
-- Control de Animales e Identificación
-- Sanidad y Vacunación
-- Reproducción
-- Trazabilidad e Historial
-- Estado de Sincronización Offline
+## Estructura
 
-## Ejecución Local
-```bash
-cd mobile
-flutter create --project-name gestion_ganadera .
+- `lib/core/`: red, tema y utilidades compartidas.
+- `lib/features/`: funcionalidades separadas de autenticación, administración, dashboard, animales, fincas, sanidad y reproducción.
+- `test/`: pruebas de widgets.
+
+## Requisitos
+
+- Flutter SDK con soporte para Dart 3.
+- Backend disponible en `http://localhost:8001` para web y escritorio, o en `http://10.0.2.2:8001` para el emulador Android.
+
+## Desarrollo
+
+Desde esta carpeta:
+
+```powershell
 flutter pub get
+flutter analyze
+flutter test
 flutter run
+```
+
+No ejecutes `flutter create` sobre este proyecto existente. Para Flutter Web, puedes configurar la URL del backend con:
+
+```powershell
+flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8001
 ```
