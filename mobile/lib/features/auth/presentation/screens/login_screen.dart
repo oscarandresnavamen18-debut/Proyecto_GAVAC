@@ -26,7 +26,6 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _captchaToken;
   VoidCallback? _resetCaptcha;
 
-  static const String appName = 'GAVAC';
   static const String appSlogan =
       'Tecnología inteligente\npara la gestión del campo.';
   static const String welcomeTitle = 'Bienvenido';
@@ -245,54 +244,49 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildDesktopLayout() {
     return Row(
       children: [
-        // LADO IZQUIERDO - Imagen de fondo con texto
+        // LADO IZQUIERDO - Imagen de fondo con logo y slogan
         Expanded(
           flex: 1,
           child: Container(
             color: const Color(0xFF6B8E85),
-            child: const Stack(
+            child: Stack(
               children: [
                 Positioned.fill(
                   child: Opacity(
-                    opacity: 0.3,
+                    opacity: 0.45,
                     child: Image(
-                      image: AssetImage('assets/imagenes/imagenlogin.png'),
+                      image: const AssetImage('assets/imagenes/imagenLoginNuevo.png'),
                       fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const SizedBox.expand(),
                     ),
                   ),
                 ),
-                Positioned.fill(
-                  child: ColoredBox(color: Color(0x33000000)),
+                const Positioned.fill(
+                  child: ColoredBox(color: Color(0x22000000)),
                 ),
                 Center(
                   child: Padding(
-                    padding: EdgeInsets.all(48.0),
+                    padding: const EdgeInsets.all(48.0),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          appName,
-                          style: TextStyle(
-                            fontSize: 72,
-                            fontWeight: FontWeight.w900,
-                            color: Color.fromARGB(255, 29, 28, 28),
-                            letterSpacing: -2,
-                            shadows: [
-                              Shadow(
-                                color: Color(0x80000000),
-                                offset: Offset(0, 4),
-                                blurRadius: 8,
-                              ),
-                            ],
-                          ),
+                        Image(
+                          image: const AssetImage(
+                              'assets/imagenes/imagenLogoNuevo.png'),
+                          height: 140,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(Icons.agriculture,
+                                  size: 80, color: Colors.white),
                         ),
-                        SizedBox(height: 16),
-                        Text(
+                        const SizedBox(height: 24),
+                        const Text(
                           appSlogan,
+                          textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w400,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w600,
                             color: Colors.white,
                             height: 1.4,
                             shadows: [
@@ -441,25 +435,13 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 48),
+              const SizedBox(height: 32),
               Center(
-                child: Container(
-                  width: 100,
+                child: Image(
+                  image: const AssetImage('assets/imagenes/imagenLogoNuevo.png'),
                   height: 100,
-                  decoration: BoxDecoration(
-                    color: GavacColors.primary,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'G',
-                      style: TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.agriculture, size: 60, color: GavacColors.primary),
                 ),
               ),
               const SizedBox(height: 24),
