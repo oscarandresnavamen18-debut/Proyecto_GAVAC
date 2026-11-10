@@ -8,6 +8,10 @@ Cliente multiplataforma de GAVAC desarrollado con Flutter y Material 3.
 - `lib/features/`: funcionalidades separadas de autenticación, administración, dashboard, animales, inventario, fincas, sanidad, reproducción, producción y reportes.
 - `test/`: pruebas de widgets.
 
+## Estado de los módulos nuevos
+
+Inventario y Producción permiten registrar datos durante la sesión actual, pero todavía no los guardan en el backend ni de forma persistente. Reportes es una vista preliminar; la generación estará disponible cuando se conecten datos reales.
+
 ## Requisitos
 
 - Flutter SDK con soporte para Dart 3.

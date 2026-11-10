@@ -108,12 +108,13 @@ class ReportesScreen extends StatelessWidget {
                       runSpacing: 16,
                       children: [
                         _buildReportButton(
-                            'Reporte de Inventario', Icons.grid_view),
-                        _buildReportButton('Reporte Sanitario', Icons.shield),
+                            context, 'Reporte de Inventario', Icons.grid_view),
                         _buildReportButton(
-                            'Reporte Reproducción', Icons.favorite),
+                            context, 'Reporte Sanitario', Icons.shield),
                         _buildReportButton(
-                            'Reporte de Productividad', Icons.water_drop),
+                            context, 'Reporte Reproducción', Icons.favorite),
+                        _buildReportButton(context, 'Reporte de Productividad',
+                            Icons.water_drop),
                       ],
                     ),
                     const SizedBox(height: 32),
@@ -139,9 +140,17 @@ class ReportesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildReportButton(String title, IconData icon) {
+  Widget _buildReportButton(BuildContext context, String title, IconData icon) {
     return ElevatedButton.icon(
-      onPressed: () {},
+      onPressed: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'La generación de reportes estará disponible cuando se conecten los datos.',
+            ),
+          ),
+        );
+      },
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.white,
         foregroundColor: GavacColors.primary,

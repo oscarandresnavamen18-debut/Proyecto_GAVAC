@@ -147,6 +147,20 @@ void main() {
     expect(find.text('420 kg'), findsOneWidget);
   });
 
+  testWidgets('report actions explain that data integration is pending',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: ReportesScreen()));
+    await tester.tap(find.text('Reporte de Inventario'));
+    await tester.pump();
+
+    expect(
+      find.text(
+        'La generación de reportes estará disponible cuando se conecten los datos.',
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('login text remains readable when the system theme is dark',
       (WidgetTester tester) async {
     await tester.pumpWidget(
