@@ -26,7 +26,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
 
-  static const String appName = 'GAVAC';
   static const String appSlogan =
       'Únete a la revolución\nde la gestión ganadera.';
 
@@ -168,19 +167,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             TextStyle(fontSize: 16, color: Color(0xFF757575)),
                       ),
                       const SizedBox(height: 32),
-                      _buildTextField('Nombre completo', 'Juan Pérez',
+                      _buildTextField('Nombre completo', 'Ingresa tu nombre completo',
                           _nombreController, Icons.person_outline),
                       const SizedBox(height: 20),
                       _buildTextField(
                           'Correo electrónico',
-                          'juan@finca.com',
+                          'correo@ejemplo.com',
                           _emailController,
                           Icons.email_outlined,
                           TextInputType.emailAddress),
                       const SizedBox(height: 20),
                       _buildTextField(
                           'Nombre de la finca',
-                          'Finca La Esperanza',
+                          'Nombre de tu finca',
                           _fincaController,
                           Icons.agriculture_outlined),
                       const SizedBox(height: 20),
@@ -246,60 +245,59 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
 
-        // LADO DERECHO - Imagen de fondo
+        // LADO DERECHO - Imagen de fondo con logo y slogan
         Expanded(
           flex: 1,
           child: Container(
             color: const Color(0xFF6B8E85),
-            child: const Stack(
+            child: Stack(
               children: [
                 Positioned.fill(
                   child: Opacity(
-                    opacity: 0.3,
+                    opacity: 0.45,
                     child: Image(
-                      image: AssetImage('assets/imagenes/imagenlogin.png'),
+                      image: const AssetImage('assets/imagenes/imagenganado.png'),
                       fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const SizedBox.expand(),
                     ),
                   ),
                 ),
-                Positioned.fill(
-                  child: ColoredBox(color: Color(0x33000000)),
+                const Positioned.fill(
+                  child: ColoredBox(color: Color(0x22000000)),
                 ),
                 Center(
                   child: Padding(
-                    padding: EdgeInsets.all(48.0),
+                    padding: const EdgeInsets.all(48.0),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          appName,
-                          style: TextStyle(
-                              fontSize: 72,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              letterSpacing: -2,
-                              shadows: [
-                                Shadow(
-                                    color: Color(0x80000000),
-                                    offset: Offset(0, 4),
-                                    blurRadius: 8)
-                              ]),
+                        Image(
+                          image: const AssetImage(
+                              'assets/imagenes/imagenLogoNuevo.png'),
+                          height: 140,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(Icons.agriculture,
+                                  size: 80, color: Colors.white),
                         ),
-                        SizedBox(height: 16),
-                        Text(
+                        const SizedBox(height: 24),
+                        const Text(
                           appSlogan,
+                          textAlign: TextAlign.center,
                           style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w400,
-                              color: Colors.white,
-                              height: 1.4,
-                              shadows: [
-                                Shadow(
-                                    color: Color(0x80000000),
-                                    offset: Offset(0, 2),
-                                    blurRadius: 4)
-                              ]),
+                            fontSize: 22,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            height: 1.4,
+                            shadows: [
+                              Shadow(
+                                color: Color(0x80000000),
+                                offset: Offset(0, 2),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -322,7 +320,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
+              Center(
+                child: Image(
+                  image: const AssetImage('assets/imagenes/imagenLogoNuevo.png'),
+                  height: 90,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.agriculture, size: 50, color: GavacColors.primary),
+                ),
+              ),
+              const SizedBox(height: 24),
               const Text('Crear Cuenta',
                   style: TextStyle(
                       fontSize: 32,
@@ -331,18 +338,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 8),
               const Text('Completa tus datos para comenzar.',
                   style: TextStyle(fontSize: 14, color: Color(0xFF757575))),
-              const SizedBox(height: 32),
-              _buildTextField('Nombre completo', 'Juan Pérez',
+              const SizedBox(height: 28),
+              _buildTextField('Nombre completo', 'Ingresa tu nombre completo',
                   _nombreController, Icons.person_outline),
               const SizedBox(height: 16),
               _buildTextField(
                   'Correo electrónico',
-                  'juan@finca.com',
+                  'correo@ejemplo.com',
                   _emailController,
                   Icons.email_outlined,
                   TextInputType.emailAddress),
               const SizedBox(height: 16),
-              _buildTextField('Nombre de la finca', 'Finca La Esperanza',
+              _buildTextField('Nombre de la finca', 'Nombre de tu finca',
                   _fincaController, Icons.agriculture_outlined),
               const SizedBox(height: 16),
               _buildPasswordField(
