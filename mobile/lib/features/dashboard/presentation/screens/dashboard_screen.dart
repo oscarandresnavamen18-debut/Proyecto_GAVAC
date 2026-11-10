@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-
 import 'dart:convert';
-
 import 'package:http/http.dart' as http;
-
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/gavac_colors.dart';
 import '../../../../core/utils/app_session.dart';
@@ -183,8 +180,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     if (emailController.text.trim().isEmpty ||
                         (codeSent && codeController.text.trim().length != 8)) {
                       _showMessage(
-                        'Completa el correo y el código de verificación.',
-                      );
+                          'Completa el correo y el código de verificación.');
                       return;
                     }
                     setDialogState(() => busy = true);
@@ -215,13 +211,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           busy = false;
                         });
                         _showMessage(
-                          'Enviamos un código para verificar el correo.',
-                        );
+                            'Enviamos un código para verificar el correo.');
                       } else {
                         setDialogState(() => busy = false);
                         _showMessage(
-                          'No se pudo verificar el correo. Revisa los datos e inténtalo de nuevo.',
-                        );
+                            'No se pudo verificar el correo. Revisa los datos e inténtalo de nuevo.');
                       }
                     } on http.ClientException {
                       if (context.mounted) {
@@ -285,9 +279,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       final isSelected = index == _selectedIndex;
                       return Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ),
+                            horizontal: 12, vertical: 4),
                         child: Material(
                           color: isSelected ? Colors.white : Colors.transparent,
                           borderRadius: BorderRadius.circular(12),
@@ -298,9 +290,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             },
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
+                                  horizontal: 16, vertical: 12),
                               child: Row(
                                 children: [
                                   Icon(
@@ -345,10 +335,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                 // Botón de Salir
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: Material(
                     color: Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
@@ -356,10 +344,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       borderRadius: BorderRadius.circular(12),
                       onTap: _handleLogout,
                       child: const Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         child: Row(
                           children: [
                             Icon(
@@ -386,10 +372,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: TextButton.icon(
                     onPressed: _manageAlternateEmail,
-                    icon: const Icon(
-                      Icons.alternate_email,
-                      color: Colors.white70,
-                    ),
+                    icon: const Icon(Icons.alternate_email,
+                        color: Colors.white70),
                     label: const Text(
                       'Correo alternativo',
                       style: TextStyle(color: Colors.white70),
@@ -440,7 +424,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 4),
                   Text(
                     'Resumen general de tu finca',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
                   ),
                 ],
               ),
@@ -448,9 +435,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
+                        horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(30),
@@ -459,24 +444,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          color: GavacColors.primary,
-                          size: 20,
-                        ),
+                        const Icon(Icons.location_on_outlined,
+                            color: GavacColors.primary, size: 20),
                         const SizedBox(width: 8),
                         Text(
                           AppSession.farmName,
                           style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: GavacColors.textPrimary,
-                          ),
+                              fontWeight: FontWeight.w600,
+                              color: GavacColors.textPrimary),
                         ),
                         const SizedBox(width: 8),
-                        Icon(
-                          Icons.keyboard_arrow_down,
-                          color: Colors.grey[600],
-                        ),
+                        Icon(Icons.keyboard_arrow_down,
+                            color: Colors.grey[600]),
                       ],
                     ),
                   ),
@@ -488,10 +467,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: const Color(0xFFE2E8F0)),
                     ),
-                    child: Icon(
-                      Icons.notifications_outlined,
-                      color: Colors.grey[600],
-                    ),
+                    child: Icon(Icons.notifications_outlined,
+                        color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -539,7 +516,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 8),
                   const Text(
                     'Este es el estado actual de tu\nactivo ganadero hoy.',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
                   ),
                 ],
               ),
@@ -577,13 +557,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 onTap: () => _selectPage(3),
               ),
               const SizedBox(width: 24),
-              _buildStatCard(
-                'ALERTAS',
-                '0',
-                Icons.warning_amber_rounded,
-                const Color(0xFFF59E0B),
-                const Color(0xFFFEF3C7),
-              ),
+              _buildStatCard('ALERTAS', '0', Icons.warning_amber_rounded,
+                  const Color(0xFFF59E0B), const Color(0xFFFEF3C7)),
             ],
           ),
         ],
@@ -619,7 +594,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 4),
                   Text(
                     'Panel de control maestro y configuración',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
                   ),
                 ],
               ),
@@ -631,9 +609,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              const GestionFincasAdminScreen(),
-                        ),
+                            builder: (context) =>
+                                const GestionFincasAdminScreen()),
                       );
                     },
                     icon: const Icon(Icons.add, size: 18),
@@ -641,16 +618,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: GavacColors.primary,
                       side: const BorderSide(
-                        color: GavacColors.primary,
-                        width: 1.5,
-                      ),
+                          color: GavacColors.primary, width: 1.5),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 14,
-                      ),
+                          horizontal: 20, vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                          borderRadius: BorderRadius.circular(12)),
                       textStyle: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
@@ -660,9 +632,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              const GestionUsuariosAdminScreen(),
-                        ),
+                            builder: (context) =>
+                                const GestionUsuariosAdminScreen()),
                       );
                     },
                     icon: const Icon(Icons.add, size: 18),
@@ -672,12 +643,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 14,
-                      ),
+                          horizontal: 20, vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                          borderRadius: BorderRadius.circular(12)),
                       textStyle: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
@@ -687,9 +655,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              const GestionUsuariosAdminScreen(),
-                        ),
+                            builder: (context) =>
+                                const GestionUsuariosAdminScreen()),
                       );
                     },
                     icon: const Icon(Icons.person_add_alt_1, size: 18),
@@ -699,12 +666,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 14,
-                      ),
+                          horizontal: 20, vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                          borderRadius: BorderRadius.circular(12)),
                       textStyle: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
@@ -749,39 +713,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const Row(
                         children: [
                           Expanded(
-                            flex: 2,
-                            child: Text(
-                              'NOMBRE',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF94A3B8),
-                              ),
-                            ),
-                          ),
+                              flex: 2,
+                              child: Text('NOMBRE',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF94A3B8)))),
                           Expanded(
-                            flex: 2,
-                            child: Text(
-                              'UBICACIÓN',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF94A3B8),
-                              ),
-                            ),
-                          ),
+                              flex: 2,
+                              child: Text('UBICACIÓN',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF94A3B8)))),
                           Expanded(
-                            flex: 1,
-                            child: Text(
-                              'ACCIÓN',
-                              textAlign: TextAlign.right,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF94A3B8),
-                              ),
-                            ),
-                          ),
+                              flex: 1,
+                              child: Text('ACCIÓN',
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF94A3B8)))),
                         ],
                       ),
                       const Divider(height: 24),
@@ -792,9 +744,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 child: Text(
                                   'No hay fincas registradas',
                                   style: TextStyle(
-                                    color: Colors.grey[500],
-                                    fontSize: 14,
-                                  ),
+                                      color: Colors.grey[500], fontSize: 14),
                                 ),
                               ),
                             )
@@ -805,44 +755,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               itemBuilder: (context, index) {
                                 final finca = fincasRegistradas[index];
                                 return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
-                                  ),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
                                   child: Row(
                                     children: [
                                       Expanded(
-                                        flex: 2,
-                                        child: Text(
-                                          finca['nombre'],
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            color: GavacColors.textPrimary,
-                                          ),
-                                        ),
-                                      ),
+                                          flex: 2,
+                                          child: Text(finca['nombre'],
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: GavacColors
+                                                      .textPrimary))),
                                       Expanded(
-                                        flex: 2,
-                                        child: Text(
-                                          finca['ubicacion'],
-                                          style: const TextStyle(
-                                            color: GavacColors.textSecondary,
-                                          ),
-                                        ),
-                                      ),
+                                          flex: 2,
+                                          child: Text(finca['ubicacion'],
+                                              style: const TextStyle(
+                                                  color: GavacColors
+                                                      .textSecondary))),
                                       Expanded(
                                         flex: 1,
                                         child: Align(
                                           alignment: Alignment.centerRight,
                                           child: TextButton(
                                             onPressed: () {},
-                                            child: const Text(
-                                              'GESTIONAR',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w700,
-                                                color: GavacColors.primary,
-                                                fontSize: 13,
-                                              ),
-                                            ),
+                                            child: const Text('GESTIONAR',
+                                                style: TextStyle(
+                                                    fontWeight: FontWeight.w700,
+                                                    color: GavacColors.primary,
+                                                    fontSize: 13)),
                                           ),
                                         ),
                                       ),
@@ -888,39 +828,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const Row(
                         children: [
                           Expanded(
-                            flex: 2,
-                            child: Text(
-                              'EMAIL / ROL',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF94A3B8),
-                              ),
-                            ),
-                          ),
+                              flex: 2,
+                              child: Text('EMAIL / ROL',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF94A3B8)))),
                           Expanded(
-                            flex: 2,
-                            child: Text(
-                              'PERMISOS MÓDULOS (BLOQUEO)',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF94A3B8),
-                              ),
-                            ),
-                          ),
+                              flex: 2,
+                              child: Text('PERMISOS MÓDULOS (BLOQUEO)',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF94A3B8)))),
                           Expanded(
-                            flex: 1,
-                            child: Text(
-                              'ACCIÓN',
-                              textAlign: TextAlign.right,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF94A3B8),
-                              ),
-                            ),
-                          ),
+                              flex: 1,
+                              child: Text('ACCIÓN',
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF94A3B8)))),
                         ],
                       ),
                       const Divider(height: 24),
@@ -931,9 +859,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 child: Text(
                                   'No hay usuarios registrados',
                                   style: TextStyle(
-                                    color: Colors.grey[500],
-                                    fontSize: 14,
-                                  ),
+                                      color: Colors.grey[500], fontSize: 14),
                                 ),
                               ),
                             )
@@ -944,30 +870,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               itemBuilder: (context, index) {
                                 final user = usuariosRegistrados[index];
                                 return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
-                                  ),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
                                   child: Row(
                                     children: [
                                       Expanded(
-                                        flex: 2,
-                                        child: Text(
-                                          user['email'],
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            color: GavacColors.textPrimary,
-                                          ),
-                                        ),
-                                      ),
+                                          flex: 2,
+                                          child: Text(user['email'],
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: GavacColors
+                                                      .textPrimary))),
                                       Expanded(
-                                        flex: 2,
-                                        child: Text(
-                                          user['permisos'],
-                                          style: const TextStyle(
-                                            color: GavacColors.textSecondary,
-                                          ),
-                                        ),
-                                      ),
+                                          flex: 2,
+                                          child: Text(user['permisos'],
+                                              style: const TextStyle(
+                                                  color: GavacColors
+                                                      .textSecondary))),
                                       Expanded(
                                         flex: 1,
                                         child: Row(
@@ -976,18 +895,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           children: [
                                             IconButton(
                                               icon: const Icon(
-                                                Icons.edit_outlined,
-                                                size: 18,
-                                                color: Colors.grey,
-                                              ),
+                                                  Icons.edit_outlined,
+                                                  size: 18,
+                                                  color: Colors.grey),
                                               onPressed: () {},
                                             ),
                                             IconButton(
                                               icon: const Icon(
-                                                Icons.delete_outline,
-                                                size: 18,
-                                                color: Colors.redAccent,
-                                              ),
+                                                  Icons.delete_outline,
+                                                  size: 18,
+                                                  color: Colors.redAccent),
                                               onPressed: () {},
                                             ),
                                           ],
@@ -1010,13 +927,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildStatCard(
-    String title,
-    String value,
-    IconData icon,
-    Color iconColor,
-    Color iconBg, {
-    VoidCallback? onTap,
-  }) {
+      String title, String value, IconData icon, Color iconColor, Color iconBg,
+      {VoidCallback? onTap}) {
     return Expanded(
       child: InkWell(
         onTap: onTap,
