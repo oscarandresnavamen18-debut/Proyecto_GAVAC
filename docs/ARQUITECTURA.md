@@ -35,7 +35,7 @@ La aplicación es un backend FastAPI único, organizado por módulos de dominio.
 El cliente Flutter está en `mobile/`:
 
 - `lib/core/` contiene componentes compartidos, como tema, utilidades y cliente HTTP.
-- `lib/features/` agrupa funcionalidades de administración, autenticación, dashboard, animales, fincas, sanidad, reproducción y ganado.
+- `lib/features/` agrupa funcionalidades de administración, autenticación, dashboard, animales, inventario, fincas, sanidad, reproducción, producción y reportes.
 - Cada funcionalidad mantiene sus pantallas, servicios y modelos dentro de su propio módulo.
 - `test/` contiene pruebas de widgets.
 

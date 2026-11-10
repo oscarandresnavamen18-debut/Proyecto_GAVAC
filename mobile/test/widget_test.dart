@@ -3,6 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gestion_ganadera/main.dart';
 import 'package:gestion_ganadera/features/auth/presentation/screens/login_screen.dart';
 import 'package:gestion_ganadera/features/reproduccion/presentation/screens/reproduccion_screen.dart';
+import 'package:gestion_ganadera/features/animals/presentation/screens/inventario_screen.dart';
+import 'package:gestion_ganadera/features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:gestion_ganadera/features/livestock/presentation/screens/produccion_screen.dart';
+import 'package:gestion_ganadera/features/reports/presentation/screens/reportes_screen.dart';
 import 'package:gestion_ganadera/core/theme/gavac_colors.dart';
 import 'package:gestion_ganadera/core/theme/gavac_theme.dart';
 
@@ -27,6 +31,48 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Control de Eventos Reproductivos'), findsOneWidget);
     expect(find.text('Historial de Eventos Reproductivos'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('new modules render without layout errors on mobile',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    for (final screen in const [
+      ProduccionScreen(),
+      InventarioScreen(),
+      ReportesScreen(),
+    ]) {
+      await tester.pumpWidget(MaterialApp(home: screen));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull,
+          reason: screen.runtimeType.toString());
+    }
+  });
+
+  testWidgets('dashboard opens production, inventory, and reports modules',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: DashboardScreen()));
+    await tester.pumpAndSettle();
+
+    for (final entry in {
+      'Producción': 'Módulo de Producción',
+      'Inventario': 'Módulo de Inventario',
+      'Reportes': 'Módulo de Reportes',
+    }.entries) {
+      await tester.tap(find.text(entry.key).first);
+      await tester.pumpAndSettle();
+      expect(find.text(entry.value), findsOneWidget);
+    }
+
     expect(tester.takeException(), isNull);
   });
 

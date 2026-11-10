@@ -5,7 +5,7 @@ Cliente multiplataforma de GAVAC desarrollado con Flutter y Material 3.
 ## Estructura
 
 - `lib/core/`: red, tema y utilidades compartidas.
-- `lib/features/`: funcionalidades separadas de autenticación, administración, dashboard, animales, fincas, sanidad y reproducción.
+- `lib/features/`: funcionalidades separadas de autenticación, administración, dashboard, animales, inventario, fincas, sanidad, reproducción, producción y reportes.
 - `test/`: pruebas de widgets.
 
 ## Requisitos
