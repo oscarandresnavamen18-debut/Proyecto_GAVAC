@@ -101,6 +101,25 @@ void main() {
     expect(find.text('12'), findsOneWidget);
   });
 
+  testWidgets('inventory form requires a name and quantity',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: InventarioScreen()));
+    final registerButton = find.widgetWithText(
+      ElevatedButton,
+      'Registrar Insumo',
+    );
+    await tester.ensureVisible(registerButton);
+    await tester.tap(registerButton);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Guardar Insumo'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ingresa el nombre del insumo.'), findsOneWidget);
+    expect(find.text('Ingresa la cantidad.'), findsOneWidget);
+    expect(find.text('Registrar Insumo / Recurso'), findsOneWidget);
+  });
+
   testWidgets('production form adds an event to the current session',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(390, 844);

@@ -16,6 +16,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
   void _showRegistrarInsumoModal() {
     final nombreController = TextEditingController();
     final cantidadController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
@@ -26,21 +27,35 @@ class _InventarioScreenState extends State<InventarioScreen> {
                 fontWeight: FontWeight.w800, color: GavacColors.primary)),
         content: SizedBox(
           width: 400,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
                   controller: nombreController,
                   decoration: const InputDecoration(
-                      labelText: 'Nombre del Insumo *',
-                      hintText: 'Ej. Vacuna Aftosa / Alimento')),
-              const SizedBox(height: 12),
-              TextField(
+                    labelText: 'Nombre del Insumo *',
+                    hintText: 'Ej. Vacuna Aftosa / Alimento',
+                  ),
+                  validator: (value) => value == null || value.trim().isEmpty
+                      ? 'Ingresa el nombre del insumo.'
+                      : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
                   controller: cantidadController,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
-                      labelText: 'Cantidad *', hintText: '50 unidades')),
-            ],
+                    labelText: 'Cantidad *',
+                    hintText: '50 unidades',
+                  ),
+                  validator: (value) => value == null || value.trim().isEmpty
+                      ? 'Ingresa la cantidad.'
+                      : null,
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
@@ -52,23 +67,23 @@ class _InventarioScreenState extends State<InventarioScreen> {
                 backgroundColor: GavacColors.primary,
                 foregroundColor: Colors.white),
             onPressed: () {
-              if (nombreController.text.trim().isNotEmpty) {
-                setState(() {
-                  _inventario.add({
-                    'nombre': nombreController.text.trim(),
-                    'cantidad': cantidadController.text.trim().isNotEmpty
-                        ? cantidadController.text.trim()
-                        : '1',
-                    'estado': 'Disponible',
-                  });
-                });
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Insumo registrado con éxito'),
-                      backgroundColor: Colors.green),
-                );
+              if (!formKey.currentState!.validate()) {
+                return;
               }
+
+              setState(() {
+                _inventario.add({
+                  'nombre': nombreController.text.trim(),
+                  'cantidad': cantidadController.text.trim(),
+                  'estado': 'Disponible',
+                });
+              });
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text('Insumo registrado con éxito'),
+                    backgroundColor: Colors.green),
+              );
             },
             child: const Text('Guardar Insumo'),
           ),
