@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:gestion_ganadera/core/theme/gavac_colors.dart';
+
+import '../../../../core/theme/gavac_colors.dart';
+import '../../../../core/widgets/feature_page_widgets.dart';
 
 class InventarioScreen extends StatefulWidget {
   const InventarioScreen({super.key});
@@ -10,53 +13,75 @@ class InventarioScreen extends StatefulWidget {
 }
 
 class _InventarioScreenState extends State<InventarioScreen> {
-  // Cero datos de prueba estáticos (lista vacía)
-  final List<Map<String, dynamic>> _inventario = [];
+  final List<_InventoryItem> _items = [];
+  final _nameController = TextEditingController();
+  final _quantityController = TextEditingController();
 
-  void _showRegistrarInsumoModal() {
-    final nombreController = TextEditingController();
-    final cantidadController = TextEditingController();
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _quantityController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _showRegisterDialog() async {
     final formKey = GlobalKey<FormState>();
+    _nameController.clear();
+    _quantityController.clear();
 
-    showDialog(
+    final item = await showDialog<_InventoryItem>(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      builder: (dialogContext) => AlertDialog(
         title: Text(
-          'Registrar Insumo / Recurso',
+          'Registrar insumo',
           style: GoogleFonts.plusJakartaSans(
-            fontWeight: FontWeight.w800,
             color: GavacColors.primary,
+            fontWeight: FontWeight.w800,
           ),
         ),
         content: SizedBox(
-          width: 400,
+          width: 420,
           child: Form(
             key: formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextFormField(
-                  controller: nombreController,
+                  controller: _nameController,
+                  textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(
-                    labelText: 'Nombre del Insumo *',
-                    hintText: 'Ej. Vacuna Aftosa / Alimento',
+                    labelText: 'Nombre del insumo',
+                    hintText: 'Ej. Alimento para ganado',
+                    prefixIcon: Icon(Icons.inventory_2_outlined),
                   ),
                   validator: (value) => value == null || value.trim().isEmpty
                       ? 'Ingresa el nombre del insumo.'
                       : null,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 TextFormField(
-                  controller: cantidadController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Cantidad *',
-                    hintText: '50 unidades',
+                  controller: _quantityController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
                   ),
-                  validator: (value) => value == null || value.trim().isEmpty
-                      ? 'Ingresa la cantidad.'
-                      : null,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                  ],
+                  decoration: const InputDecoration(
+                    labelText: 'Cantidad',
+                    hintText: 'Ej. 50',
+                    prefixIcon: Icon(Icons.numbers_outlined),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Ingresa la cantidad.';
+                    }
+                    final quantity = _parseQuantity(value);
+                    if (quantity == null || quantity <= 0) {
+                      return 'La cantidad debe ser un número mayor que cero.';
+                    }
+                    return null;
+                  },
                 ),
               ],
             ),
@@ -64,343 +89,242 @@ class _InventarioScreenState extends State<InventarioScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: GavacColors.primary,
-              foregroundColor: Colors.white,
-            ),
+          FilledButton.icon(
             onPressed: () {
-              if (!formKey.currentState!.validate()) {
-                return;
-              }
-
-              setState(() {
-                _inventario.add({
-                  'nombre': nombreController.text.trim(),
-                  'cantidad': cantidadController.text.trim(),
-                  'estado': 'Disponible',
-                });
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Insumo registrado con éxito'),
-                  backgroundColor: Colors.green,
+              if (!formKey.currentState!.validate()) return;
+              Navigator.pop(
+                dialogContext,
+                _InventoryItem(
+                  name: _nameController.text.trim(),
+                  quantity: _formatQuantity(
+                    _parseQuantity(_quantityController.text)!,
+                  ),
                 ),
               );
             },
-            child: const Text('Guardar Insumo'),
+            icon: const Icon(Icons.check),
+            label: const Text('Guardar insumo'),
           ),
         ],
       ),
     );
+
+    if (item == null || !mounted) return;
+    setState(() => _items.insert(0, item));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Insumo guardado en esta sesión.')),
+    );
   }
+
+  double? _parseQuantity(String value) =>
+      double.tryParse(value.trim().replaceAll(',', '.'));
+
+  String _formatQuantity(double value) => value == value.roundToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
 
   @override
   Widget build(BuildContext context) {
+    final pagePadding = MediaQuery.sizeOf(context).width < 600 ? 16.0 : 32.0;
+
     return Scaffold(
       backgroundColor: GavacColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(
-            MediaQuery.sizeOf(context).width < 600 ? 16 : 32,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Banner Superior
-              Container(
-                width: double.infinity,
-                height: MediaQuery.sizeOf(context).width < 600 ? 180 : 160,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  image: const DecorationImage(
-                    image: AssetImage('assets/imagenes/imagenganado.png'),
-                    fit: BoxFit.cover,
+          padding: EdgeInsets.all(pagePadding),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const FeaturePageHeader(
+                    icon: Icons.inventory_2_outlined,
+                    title: 'Inventario',
+                    subtitle:
+                        'Organiza y lleva el control de los insumos y recursos de tu finca.',
                   ),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [
-                        GavacColors.primary.withValues(alpha: 0.95),
-                        GavacColors.primary.withValues(alpha: 0.5),
-                        Colors.transparent,
+                  const SizedBox(height: 24),
+                  _buildMetrics(),
+                  const SizedBox(height: 24),
+                  FeaturePanel(
+                    title: 'Insumos registrados',
+                    subtitle:
+                        'Consulta y administra los elementos de tu inventario.',
+                    child: Column(
+                      children: [
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: FilledButton.icon(
+                            onPressed: _showRegisterDialog,
+                            icon: const Icon(Icons.add),
+                            label: const Text('Nuevo insumo'),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        if (_items.isEmpty)
+                          const _InventoryEmptyState()
+                        else
+                          ..._items.map(
+                            (item) => _InventoryItemTile(
+                              item: item,
+                              onDelete: () =>
+                                  setState(() => _items.remove(item)),
+                            ),
+                          ),
                       ],
                     ),
                   ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: MediaQuery.sizeOf(context).width < 600
-                        ? 16
-                        : 32,
-                    vertical: 20,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Icon(
-                          Icons.inventory_2_outlined,
-                          color: Colors.white,
-                          size: 36,
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Módulo de Inventario',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
-                                fontSize: MediaQuery.sizeOf(context).width < 600
-                                    ? 20
-                                    : 24,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Control de insumos, alimentos y recursos de la finca.',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white70,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                  const SizedBox(height: 12),
+                  const _SessionNotice(),
+                ],
               ),
-              const SizedBox(height: 28),
-
-              // KPIs en ceros
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final cardWidth = constraints.maxWidth < 600
-                      ? (constraints.maxWidth - 16) / 2
-                      : (constraints.maxWidth - 32) / 3;
-                  return Wrap(
-                    spacing: 16,
-                    runSpacing: 16,
-                    children: [
-                      SizedBox(
-                        width: cardWidth,
-                        child: _buildKpiCard(
-                          '0',
-                          'Total Insumos',
-                          Icons.inventory,
-                          const Color(0xFFEFF6FF),
-                          const Color(0xFF2563EB),
-                        ),
-                      ),
-                      SizedBox(
-                        width: cardWidth,
-                        child: _buildKpiCard(
-                          '0',
-                          'Stock Óptimo',
-                          Icons.check_circle,
-                          const Color(0xFFECFDF5),
-                          const Color(0xFF059669),
-                        ),
-                      ),
-                      SizedBox(
-                        width: cardWidth,
-                        child: _buildKpiCard(
-                          '0',
-                          'Stock Bajo',
-                          Icons.warning,
-                          const Color(0xFFFEF2F2),
-                          const Color(0xFFDC2626),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 32),
-
-              // Tabla de Inventario
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final title = Text(
-                          'Listado de Inventario',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: GavacColors.primary,
-                          ),
-                        );
-                        final addButton = ElevatedButton.icon(
-                          onPressed: _showRegistrarInsumoModal,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: GavacColors.primary,
-                            foregroundColor: Colors.white,
-                          ),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Registrar Insumo'),
-                        );
-                        if (constraints.maxWidth < 600) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              title,
-                              const SizedBox(height: 12),
-                              addButton,
-                            ],
-                          );
-                        }
-                        return Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [title, addButton],
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    _inventario.isEmpty
-                        ? Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 40),
-                            child: Center(
-                              child: Text(
-                                'Inventario vacío',
-                                style: TextStyle(
-                                  color: Colors.grey[500],
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          )
-                        : SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: DataTable(
-                              columns: const [
-                                DataColumn(label: Text('NOMBRE')),
-                                DataColumn(label: Text('CANTIDAD')),
-                                DataColumn(label: Text('ESTADO')),
-                                DataColumn(label: Text('ACCIONES')),
-                              ],
-                              rows: _inventario.map((item) {
-                                return DataRow(
-                                  cells: [
-                                    DataCell(
-                                      Text(
-                                        item['nombre'],
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    DataCell(Text(item['cantidad'])),
-                                    DataCell(
-                                      Chip(
-                                        label: Text(item['estado']),
-                                        backgroundColor: Colors.blue[50],
-                                        labelStyle: const TextStyle(
-                                          color: Colors.blue,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    DataCell(
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.delete_outline,
-                                          color: Colors.red,
-                                        ),
-                                        onPressed: () => setState(
-                                          () => _inventario.remove(item),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildKpiCard(
-    String value,
-    String label,
-    IconData icon,
-    Color bg,
-    Color fg,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                value,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                  color: GavacColors.primary,
-                ),
+  Widget _buildMetrics() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 12.0;
+        final cardWidth = (constraints.maxWidth - spacing) / 2;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            SizedBox(
+              width: cardWidth,
+              child: FeatureMetricCard(
+                value: '${_items.length}',
+                label: 'Insumos registrados',
+                icon: Icons.inventory_2_outlined,
+                color: GavacColors.infoText,
+                backgroundColor: GavacColors.infoBg,
               ),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: bg,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: fg, size: 20),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: GavacColors.textSecondary,
             ),
+            SizedBox(
+              width: cardWidth,
+              child: FeatureMetricCard(
+                value: _items.isEmpty ? '—' : 'Hoy',
+                label: 'Último movimiento',
+                icon: Icons.schedule_outlined,
+                color: GavacColors.warningText,
+                backgroundColor: GavacColors.warningBg,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _InventoryItem {
+  const _InventoryItem({required this.name, required this.quantity});
+
+  final String name;
+  final String quantity;
+}
+
+class _InventoryItemTile extends StatelessWidget {
+  const _InventoryItemTile({required this.item, required this.onDelete});
+
+  final _InventoryItem item;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: GavacColors.background,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: ListTile(
+        leading: const CircleAvatar(
+          backgroundColor: GavacColors.infoBg,
+          child: Icon(
+            Icons.inventory_2_outlined,
+            color: GavacColors.infoText,
+          ),
+        ),
+        title: Text(
+          item.name,
+          style: GoogleFonts.plusJakartaSans(
+            color: GavacColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        subtitle: Text(
+          'Cantidad: ${item.quantity}',
+          style: const TextStyle(color: GavacColors.textSecondary),
+        ),
+        trailing: IconButton(
+          tooltip: 'Eliminar insumo',
+          onPressed: onDelete,
+          icon: const Icon(Icons.delete_outline, color: GavacColors.textMuted),
+        ),
+      ),
+    );
+  }
+}
+
+class _InventoryEmptyState extends StatelessWidget {
+  const _InventoryEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 12),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.inventory_2_outlined,
+            size: 38,
+            color: GavacColors.textMuted,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Tu inventario está vacío',
+            style: GoogleFonts.plusJakartaSans(
+              color: GavacColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Registra el primer insumo para comenzar a organizar tus recursos.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: GavacColors.textSecondary, height: 1.5),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SessionNotice extends StatelessWidget {
+  const _SessionNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: [
+        Icon(Icons.info_outline, size: 16, color: GavacColors.textMuted),
+        SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            'Los insumos se conservan solo durante esta sesión.',
+            style: TextStyle(color: GavacColors.textSecondary, fontSize: 12),
+          ),
+        ),
+      ],
     );
   }
 }

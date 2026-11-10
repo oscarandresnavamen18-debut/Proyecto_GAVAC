@@ -15,9 +15,12 @@ void main() {
     await tester.pumpAndSettle();
 
     for (final entry in {
-      'Producción': 'Módulo de Producción',
-      'Inventario': 'Módulo de Inventario',
-      'Reportes': 'Módulo de Reportes',
+      'Producción':
+          'Registra la producción diaria y consulta el rendimiento del ganado.',
+      'Inventario':
+          'Organiza y lleva el control de los insumos y recursos de tu finca.',
+      'Reportes':
+          'Consulta resúmenes para entender mejor la actividad de tu finca.',
     }.entries) {
       await tester.tap(find.text(entry.key).first);
       await tester.pumpAndSettle();

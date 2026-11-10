@@ -13,8 +13,8 @@ void main() {
 
     await tester.pumpWidget(const MaterialApp(home: InventarioScreen()));
     final registerButton = find.widgetWithText(
-      ElevatedButton,
-      'Registrar Insumo',
+      FilledButton,
+      'Nuevo insumo',
     );
     await tester.ensureVisible(registerButton);
     await tester.tap(registerButton);
@@ -22,11 +22,11 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).at(0), 'Sal mineral');
     await tester.enterText(find.byType(TextFormField).at(1), '12');
-    await tester.tap(find.text('Guardar Insumo'));
+    await tester.tap(find.text('Guardar insumo'));
     await tester.pumpAndSettle();
 
     expect(find.text('Sal mineral'), findsOneWidget);
-    expect(find.text('12'), findsOneWidget);
+    expect(find.text('Cantidad: 12'), findsOneWidget);
   });
 
   testWidgets('inventory form requires a name and quantity', (
@@ -34,18 +34,18 @@ void main() {
   ) async {
     await tester.pumpWidget(const MaterialApp(home: InventarioScreen()));
     final registerButton = find.widgetWithText(
-      ElevatedButton,
-      'Registrar Insumo',
+      FilledButton,
+      'Nuevo insumo',
     );
     await tester.ensureVisible(registerButton);
     await tester.tap(registerButton);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Guardar Insumo'));
+    await tester.tap(find.text('Guardar insumo'));
     await tester.pumpAndSettle();
 
     expect(find.text('Ingresa el nombre del insumo.'), findsOneWidget);
     expect(find.text('Ingresa la cantidad.'), findsOneWidget);
-    expect(find.text('Registrar Insumo / Recurso'), findsOneWidget);
+    expect(find.text('Registrar insumo'), findsOneWidget);
   });
 }

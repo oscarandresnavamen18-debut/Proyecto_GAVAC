@@ -1,167 +1,188 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:gestion_ganadera/core/theme/gavac_colors.dart';
+
+import '../../../../core/theme/gavac_colors.dart';
+import '../../../../core/widgets/feature_page_widgets.dart';
 
 class ReportesScreen extends StatelessWidget {
   const ReportesScreen({super.key});
 
+  static const _reportTypes = [
+    _ReportType(
+      title: 'Inventario',
+      subtitle: 'Existencias y movimientos de insumos',
+      icon: Icons.inventory_2_outlined,
+      color: GavacColors.infoText,
+      backgroundColor: GavacColors.infoBg,
+    ),
+    _ReportType(
+      title: 'Sanidad',
+      subtitle: 'Tratamientos, vacunas y alertas',
+      icon: Icons.health_and_safety_outlined,
+      color: GavacColors.successText,
+      backgroundColor: GavacColors.successBg,
+    ),
+    _ReportType(
+      title: 'Reproducción',
+      subtitle: 'Eventos y seguimiento reproductivo',
+      icon: Icons.favorite_border,
+      color: Color(0xFFBE5670),
+      backgroundColor: Color(0xFFFFF1F3),
+    ),
+    _ReportType(
+      title: 'Productividad',
+      subtitle: 'Producción y rendimiento del ganado',
+      icon: Icons.query_stats,
+      color: GavacColors.warningText,
+      backgroundColor: GavacColors.warningBg,
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
+    final pagePadding = MediaQuery.sizeOf(context).width < 600 ? 16.0 : 32.0;
+
     return Scaffold(
       backgroundColor: GavacColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(
-            MediaQuery.sizeOf(context).width < 600 ? 16 : 32,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Banner Superior
-              Container(
-                width: double.infinity,
-                height: MediaQuery.sizeOf(context).width < 600 ? 220 : 160,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  image: const DecorationImage(
-                    image: AssetImage('assets/imagenes/imagenganado.png'),
-                    fit: BoxFit.cover,
+          padding: EdgeInsets.all(pagePadding),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const FeaturePageHeader(
+                    icon: Icons.insert_chart_outlined,
+                    title: 'Reportes',
+                    subtitle:
+                        'Consulta resúmenes para entender mejor la actividad de tu finca.',
                   ),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [
-                        GavacColors.primary.withValues(alpha: 0.95),
-                        GavacColors.primary.withValues(alpha: 0.5),
-                        Colors.transparent,
-                      ],
+                  const SizedBox(height: 24),
+                  FeaturePanel(
+                    title: 'Informes disponibles',
+                    subtitle:
+                        'Selecciona un área para conocer el tipo de información que ofrecerá.',
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        const spacing = 12.0;
+                        final columns = constraints.maxWidth < 560 ? 1 : 2;
+                        final cardWidth =
+                            (constraints.maxWidth - (spacing * (columns - 1))) /
+                                columns;
+                        return Wrap(
+                          spacing: spacing,
+                          runSpacing: spacing,
+                          children: _reportTypes
+                              .map(
+                                (report) => SizedBox(
+                                  width: cardWidth,
+                                  child: _ReportCard(report: report),
+                                ),
+                              )
+                              .toList(),
+                        );
+                      },
                     ),
                   ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: MediaQuery.sizeOf(context).width < 600
-                        ? 16
-                        : 32,
-                    vertical: 20,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Icon(
-                          Icons.bar_chart_outlined,
-                          color: Colors.white,
-                          size: 36,
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Módulo de Reportes',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
-                                fontSize: MediaQuery.sizeOf(context).width < 600
-                                    ? 18
-                                    : 24,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Informes estadísticos y trazabilidad del hato ganadero.',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white70,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                  const SizedBox(height: 20),
+                  const _ReportsEmptyState(),
+                ],
               ),
-              const SizedBox(height: 28),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
-              // Opciones de Reporte y Resumen analítico
+class _ReportType {
+  const _ReportType({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.backgroundColor,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final Color backgroundColor;
+}
+
+class _ReportCard extends StatelessWidget {
+  const _ReportCard({required this.report});
+
+  final _ReportType report;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'La generación de reportes estará disponible cuando se conecten los datos.',
+              ),
+            ),
+          );
+        },
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 104),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE7ECE9)),
+          ),
+          child: Row(
+            children: [
               Container(
-                padding: const EdgeInsets.all(24),
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  color: report.backgroundColor,
+                  borderRadius: BorderRadius.circular(13),
                 ),
+                child: Icon(report.icon, color: report.color),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Generación de Informes',
+                      'Reporte de ${report.title}',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: GavacColors.primary,
+                        color: GavacColors.textPrimary,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Selecciona el tipo de informe que deseas consultar o exportar:',
-                      style: TextStyle(color: GavacColors.textSecondary),
-                    ),
-                    const SizedBox(height: 20),
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 16,
-                      children: [
-                        _buildReportButton(
-                          context,
-                          'Reporte de Inventario',
-                          Icons.grid_view,
-                        ),
-                        _buildReportButton(
-                          context,
-                          'Reporte Sanitario',
-                          Icons.shield,
-                        ),
-                        _buildReportButton(
-                          context,
-                          'Reporte Reproducción',
-                          Icons.favorite,
-                        ),
-                        _buildReportButton(
-                          context,
-                          'Reporte de Productividad',
-                          Icons.water_drop,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
-                    const Divider(height: 24),
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
-                        child: Text(
-                          'No hay datos suficientes para generar informes',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                    const SizedBox(height: 4),
+                    Text(
+                      report.subtitle,
+                      style: const TextStyle(
+                        color: GavacColors.textSecondary,
+                        fontSize: 12,
+                        height: 1.4,
                       ),
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.arrow_forward_ios,
+                size: 14,
+                color: GavacColors.textMuted,
               ),
             ],
           ),
@@ -169,28 +190,47 @@ class ReportesScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildReportButton(BuildContext context, String title, IconData icon) {
-    return ElevatedButton.icon(
-      onPressed: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'La generación de reportes estará disponible cuando se conecten los datos.',
+class _ReportsEmptyState extends StatelessWidget {
+  const _ReportsEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+      decoration: BoxDecoration(
+        color: GavacColors.successBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFD8EEE2)),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.analytics_outlined,
+            size: 34,
+            color: GavacColors.primary,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Tus reportes aparecerán aquí',
+            style: GoogleFonts.plusJakartaSans(
+              color: GavacColors.primary,
+              fontWeight: FontWeight.w800,
             ),
           ),
-        );
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white,
-        foregroundColor: GavacColors.primary,
-        elevation: 0,
-        side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          const SizedBox(height: 6),
+          const Text(
+            'La generación de informes estará disponible cuando se conecten los datos de la finca.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: GavacColors.textSecondary,
+              height: 1.5,
+            ),
+          ),
+        ],
       ),
-      icon: Icon(icon, color: GavacColors.primary),
-      label: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
     );
   }
 }
