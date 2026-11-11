@@ -21,6 +21,34 @@ void main() {
     );
   });
 
+  testWidgets('global theme button switches between light and dark modes',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const GAVACApp());
+
+    expect(
+      Theme.of(tester.element(find.byType(LoginScreen))).brightness,
+      Brightness.light,
+    );
+    expect(find.byTooltip('Cambiar a modo oscuro'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Cambiar a modo oscuro'));
+    await tester.pumpAndSettle();
+
+    expect(
+      Theme.of(tester.element(find.byType(LoginScreen))).brightness,
+      Brightness.dark,
+    );
+    expect(find.byTooltip('Cambiar a modo claro'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Cambiar a modo claro'));
+    await tester.pumpAndSettle();
+
+    expect(
+      Theme.of(tester.element(find.byType(LoginScreen))).brightness,
+      Brightness.light,
+    );
+  });
+
   testWidgets('Reproduction screen renders without layout errors',
       (WidgetTester tester) async {
     await tester.pumpWidget(const MaterialApp(home: ReproduccionScreen()));
