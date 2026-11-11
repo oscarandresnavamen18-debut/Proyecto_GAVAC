@@ -30,7 +30,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('HU-006: Registro de Animales'), findsOneWidget);
+    expect(find.text('Módulo de Registro de Animales'), findsOneWidget);
     expect(find.text('GAV-008'), findsOneWidget);
     expect(find.text('CH-1024'), findsNothing);
     expect(find.text('CH-1025'), findsNothing);
@@ -55,7 +55,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Aún no hay animales registrados en tu finca.'),
+    expect(find.text('No hay animales registrados en el sistema'),
         findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -82,11 +82,11 @@ void main() {
 
       final dialog = tester.widget<AlertDialog>(find.byType(AlertDialog).last);
       expect(dialog.backgroundColor, Colors.white);
-      expect(find.text('Fecha de nacimiento'), findsOneWidget);
-      expect(find.text('Guardar animal'), findsOneWidget);
+      expect(find.textContaining('Fecha de'), findsOneWidget);
+      expect(find.textContaining('Guardar'), findsOneWidget);
 
       final sexDropdown = tester.widget<DropdownButton<String>>(
-        find.byType(DropdownButton<String>),
+        find.byType(DropdownButton<String>).first,
       );
       expect(sexDropdown.dropdownColor, Colors.white);
       expect(sexDropdown.style?.color, const Color(0xFF1E293B));

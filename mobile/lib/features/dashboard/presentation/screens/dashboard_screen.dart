@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/gavac_colors.dart';
 import '../../../../core/utils/app_session.dart';
 import '../../../animals/presentation/screens/animales_screen.dart';
@@ -12,8 +9,6 @@ import '../../../livestock/presentation/screens/produccion_screen.dart';
 import '../../../reports/presentation/screens/reportes_screen.dart';
 import '../../../admin/presentation/screens/gestion_fincas_screen.dart';
 import '../../../admin/presentation/screens/gestion_usuarios_screen.dart';
-
-String get _apiBaseUrl => ApiClient.baseUrl;
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -27,13 +22,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   final List<Map<String, dynamic>> _menuItems = [
     {'icon': Icons.dashboard_outlined, 'label': 'Inicio'},
-    {'icon': Icons.pets_outlined, 'label': 'Animales'},
-    {'icon': Icons.shield_outlined, 'label': 'Sanidad'},
+    {'icon': Icons.person_add_outlined, 'label': 'Registro'},
+    {'icon': Icons.shield_outlined, 'label': 'Salud'},
     {'icon': Icons.favorite_border, 'label': 'Reproducción'},
     {'icon': Icons.water_drop_outlined, 'label': 'Producción'},
     {'icon': Icons.inventory_2_outlined, 'label': 'Inventario'},
     {'icon': Icons.bar_chart_outlined, 'label': 'Reportes'},
-    {'icon': Icons.admin_panel_settings_outlined, 'label': 'Admin'},
+    {'icon': Icons.admin_panel_settings_outlined, 'label': 'Administración'},
   ];
 
   late final List<Widget Function()> _pageBuilders;
@@ -93,152 +88,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Future<void> _manageAlternateEmail() async {
-    final token = AppSession.accessToken;
-    if (token == null) {
-      _showMessage('La sesión venció. Inicia sesión de nuevo.');
-      return;
+  String _getUserInitials(String name) {
+    final clean = name.trim();
+    if (clean.isEmpty) return 'U';
+    final parts = clean.split(RegExp(r'\s+'));
+    if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    } else if (parts.isNotEmpty && parts[0].isNotEmpty) {
+      return parts[0][0].toUpperCase();
     }
-
-    final emailController = TextEditingController();
-    final codeController = TextEditingController();
-    var codeSent = false;
-    var verifiedEmail = '';
-    var busy = true;
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          if (busy && verifiedEmail.isEmpty && !codeSent) {
-            http.get(
-              Uri.parse('$_apiBaseUrl/api/v1/auth/alternate-email'),
-              headers: {'Authorization': 'Bearer $token'},
-            ).then((response) {
-              if (response.statusCode == 200 && context.mounted) {
-                final data = jsonDecode(response.body) as Map<String, dynamic>;
-                setDialogState(() {
-                  final email = data['email'] as String?;
-                  verifiedEmail =
-                      data['verified'] == true && email != null ? email : '';
-                  if (verifiedEmail.isNotEmpty) {
-                    emailController.text = verifiedEmail;
-                  }
-                  busy = false;
-                });
-              } else if (context.mounted) {
-                setDialogState(() => busy = false);
-                _showMessage('No se pudo consultar el correo alternativo.');
-              }
-            }).catchError((Object _) {
-              if (context.mounted) {
-                setDialogState(() => busy = false);
-                _showMessage('No se pudo conectar con el servicio.');
-              }
-            });
-          }
-
-          return AlertDialog(
-            title: const Text('Correo alternativo'),
-            content: busy
-                ? const SizedBox(
-                    height: 64,
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (verifiedEmail.isNotEmpty)
-                        Text('Correo verificado: $verifiedEmail')
-                      else ...[
-                        TextField(
-                          controller: emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(
-                            labelText: 'Correo alternativo',
-                          ),
-                        ),
-                        if (codeSent)
-                          TextField(
-                            controller: codeController,
-                            keyboardType: TextInputType.number,
-                            maxLength: 8,
-                            decoration: const InputDecoration(
-                              labelText: 'Código enviado al correo',
-                            ),
-                          ),
-                      ],
-                    ],
-                  ),
-            actions: [
-              TextButton(
-                onPressed: busy ? null : () => Navigator.pop(dialogContext),
-                child: const Text('Cerrar'),
-              ),
-              if (!busy && verifiedEmail.isEmpty)
-                FilledButton(
-                  onPressed: () async {
-                    if (emailController.text.trim().isEmpty ||
-                        (codeSent && codeController.text.trim().length != 8)) {
-                      _showMessage(
-                          'Completa el correo y el código de verificación.');
-                      return;
-                    }
-                    setDialogState(() => busy = true);
-                    try {
-                      final response = await http.post(
-                        Uri.parse(
-                          '$_apiBaseUrl/api/v1/auth/alternate-email/${codeSent ? 'confirm' : 'request'}',
-                        ),
-                        headers: {
-                          'Authorization': 'Bearer $token',
-                          'Content-Type': 'application/json',
-                        },
-                        body: jsonEncode(
-                          codeSent
-                              ? {'code': codeController.text.trim()}
-                              : {'email': emailController.text.trim()},
-                        ),
-                      );
-                      if (!context.mounted) return;
-                      if (response.statusCode == 200) {
-                        setDialogState(() {
-                          verifiedEmail = emailController.text.trim();
-                          busy = false;
-                        });
-                      } else if (response.statusCode == 202) {
-                        setDialogState(() {
-                          codeSent = true;
-                          busy = false;
-                        });
-                        _showMessage(
-                            'Enviamos un código para verificar el correo.');
-                      } else {
-                        setDialogState(() => busy = false);
-                        _showMessage(
-                            'No se pudo verificar el correo. Revisa los datos e inténtalo de nuevo.');
-                      }
-                    } on http.ClientException {
-                      if (context.mounted) {
-                        setDialogState(() => busy = false);
-                        _showMessage('No se pudo conectar con el servicio.');
-                      }
-                    }
-                  },
-                  child: Text(codeSent ? 'Verificar' : 'Enviar código'),
-                ),
-            ],
-          );
-        },
-      ),
-    );
-    emailController.dispose();
-    codeController.dispose();
-  }
-
-  void _showMessage(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    return 'U';
   }
 
   @override
@@ -247,30 +106,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
       backgroundColor: const Color(0xFFF8FAFC),
       body: Row(
         children: [
-          // SIDEBAR
+          // SIDEBAR (Fondo imagenNav.jpg + Logo imagenLogoNuevo.png)
           Container(
             width: 260,
-            color: GavacColors.primary,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A3A32),
+              image: DecorationImage(
+                image: const AssetImage('assets/imagenes/imagenNav.jpg'),
+                fit: BoxFit.cover,
+                opacity: 0.35,
+                onError: (exception, stackTrace) {},
+              ),
+            ),
             child: Column(
               children: [
                 const SizedBox(height: 30),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Row(
-                    children: [
-                      Text(
-                        'GAVAC',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1,
-                        ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Image.asset(
+                    'assets/imagenes/imagenLogoNuevo.png',
+                    height: 65,
+                    errorBuilder: (context, error, stackTrace) => const Text(
+                      'GAVAC',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1,
                       ),
-                    ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 30),
                 // Menú principal
                 Expanded(
                   child: ListView.builder(
@@ -333,7 +200,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // Botón de Salir
+                // Botón de Salir (Rojo)
                 Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -368,30 +235,95 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: TextButton.icon(
-                    onPressed: _manageAlternateEmail,
-                    icon: const Icon(Icons.alternate_email,
-                        color: Colors.white70),
-                    label: const Text(
-                      'Correo alternativo',
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                  ),
-                ),
                 const SizedBox(height: 20),
               ],
             ),
           ),
 
-          // CONTENIDO PRINCIPAL CON INDEXEDSTACK (COMPATIBLE CON COMPAÑERO)
+          // CONTENIDO PRINCIPAL CON TOP BAR Y INDEXEDSTACK
           Expanded(
-            child: IndexedStack(
-              index: _selectedIndex,
-              children: _pages
-                  .map((page) => page ?? const SizedBox.shrink())
-                  .toList(),
+            child: Column(
+              children: [
+                // TOP BAR SUPERIOR
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 32, vertical: 16),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      bottom: BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.menu,
+                          color: GavacColors.primary, size: 24),
+                      const SizedBox(width: 16),
+                      const Text(
+                        'Panel Principal',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: GavacColors.textPrimary,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF1F5F9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.notifications_none_outlined,
+                          color: Color(0xFF64748B),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: GavacColors.primary,
+                            child: Text(
+                              _getUserInitials(AppSession.userName),
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            AppSession.userName.isNotEmpty
+                                ? AppSession.userName
+                                : 'Usuario',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              color: GavacColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.keyboard_arrow_down,
+                              color: Colors.grey, size: 20),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // VISTAS DEL MODULO
+                Expanded(
+                  child: IndexedStack(
+                    index: _selectedIndex,
+                    children: _pages
+                        .map((page) => page ?? const SizedBox.shrink())
+                        .toList(),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -448,7 +380,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             color: GavacColors.primary, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          AppSession.farmName,
+                          AppSession.farmName.isNotEmpty
+                              ? AppSession.farmName
+                              : 'Seleccionar Finca',
                           style: const TextStyle(
                               fontWeight: FontWeight.w600,
                               color: GavacColors.textPrimary),
@@ -476,15 +410,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 32),
 
-          // Banner de Bienvenida
+          // Banner de Bienvenida (imagenInicio.jpg)
           Container(
             width: double.infinity,
             height: 220,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
-              image: const DecorationImage(
-                image: AssetImage('assets/imagenes/imagenganado.png'),
+              image: DecorationImage(
+                image: const AssetImage('assets/imagenes/imagenInicio.jpg'),
                 fit: BoxFit.cover,
+                onError: (exception, stackTrace) {},
               ),
             ),
             child: Container(
@@ -506,7 +441,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Bienvenido, ${AppSession.userName}',
+                    'Bienvenido, ${AppSession.userName.isNotEmpty ? AppSession.userName : 'Usuario'}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 32,
@@ -527,7 +462,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 32),
 
-          // Tarjetas de Estadísticas (KPIs)
+          // Tarjetas de Estadísticas (KPIs en ceros '0')
           Row(
             children: [
               _buildStatCard(
@@ -536,7 +471,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Icons.grid_view,
                 const Color(0xFF64748B),
                 const Color(0xFFF1F5F9),
-                onTap: () => _selectPage(1), // Conexión a Animales
+                onTap: () => _selectPage(1),
               ),
               const SizedBox(width: 24),
               _buildStatCard(
@@ -545,7 +480,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Icons.shield_outlined,
                 const Color(0xFF10B981),
                 const Color(0xFFD1FAE5),
-                onTap: () => _selectPage(2), // Conexión a Sanidad
+                onTap: () => _selectPage(2),
               ),
               const SizedBox(width: 24),
               _buildStatCard(
@@ -566,7 +501,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Vista de Administración (Índice 7) con el diseño del Mockup
+  // Vista de Administración
   Widget _buildAdminHubView() {
     final List<Map<String, dynamic>> fincasRegistradas = [];
     final List<Map<String, dynamic>> usuariosRegistrados = [];
@@ -576,7 +511,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Superior de Admin
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -601,7 +535,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ],
               ),
-              // Botones de Acción Superior (Mockup)
               Row(
                 children: [
                   OutlinedButton.icon(
@@ -677,12 +610,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 32),
-
-          // SECCIONES A DOS COLUMNAS
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // COLUMNA 1: Fincas Registradas
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(24),
@@ -796,8 +726,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               const SizedBox(width: 24),
-
-              // COLUMNA 2: Gestión de Usuarios y Permisos
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(24),
