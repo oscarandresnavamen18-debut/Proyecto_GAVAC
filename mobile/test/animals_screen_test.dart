@@ -35,6 +35,9 @@ void main() {
     expect(find.text('CH-1024'), findsNothing);
     expect(find.text('CH-1025'), findsNothing);
     expect(find.text('CH-1026'), findsNothing);
+    final breedText = tester.widget<Text>(find.text('Brahman'));
+    expect(breedText.maxLines, 1);
+    expect(breedText.overflow, TextOverflow.ellipsis);
     expect(tester.takeException(), isNull);
   });
 

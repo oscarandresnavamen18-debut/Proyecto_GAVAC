@@ -18,7 +18,7 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
   static const Color backgroundColor = Color(0xFFF7F9F7);
   static const Color cardColor = Colors.white;
   static const Color borderColor = Color(0xFFF1F5F9);
-  static const Color textMuted = Color(0xFF94A3B8);
+  static const Color textMuted = Color(0xFF64748B);
 
   final TextEditingController _searchController = TextEditingController();
   late final AnimalRepository _repository;
@@ -370,35 +370,40 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                 headingRowColor: WidgetStateProperty.all(backgroundColor),
                 dataRowMinHeight: 64,
                 dataRowMaxHeight: 72,
-                columnSpacing: 22,
+                columnSpacing: 12,
                 columns: [
-                  _buildDataColumn('CHAPETA ÚNICA'),
-                  _buildDataColumn('ESPECIE'),
-                  _buildDataColumn('RAZA'),
-                  _buildDataColumn('SEXO'),
-                  _buildDataColumn('EDAD'),
-                  _buildDataColumn('PESO'),
-                  _buildDataColumn('ESTADO SINCRONIZACIÓN'),
-                  _buildDataColumn('ACCIONES'),
+                  _buildDataColumn('CHAPETA ÚNICA', 130),
+                  _buildDataColumn('ESPECIE', 100),
+                  _buildDataColumn('RAZA', 130),
+                  _buildDataColumn('SEXO', 90),
+                  _buildDataColumn('EDAD', 100),
+                  _buildDataColumn('PESO', 100),
+                  _buildDataColumn('ESTADO SINCRONIZACIÓN', 180),
+                  _buildDataColumn('ACCIONES', 90),
                 ],
                 rows: animalesMostrados.map((animal) {
                   return DataRow(
                     cells: [
                       DataCell(
-                        Text(
-                          animal.chapeta,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: primaryColor,
+                        SizedBox(
+                          width: 130,
+                          child: Text(
+                            animal.chapeta,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: primaryColor,
+                            ),
                           ),
                         ),
                       ),
-                      DataCell(_cellText(animal.especie)),
-                      DataCell(_cellText(animal.raza)),
-                      DataCell(_cellText(animal.sexo)),
-                      DataCell(_cellText(animal.edad)),
-                      DataCell(_cellText(animal.peso)),
+                      DataCell(_cellText(animal.especie, 100)),
+                      DataCell(_cellText(animal.raza, 130)),
+                      DataCell(_cellText(animal.sexo, 90)),
+                      DataCell(_cellText(animal.edad, 100)),
+                      DataCell(_cellText(animal.peso, 100)),
                       DataCell(_buildSyncBadge(animal.estadoSincronizacion)),
                       DataCell(
                         IconButton(
@@ -422,8 +427,10 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
     );
   }
 
-  DataColumn _buildDataColumn(String title) {
-    return DataColumn(label: _buildTableHeader(title));
+  DataColumn _buildDataColumn(String title, double width) {
+    return DataColumn(
+      label: SizedBox(width: width, child: _buildTableHeader(title)),
+    );
   }
 
   Widget _buildSearchField() {
@@ -471,10 +478,18 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
     );
   }
 
-  Widget _cellText(String value) {
-    return Text(
-      value,
-      style: GoogleFonts.plusJakartaSans(fontSize: 14),
+  Widget _cellText(String value, double width) {
+    return SizedBox(
+      width: width,
+      child: Text(
+        value,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 14,
+          color: const Color(0xFF334155),
+        ),
+      ),
     );
   }
 
@@ -484,7 +499,7 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
       style: GoogleFonts.plusJakartaSans(
         fontSize: 12,
         fontWeight: FontWeight.w800,
-        color: textMuted,
+        color: const Color(0xFF475569),
       ),
     );
   }
