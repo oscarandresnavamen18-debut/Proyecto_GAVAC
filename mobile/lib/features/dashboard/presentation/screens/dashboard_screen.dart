@@ -25,6 +25,13 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
+  Color get _backgroundColor => const Color(0xFFF8FAFC);
+  Color get _surfaceColor => Colors.white;
+  Color get _primaryTextColor => GavacColors.textPrimary;
+  Color get _secondaryTextColor => const Color(0xFF64748B);
+  Color get _borderColor => const Color(0xFFE2E8F0);
+  Color get _headingColor => GavacColors.primary;
+
   final List<Map<String, dynamic>> _menuItems = [
     {'icon': Icons.dashboard_outlined, 'label': 'Inicio'},
     {'icon': Icons.pets_outlined, 'label': 'Animales'},
@@ -244,13 +251,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: _backgroundColor,
       body: Row(
         children: [
           // SIDEBAR
           Container(
             width: 260,
-            color: GavacColors.primary,
+            color: _headingColor,
             child: Column(
               children: [
                 const SizedBox(height: 30),
@@ -413,12 +420,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Inicio',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
-                      color: GavacColors.primary,
+                      color: _headingColor,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -426,7 +433,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     'Resumen general de tu finca',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: _secondaryTextColor,
                     ),
                   ),
                 ],
@@ -437,25 +444,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: _surfaceColor,
                       borderRadius: BorderRadius.circular(30),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: _borderColor),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.location_on_outlined,
-                            color: GavacColors.primary, size: 20),
+                        Icon(Icons.location_on_outlined,
+                            color: _headingColor, size: 20),
                         const SizedBox(width: 8),
                         Text(
                           AppSession.farmName,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              color: GavacColors.textPrimary),
+                              color: _primaryTextColor),
                         ),
                         const SizedBox(width: 8),
                         Icon(Icons.keyboard_arrow_down,
-                            color: Colors.grey[600]),
+                            color: _secondaryTextColor),
                       ],
                     ),
                   ),
@@ -463,12 +470,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: _surfaceColor,
                       shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: _borderColor),
                     ),
                     child: Icon(Icons.notifications_outlined,
-                        color: Colors.grey[600]),
+                        color: _secondaryTextColor),
                   ),
                 ],
               ),
@@ -583,12 +590,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Administración',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
-                      color: GavacColors.primary,
+                      color: _headingColor,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -596,7 +603,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     'Panel de control maestro y configuración',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: _secondaryTextColor,
                     ),
                   ),
                 ],
@@ -687,9 +694,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: _surfaceColor,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: _borderColor),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.02),
@@ -701,12 +708,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Fincas Registradas',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: GavacColors.primary,
+                          color: _headingColor,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -802,9 +809,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: _surfaceColor,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: _borderColor),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.02),
@@ -816,12 +823,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Gestión de Usuarios y Permisos',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: GavacColors.primary,
+                          color: _headingColor,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -936,7 +943,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: _surfaceColor,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
@@ -969,17 +976,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Colors.grey[600],
+                  color: _secondaryTextColor,
                   letterSpacing: 0.5,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w800,
-                  color: GavacColors.primary,
+                  color: _headingColor,
                 ),
               ),
             ],

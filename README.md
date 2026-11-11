@@ -63,7 +63,7 @@ flutter pub get
 flutter analyze
 flutter test
 ```
-
+<!-- flutter run -d chrome --web-hostname localhost --web-port 61015 --dart-define=API_BASE_URL=https://proyectogavac-gavac-staging.up.railway.app -->
 ## Datos locales
 
 Docker Compose conserva la base en el volumen `postgres_api_data`. Evita `docker compose down -v` si necesitas conservar esos datos. Para revisar los registros de la API:

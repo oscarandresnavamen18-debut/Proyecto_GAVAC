@@ -30,6 +30,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   static const String appSlogan =
       'Únete a la revolución\nde la gestión ganadera.';
 
+  bool get _isDarkMode => Theme.of(context).brightness == Brightness.dark;
+  Color get _formBackground =>
+      _isDarkMode ? const Color(0xFF0F172A) : Colors.white;
+  Color get _formText =>
+      _isDarkMode ? const Color(0xFFF1F5F9) : GavacColors.textPrimary;
+  Color get _mutedText =>
+      _isDarkMode ? const Color(0xFFCBD5E1) : const Color(0xFF757575);
+  Color get _fieldBackground =>
+      _isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC);
+  Color get _fieldBorder =>
+      _isDarkMode ? const Color(0xFF334155) : const Color(0xFFD1D5DB);
+
   @override
   void dispose() {
     _nombreController.dispose();
@@ -86,8 +98,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               }),
             );
             if (farmResponse.statusCode == 201) {
-              final farmData = jsonDecode(farmResponse.body) as Map<String, dynamic>;
-              AppSession.farmName = farmData['nombre'] as String? ?? _fincaController.text.trim();
+              final farmData =
+                  jsonDecode(farmResponse.body) as Map<String, dynamic>;
+              AppSession.farmName =
+                  farmData['nombre'] as String? ?? _fincaController.text.trim();
             }
           } catch (_) {
             // Ignorar si falla la finca opcional, la sesión continuará
@@ -105,7 +119,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } on http.ClientException {
       if (mounted) {
-        _showMessage('No se pudo conectar con el servidor. Revisa tu conexión.');
+        _showMessage(
+            'No se pudo conectar con el servidor. Revisa tu conexión.');
       }
     } on FormatException {
       if (mounted) {
@@ -143,7 +158,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Expanded(
           flex: 1,
           child: Container(
-            color: Colors.white,
+            color: _formBackground,
             child: Center(
               child: SingleChildScrollView(
                 padding:
@@ -153,19 +168,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Crear Cuenta',
                         style: TextStyle(
                           fontSize: 36,
                           fontWeight: FontWeight.w800,
-                          color: GavacColors.primary,
+                          color: _isDarkMode
+                              ? const Color(0xFFB7D8CC)
+                              : GavacColors.primary,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Completa tus datos para comenzar.',
-                        style:
-                            TextStyle(fontSize: 16, color: Color(0xFF757575)),
+                        style: TextStyle(fontSize: 16, color: _mutedText),
                       ),
                       const SizedBox(height: 32),
                       _buildTextField('Nombre completo', 'Juan Pérez',
@@ -231,9 +247,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         child: TextButton(
                           onPressed: () =>
                               Navigator.pushReplacementNamed(context, '/login'),
-                          child: const Text('¿Ya tienes cuenta? Inicia sesión',
+                          child: Text('¿Ya tienes cuenta? Inicia sesión',
                               style: TextStyle(
-                                  color: GavacColors.primary,
+                                  color: _isDarkMode
+                                      ? const Color(0xFFB7D8CC)
+                                      : GavacColors.primary,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14)),
                         ),
@@ -323,14 +341,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 32),
-              const Text('Crear Cuenta',
+              Text('Crear Cuenta',
                   style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w800,
-                      color: GavacColors.primary)),
+                      color: _isDarkMode
+                          ? const Color(0xFFB7D8CC)
+                          : GavacColors.primary)),
               const SizedBox(height: 8),
-              const Text('Completa tus datos para comenzar.',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF757575))),
+              Text('Completa tus datos para comenzar.',
+                  style: TextStyle(fontSize: 14, color: _mutedText)),
               const SizedBox(height: 32),
               _buildTextField('Nombre completo', 'Juan Pérez',
                   _nombreController, Icons.person_outline),
@@ -387,9 +407,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: TextButton(
                   onPressed: () =>
                       Navigator.pushReplacementNamed(context, '/login'),
-                  child: const Text('¿Ya tienes cuenta? Inicia sesión',
+                  child: Text('¿Ya tienes cuenta? Inicia sesión',
                       style: TextStyle(
-                          color: GavacColors.primary,
+                          color: _isDarkMode
+                              ? const Color(0xFFB7D8CC)
+                              : GavacColors.primary,
                           fontWeight: FontWeight.w600)),
                 ),
               ),
@@ -407,27 +429,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: GavacColors.textPrimary)),
+            style: TextStyle(
+                fontSize: 14, fontWeight: FontWeight.w600, color: _formText)),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           keyboardType: type,
-          style: const TextStyle(color: GavacColors.textPrimary, fontSize: 15),
+          style: TextStyle(color: _formText, fontSize: 15),
           decoration: InputDecoration(
               hintText: hint,
-              hintStyle: const TextStyle(color: Color(0xFF9E9E9E)),
-              prefixIcon: Icon(icon, color: const Color(0xFF9E9E9E)),
+              hintStyle: TextStyle(color: _mutedText),
+              prefixIcon: Icon(icon, color: _mutedText),
               filled: true,
-              fillColor: const Color(0xFFF8FAFC),
+              fillColor: _fieldBackground,
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFD1D5DB))),
+                  borderSide: BorderSide(color: _fieldBorder)),
               enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFD1D5DB))),
+                  borderSide: BorderSide(color: _fieldBorder)),
               focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide:
@@ -447,35 +467,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: GavacColors.textPrimary)),
+            style: TextStyle(
+                fontSize: 14, fontWeight: FontWeight.w600, color: _formText)),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           obscureText: obscure,
-          style: const TextStyle(color: GavacColors.textPrimary, fontSize: 15),
+          style: TextStyle(color: _formText, fontSize: 15),
           decoration: InputDecoration(
               hintText: '••••••••',
-              hintStyle: const TextStyle(color: Color(0xFF9E9E9E)),
-              prefixIcon:
-                  const Icon(Icons.lock_outline, color: Color(0xFF9E9E9E)),
+              hintStyle: TextStyle(color: _mutedText),
+              prefixIcon: Icon(Icons.lock_outline, color: _mutedText),
               suffixIcon: IconButton(
                   icon: Icon(
                       obscure
                           ? Icons.visibility_outlined
                           : Icons.visibility_off_outlined,
-                      color: const Color(0xFF9E9E9E)),
+                      color: _mutedText),
                   onPressed: toggle),
               filled: true,
-              fillColor: const Color(0xFFF8FAFC),
+              fillColor: _fieldBackground,
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFD1D5DB))),
+                  borderSide: BorderSide(color: _fieldBorder)),
               enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFD1D5DB))),
+                  borderSide: BorderSide(color: _fieldBorder)),
               focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide:
