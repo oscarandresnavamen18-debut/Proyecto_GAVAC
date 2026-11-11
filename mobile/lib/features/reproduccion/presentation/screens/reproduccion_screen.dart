@@ -57,46 +57,12 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
   @override
   void initState() {
     super.initState();
-    _listaRegistros = widget.registros ??
-        const [
-          ReproduccionRecord(
-            id: '1',
-            chapeta: 'CH-1024',
-            evento: 'Preñez',
-            fecha: '15/01/2026',
-            detalleAdicional: 'Diagnóstico positivo por palpación',
-            estadoActual: 'Gestante',
-          ),
-          ReproduccionRecord(
-            id: '2',
-            chapeta: 'CH-1025',
-            evento: 'Inseminación',
-            fecha: '10/02/2026',
-            detalleAdicional: 'Semen Toro Brahman TR-08',
-            estadoActual: 'Inseminada',
-          ),
-          ReproduccionRecord(
-            id: '3',
-            chapeta: 'CH-1026',
-            evento: 'Celo',
-            fecha: '20/02/2026',
-            detalleAdicional: 'Se detecta celo activo en corral',
-            estadoActual: 'Disponible',
-          ),
-          ReproduccionRecord(
-            id: '4',
-            chapeta: 'CH-1020',
-            evento: 'Parto',
-            fecha: '01/03/2026',
-            detalleAdicional: 'Cría hembra nacida sin novedad',
-            estadoActual: 'Lactancia',
-          ),
-        ];
+    _listaRegistros = widget.registros ?? [];
 
     _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text.trim().toLowerCase();
-      });
+      if (!mounted) return;
+      setState(
+          () => _searchQuery = _searchController.text.trim().toLowerCase());
     });
   }
 
@@ -165,7 +131,7 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
           ],
         );
         final button = ElevatedButton.icon(
-          onPressed: () => _mostrarModalRegistrarEvento(context),
+          onPressed: () => _mostrarAvisoRegistroNoDisponible(context),
           style: ElevatedButton.styleFrom(
             backgroundColor: primaryColor,
             foregroundColor: Colors.white,
@@ -639,107 +605,11 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
     );
   }
 
-  // --- MODAL DE REGISTRO (Criterios de Aceptación: Celo, Inseminación, Preñez, Parto) ---
-  void _mostrarModalRegistrarEvento(BuildContext context) {
-    String eventoSeleccionado = 'Celo';
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setStateModal) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-          title: Text(
-            'Registrar Evento Reproductivo',
-            style: GoogleFonts.plusJakartaSans(
-                fontWeight: FontWeight.w800, color: primaryColor),
-          ),
-          content: SizedBox(
-            width: 400,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  decoration: InputDecoration(
-                    labelText: 'Chapeta / Arete Único',
-                    filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text('Seleccione el Evento:',
-                    style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        color: textMuted)),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  initialValue: eventoSeleccionado,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none),
-                  ),
-                  items: ['Celo', 'Inseminación', 'Preñez', 'Parto']
-                      .map((evento) => DropdownMenuItem(
-                          value: evento,
-                          child: Text(evento,
-                              style: GoogleFonts.plusJakartaSans(
-                                  fontWeight: FontWeight.w600))))
-                      .toList(),
-                  onChanged: (val) {
-                    if (val != null) {
-                      setStateModal(() => eventoSeleccionado = val);
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  decoration: InputDecoration(
-                    labelText: 'Detalle (Toro, observaciones, cría)',
-                    filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancelar',
-                  style: GoogleFonts.plusJakartaSans(
-                      fontWeight: FontWeight.w700, color: textMuted)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                      content: Text(
-                          'Evento de "$eventoSeleccionado" registrado exitosamente')),
-                );
-              },
-              child: Text('Guardar Evento',
-                  style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white, fontWeight: FontWeight.w700)),
-            ),
-          ],
+  void _mostrarAvisoRegistroNoDisponible(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'El registro de eventos reproductivos aún no está conectado a la base de datos.',
         ),
       ),
     );

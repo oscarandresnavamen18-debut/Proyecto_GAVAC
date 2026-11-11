@@ -803,6 +803,8 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                         const SizedBox(height: 14),
                         DropdownButtonFormField<String>(
                           initialValue: sexoSeleccionado,
+                          dropdownColor: Colors.white,
+                          iconEnabledColor: accentColor,
                           style: GoogleFonts.plusJakartaSans(
                             color: const Color(0xFF1E293B),
                             fontSize: 14,
@@ -811,11 +813,17 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                           items: const [
                             DropdownMenuItem(
                               value: 'Macho',
-                              child: Text('Macho'),
+                              child: Text(
+                                'Macho',
+                                style: TextStyle(color: primaryColor),
+                              ),
                             ),
                             DropdownMenuItem(
                               value: 'Hembra',
-                              child: Text('Hembra'),
+                              child: Text(
+                                'Hembra',
+                                style: TextStyle(color: primaryColor),
+                              ),
                             ),
                           ],
                           validator: (value) =>

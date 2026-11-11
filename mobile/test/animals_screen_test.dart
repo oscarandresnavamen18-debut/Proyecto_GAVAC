@@ -81,6 +81,16 @@ void main() {
       expect(dialog.backgroundColor, Colors.white);
       expect(find.text('Fecha de nacimiento'), findsOneWidget);
       expect(find.text('Guardar animal'), findsOneWidget);
+
+      final sexDropdown = tester.widget<DropdownButton<String>>(
+        find.byType(DropdownButton<String>),
+      );
+      expect(sexDropdown.dropdownColor, Colors.white);
+      expect(sexDropdown.style?.color, const Color(0xFF1E293B));
+      for (final item in sexDropdown.items!) {
+        final itemText = item.child as Text;
+        expect(itemText.style?.color, const Color(0xFF1A3A32));
+      }
       expect(tester.takeException(), isNull);
     },
   );

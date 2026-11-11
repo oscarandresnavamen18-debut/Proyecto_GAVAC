@@ -27,7 +27,29 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Control de Eventos Reproductivos'), findsOneWidget);
     expect(find.text('Historial de Eventos Reproductivos'), findsOneWidget);
+    expect(find.text('No hay eventos registrados'), findsOneWidget);
+    expect(find.text('CH-1024'), findsNothing);
+    expect(find.text('CH-1025'), findsNothing);
+    expect(find.text('CH-1026'), findsNothing);
+    expect(find.text('0'), findsWidgets);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('reproduction registration does not report unsaved events',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: ReproduccionScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Registrar Evento'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'El registro de eventos reproductivos aún no está conectado a la base de datos.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('registrado exitosamente'), findsNothing);
   });
 
   testWidgets('login text remains readable when the system theme is dark',
