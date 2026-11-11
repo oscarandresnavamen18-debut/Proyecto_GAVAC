@@ -8,15 +8,8 @@ void main() {
   runApp(const GAVACApp());
 }
 
-class GAVACApp extends StatefulWidget {
+class GAVACApp extends StatelessWidget {
   const GAVACApp({super.key});
-
-  @override
-  State<GAVACApp> createState() => _GAVACAppState();
-}
-
-class _GAVACAppState extends State<GAVACApp> {
-  final ThemeMode _themeMode = ThemeMode.system;
 
   @override
   Widget build(BuildContext context) {
@@ -24,8 +17,6 @@ class _GAVACAppState extends State<GAVACApp> {
       title: 'GAVAC - Gestión Ganadera',
       debugShowCheckedModeBanner: false,
       theme: GavacTheme.lightTheme,
-      darkTheme: GavacTheme.darkTheme,
-      themeMode: _themeMode,
       initialRoute: '/login',
       routes: {
         '/login': (context) => const LoginScreen(),

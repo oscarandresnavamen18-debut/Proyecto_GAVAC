@@ -92,7 +92,7 @@ void main() {
       expect(sexDropdown.style?.color, const Color(0xFF1E293B));
       for (final item in sexDropdown.items!) {
         final itemText = item.child as Text;
-        expect(itemText.style?.color, const Color(0xFF1A3A32));
+        expect(itemText.style?.color, const Color(0xFF2E6B57));
       }
       expect(tester.takeException(), isNull);
     },
