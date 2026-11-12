@@ -3,6 +3,30 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gestion_ganadera/features/dashboard/presentation/screens/dashboard_screen.dart';
 
 void main() {
+  testWidgets('dashboard keeps alternate email management available', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: DashboardScreen()));
+
+    expect(find.text('Correo alternativo'), findsOneWidget);
+  });
+
+  testWidgets('dashboard administration fits a standard laptop viewport', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1024, 768);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: DashboardScreen()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Administración').first);
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('dashboard opens production, inventory, and reports', (
     WidgetTester tester,
   ) async {
