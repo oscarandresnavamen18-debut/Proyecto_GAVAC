@@ -44,8 +44,8 @@ void main() {
     await tester.pump();
 
     final field = tester.widget<TextField>(emailInput);
-    expect(field.style?.color, GavacColors.textPrimary);
+    expect(field.style?.color, const Color(0xFFF1F5F9));
     expect(field.cursorColor, GavacColors.primary);
-    expect(field.decoration?.fillColor, const Color(0xFFF8FAFC));
+    expect(field.decoration?.fillColor, const Color(0xFF1E293B));
   });
 }
