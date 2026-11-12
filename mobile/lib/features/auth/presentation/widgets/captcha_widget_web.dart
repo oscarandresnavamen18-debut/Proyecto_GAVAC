@@ -5,7 +5,7 @@ import 'dart:html' as html;
 import 'dart:js_interop';
 import 'dart:ui_web' as ui_web;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 const _siteKey = String.fromEnvironment(
   'RECAPTCHA_SITE_KEY',

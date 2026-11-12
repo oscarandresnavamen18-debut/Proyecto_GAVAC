@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'captcha_widget_stub.dart'
     if (dart.library.html) 'captcha_widget_web.dart' as platform;
 

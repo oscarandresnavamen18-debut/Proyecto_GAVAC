@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/theme/gavac_colors.dart';
 import '../../data/models/finca_model.dart';
 
