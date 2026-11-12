@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 class GavacColors {
   // Paleta Oficial GAVAC
-  static const Color primary = Color(0xFF1A3A32); // Deep Forest Green
-  static const Color accent = Color(0xFF2E5A4D); // Dark Emerald Accent
+  static const Color primary = Color(0xFF2E6B57);
+  static const Color accent = Color(0xFF3F8069);
   static const Color background = Color(0xFFF7F9F7); // Soft Clean Off-White
   static const Color surface = Color(0xFFFFFFFF); // Pure White
   static const Color border = Color(0xFFF1F5F9); // Bordes sutiles
