@@ -1,11 +1,14 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
+
 import 'dart:convert';
+
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/gavac_colors.dart';
 import '../../../../core/theme/gavac_theme.dart';
 import '../../../../core/utils/app_session.dart';
+import '../../../../core/widgets/gavac_brand.dart';
 import '../widgets/captcha_widget.dart';
 
 String get _apiBaseUrl => ApiClient.baseUrl;
@@ -26,7 +29,6 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _captchaToken;
   VoidCallback? _resetCaptcha;
 
-  static const String appName = 'GAVAC';
   static const String appSlogan =
       'Tecnología inteligente\npara la gestión del campo.';
   static const String welcomeTitle = 'Bienvenido';
@@ -78,8 +80,9 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       if (!mounted) return;
       if (response.statusCode == 200) {
-        AppSession.accessToken = (jsonDecode(response.body)
-            as Map<String, dynamic>)['access_token'] as String;
+        AppSession.accessToken =
+            (jsonDecode(response.body) as Map<String, dynamic>)['access_token']
+                as String;
         Navigator.pushReplacementNamed(context, '/dashboard');
       } else {
         _resetCaptcha?.call();
@@ -97,9 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } on FormatException {
       if (mounted) {
-        _showMessage(
-          'El servicio respondió con un formato no válido.',
-        );
+        _showMessage('El servicio respondió con un formato no válido.');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -112,13 +113,14 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildCaptcha() => CaptchaWidget(
-        onToken: (token) => setState(() => _captchaToken = token),
-        onResetReady: (reset) => _resetCaptcha = reset,
-      );
+    onToken: (token) => setState(() => _captchaToken = token),
+    onResetReady: (reset) => _resetCaptcha = reset,
+  );
 
   Future<void> _showPasswordResetDialog() async {
-    final emailController =
-        TextEditingController(text: _emailController.text.trim());
+    final emailController = TextEditingController(
+      text: _emailController.text.trim(),
+    );
     final codeController = TextEditingController();
     final passwordController = TextEditingController();
     var codeSent = false;
@@ -146,14 +148,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: codeController,
                     keyboardType: TextInputType.number,
                     maxLength: 8,
-                    decoration:
-                        const InputDecoration(labelText: 'Código de 8 dígitos'),
+                    decoration: const InputDecoration(
+                      labelText: 'Código de 8 dígitos',
+                    ),
                   ),
                   TextField(
                     controller: passwordController,
                     obscureText: true,
-                    decoration:
-                        const InputDecoration(labelText: 'Nueva contraseña'),
+                    decoration: const InputDecoration(
+                      labelText: 'Nueva contraseña',
+                    ),
                   ),
                 ],
               ],
@@ -175,7 +179,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text(
-                                'Ingresa el código y una contraseña de al menos 10 caracteres.'),
+                              'Ingresa el código y una contraseña de al menos 10 caracteres.',
+                            ),
                           ),
                         );
                         return;
@@ -201,20 +206,23 @@ class _LoginScreenState extends State<LoginScreen> {
                         if (response.statusCode == 204) {
                           Navigator.pop(dialogContext);
                           _showMessage(
-                              'Contraseña restablecida. Ya puedes iniciar sesión.');
+                            'Contraseña restablecida. Ya puedes iniciar sesión.',
+                          );
                         } else if (response.statusCode == 202) {
                           setDialogState(() => codeSent = true);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text(
-                                  'Si el correo está asociado, recibirás un código de verificación.'),
+                                'Si el correo está asociado, recibirás un código de verificación.',
+                              ),
                             ),
                           );
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text(
-                                  'No se pudo completar la solicitud. Revisa el código e inténtalo de nuevo.'),
+                                'No se pudo completar la solicitud. Revisa el código e inténtalo de nuevo.',
+                              ),
                             ),
                           );
                         }
@@ -222,8 +230,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                                content: Text(
-                                    'No se pudo conectar con el servicio.')),
+                              content: Text(
+                                'No se pudo conectar con el servicio.',
+                              ),
+                            ),
                           );
                         }
                       } finally {
@@ -262,49 +272,39 @@ class _LoginScreenState extends State<LoginScreen> {
           flex: 1,
           child: Container(
             color: const Color(0xFF6B8E85),
-            child: const Stack(
+            child: Stack(
               children: [
                 Positioned.fill(
                   child: Opacity(
-                    opacity: 0.3,
+                    opacity: 0.45,
                     child: Image(
-                      image: AssetImage('assets/imagenes/imagenlogin.png'),
+                      image: const AssetImage(
+                        'assets/imagenes/fondo_login.png',
+                      ),
                       fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const SizedBox.expand(),
                     ),
                   ),
                 ),
-                Positioned.fill(
-                  child: ColoredBox(color: Color(0x33000000)),
+                const Positioned.fill(
+                  child: ColoredBox(color: Color(0x22000000)),
                 ),
-                Center(
+                const Center(
                   child: Padding(
                     padding: EdgeInsets.all(48.0),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          appName,
-                          style: TextStyle(
-                            fontSize: 72,
-                            fontWeight: FontWeight.w900,
-                            color: Color.fromARGB(255, 29, 28, 28),
-                            letterSpacing: -2,
-                            shadows: [
-                              Shadow(
-                                color: Color(0x80000000),
-                                offset: Offset(0, 4),
-                                blurRadius: 8,
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: 16),
+                        GavacBrand(foregroundColor: Colors.white),
+                        SizedBox(height: 24),
                         Text(
                           appSlogan,
+                          textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w400,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w600,
                             color: Colors.white,
                             height: 1.4,
                             shadows: [
@@ -332,8 +332,10 @@ class _LoginScreenState extends State<LoginScreen> {
             color: _formBackground,
             child: Center(
               child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 64, vertical: 48),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 64,
+                  vertical: 48,
+                ),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -352,10 +354,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 8),
                       Text(
                         welcomeSubtitle,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: _mutedText,
-                        ),
+                        style: TextStyle(fontSize: 16, color: _mutedText),
                       ),
                       const SizedBox(height: 48),
 
@@ -372,8 +371,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed:
-                              _isLoading ? null : _showPasswordResetDialog,
+                          onPressed: _isLoading
+                              ? null
+                              : _showPasswordResetDialog,
                           child: const Text('¿Olvidaste tu contraseña?'),
                         ),
                       ),
@@ -392,8 +392,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             backgroundColor: GavacColors.primary,
                             foregroundColor: Colors.white,
                             elevation: 8,
-                            shadowColor:
-                                GavacColors.primary.withValues(alpha: 0.3),
+                            shadowColor: GavacColors.primary.withValues(
+                              alpha: 0.3,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -405,7 +406,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2.5,
                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white),
+                                      Colors.white,
+                                    ),
                                   ),
                                 )
                               : const Text(
@@ -457,25 +459,13 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 48),
+              const SizedBox(height: 24),
               Center(
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: GavacColors.primary,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'G',
-                      style: TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
+                child: GavacBrand(
+                  foregroundColor: _isDarkMode
+                      ? const Color(0xFFB7D8CC)
+                      : GavacColors.primary,
+                  compact: true,
                 ),
               ),
               const SizedBox(height: 24),
@@ -492,10 +482,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 8),
               Text(
                 welcomeSubtitle,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: _mutedText,
-                ),
+                style: TextStyle(fontSize: 14, color: _mutedText),
               ),
               const SizedBox(height: 40),
 
@@ -517,10 +504,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              if (kIsWeb) ...[
-                _buildCaptcha(),
-                const SizedBox(height: 20),
-              ],
+              if (kIsWeb) ...[_buildCaptcha(), const SizedBox(height: 20)],
 
               SizedBox(
                 width: double.infinity,
@@ -541,8 +525,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: 22,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Text(
@@ -620,11 +605,15 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: GavacColors.primary, width: 2),
+              borderSide: const BorderSide(
+                color: GavacColors.primary,
+                width: 2,
+              ),
             ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
@@ -682,11 +671,15 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: GavacColors.primary, width: 2),
+              borderSide: const BorderSide(
+                color: GavacColors.primary,
+                width: 2,
+              ),
             ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {

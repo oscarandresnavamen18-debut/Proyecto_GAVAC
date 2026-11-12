@@ -1,9 +1,12 @@
 import 'dart:convert';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:http/http.dart' as http;
+
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/gavac_colors.dart';
 import '../../../../core/utils/app_session.dart';
+import '../../../../core/widgets/gavac_brand.dart';
 
 String get _apiBaseUrl => ApiClient.baseUrl;
 
@@ -26,7 +29,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
 
-  static const String appName = 'GAVAC';
   static const String appSlogan =
       'Únete a la revolución\nde la gestión ganadera.';
 
@@ -83,8 +85,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         AppSession.accessToken = token;
         AppSession.userName = _nombreController.text.trim();
 
-        // 2. Creación de la Finca asociada en PostgreSQL
-        if (_fincaController.text.trim().isNotEmpty) {
+        final farmName = _fincaController.text.trim();
+        var farmCreated = farmName.isEmpty;
+        if (farmName.isNotEmpty) {
           try {
             final farmResponse = await http.post(
               Uri.parse('$_apiBaseUrl/api/v1/farms'),
@@ -100,15 +103,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
             if (farmResponse.statusCode == 201) {
               final farmData =
                   jsonDecode(farmResponse.body) as Map<String, dynamic>;
-              AppSession.farmName =
-                  farmData['nombre'] as String? ?? _fincaController.text.trim();
+              AppSession.farmName = farmData['nombre'] as String? ?? farmName;
+              farmCreated = true;
+            } else {
+              debugPrint(
+                'No se pudo registrar la finca. HTTP ${farmResponse.statusCode}.',
+              );
             }
-          } catch (_) {
-            // Ignorar si falla la finca opcional, la sesión continuará
+          } on http.ClientException catch (error) {
+            debugPrint('Error de conexión al registrar la finca: $error');
+          } on FormatException catch (error) {
+            debugPrint('Respuesta inválida al registrar la finca: $error');
           }
         }
 
-        _showMessage('¡Cuenta creada e inscrita en la base de datos!');
+        _showMessage(
+          farmCreated ? 'Cuenta creada correctamente.' : 'Cuenta creada, pero no se pudo registrar la finca. Puedes intentarlo desde Administración.',
+        );
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/dashboard');
         }
@@ -120,7 +131,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } on http.ClientException {
       if (mounted) {
         _showMessage(
-            'No se pudo conectar con el servidor. Revisa tu conexión.');
+          'No se pudo conectar con el servidor. Revisa tu conexión.',
+        );
       }
     } on FormatException {
       if (mounted) {
@@ -134,10 +146,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _showMessage(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: GavacColors.primary,
-      ),
+      SnackBar(content: Text(message), backgroundColor: GavacColors.primary),
     );
   }
 
@@ -161,8 +170,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             color: _formBackground,
             child: Center(
               child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 64, vertical: 48),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 64,
+                  vertical: 48,
+                ),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -184,35 +195,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         style: TextStyle(fontSize: 16, color: _mutedText),
                       ),
                       const SizedBox(height: 32),
-                      _buildTextField('Nombre completo', 'Juan Pérez',
-                          _nombreController, Icons.person_outline),
+                      _buildTextField(
+                        'Nombre completo',
+                        'Ingresa tu nombre completo',
+                        _nombreController,
+                        Icons.person_outline,
+                      ),
                       const SizedBox(height: 20),
                       _buildTextField(
-                          'Correo electrónico',
-                          'juan@finca.com',
-                          _emailController,
-                          Icons.email_outlined,
-                          TextInputType.emailAddress),
+                        'Correo electrónico',
+                        'correo@ejemplo.com',
+                        _emailController,
+                        Icons.email_outlined,
+                        TextInputType.emailAddress,
+                      ),
                       const SizedBox(height: 20),
                       _buildTextField(
-                          'Nombre de la finca',
-                          'Finca La Esperanza',
-                          _fincaController,
-                          Icons.agriculture_outlined),
+                        'Nombre de la finca',
+                        'Nombre de tu finca',
+                        _fincaController,
+                        Icons.agriculture_outlined,
+                      ),
                       const SizedBox(height: 20),
                       _buildPasswordField(
-                          'Contraseña',
-                          _passwordController,
-                          _obscurePassword,
-                          () => setState(
-                              () => _obscurePassword = !_obscurePassword)),
+                        'Contraseña',
+                        _passwordController,
+                        _obscurePassword,
+                        () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
+                      ),
                       const SizedBox(height: 20),
                       _buildPasswordField(
-                          'Confirmar contraseña',
-                          _confirmPasswordController,
-                          _obscureConfirmPassword,
-                          () => setState(() => _obscureConfirmPassword =
-                              !_obscureConfirmPassword)),
+                        'Confirmar contraseña',
+                        _confirmPasswordController,
+                        _obscureConfirmPassword,
+                        () => setState(
+                          () => _obscureConfirmPassword =
+                              !_obscureConfirmPassword,
+                        ),
+                      ),
                       const SizedBox(height: 32),
                       SizedBox(
                         width: double.infinity,
@@ -223,23 +245,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             backgroundColor: GavacColors.primary,
                             foregroundColor: Colors.white,
                             elevation: 8,
-                            shadowColor:
-                                GavacColors.primary.withValues(alpha: 0.3),
+                            shadowColor: GavacColors.primary.withValues(
+                              alpha: 0.3,
+                            ),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                           child: _isLoading
                               ? const SizedBox(
                                   height: 24,
                                   width: 24,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.white)))
-                              : const Text('Registrarme',
+                                    strokeWidth: 2.5,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : const Text(
+                                  'Registrarme',
                                   style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700)),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -247,13 +277,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         child: TextButton(
                           onPressed: () =>
                               Navigator.pushReplacementNamed(context, '/login'),
-                          child: Text('¿Ya tienes cuenta? Inicia sesión',
-                              style: TextStyle(
-                                  color: _isDarkMode
-                                      ? const Color(0xFFB7D8CC)
-                                      : GavacColors.primary,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14)),
+                          child: Text(
+                            '¿Ya tienes cuenta? Inicia sesión',
+                            style: TextStyle(
+                              color: _isDarkMode
+                                  ? const Color(0xFFB7D8CC)
+                                  : GavacColors.primary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -264,60 +297,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
 
-        // LADO DERECHO - Imagen de fondo
+        // LADO DERECHO - Imagen de fondo con logo y slogan
         Expanded(
           flex: 1,
           child: Container(
             color: const Color(0xFF6B8E85),
-            child: const Stack(
+            child: Stack(
               children: [
                 Positioned.fill(
                   child: Opacity(
-                    opacity: 0.3,
+                    opacity: 0.45,
                     child: Image(
-                      image: AssetImage('assets/imagenes/imagenlogin.png'),
+                      image: const AssetImage(
+                        'assets/imagenes/fondo_login.png',
+                      ),
                       fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const SizedBox.expand(),
                     ),
                   ),
                 ),
-                Positioned.fill(
-                  child: ColoredBox(color: Color(0x33000000)),
+                const Positioned.fill(
+                  child: ColoredBox(color: Color(0x22000000)),
                 ),
-                Center(
+                const Center(
                   child: Padding(
                     padding: EdgeInsets.all(48.0),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          appName,
-                          style: TextStyle(
-                              fontSize: 72,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              letterSpacing: -2,
-                              shadows: [
-                                Shadow(
-                                    color: Color(0x80000000),
-                                    offset: Offset(0, 4),
-                                    blurRadius: 8)
-                              ]),
-                        ),
-                        SizedBox(height: 16),
+                        GavacBrand(foregroundColor: Colors.white),
+                        SizedBox(height: 24),
                         Text(
                           appSlogan,
+                          textAlign: TextAlign.center,
                           style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w400,
-                              color: Colors.white,
-                              height: 1.4,
-                              shadows: [
-                                Shadow(
-                                    color: Color(0x80000000),
-                                    offset: Offset(0, 2),
-                                    blurRadius: 4)
-                              ]),
+                            fontSize: 22,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            height: 1.4,
+                            shadows: [
+                              Shadow(
+                                color: Color(0x80000000),
+                                offset: Offset(0, 2),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -340,43 +367,69 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 32),
-              Text('Crear Cuenta',
-                  style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      color: _isDarkMode
-                          ? const Color(0xFFB7D8CC)
-                          : GavacColors.primary)),
+              const SizedBox(height: 24),
+              Center(
+                child: GavacBrand(
+                  foregroundColor: _isDarkMode
+                      ? const Color(0xFFB7D8CC)
+                      : GavacColors.primary,
+                  compact: true,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Crear Cuenta',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w800,
+                  color: _isDarkMode
+                      ? const Color(0xFFB7D8CC)
+                      : GavacColors.primary,
+                ),
+              ),
               const SizedBox(height: 8),
-              Text('Completa tus datos para comenzar.',
-                  style: TextStyle(fontSize: 14, color: _mutedText)),
-              const SizedBox(height: 32),
-              _buildTextField('Nombre completo', 'Juan Pérez',
-                  _nombreController, Icons.person_outline),
+              const Text(
+                'Completa tus datos para comenzar.',
+                style: TextStyle(fontSize: 14, color: Color(0xFF757575)),
+              ),
+              const SizedBox(height: 28),
+              _buildTextField(
+                'Nombre completo',
+                'Ingresa tu nombre completo',
+                _nombreController,
+                Icons.person_outline,
+              ),
               const SizedBox(height: 16),
               _buildTextField(
-                  'Correo electrónico',
-                  'juan@finca.com',
-                  _emailController,
-                  Icons.email_outlined,
-                  TextInputType.emailAddress),
+                'Correo electrónico',
+                'correo@ejemplo.com',
+                _emailController,
+                Icons.email_outlined,
+                TextInputType.emailAddress,
+              ),
               const SizedBox(height: 16),
-              _buildTextField('Nombre de la finca', 'Finca La Esperanza',
-                  _fincaController, Icons.agriculture_outlined),
+              _buildTextField(
+                'Nombre de la finca',
+                'Nombre de tu finca',
+                _fincaController,
+                Icons.agriculture_outlined,
+              ),
               const SizedBox(height: 16),
               _buildPasswordField(
-                  'Contraseña',
-                  _passwordController,
-                  _obscurePassword,
-                  () => setState(() => _obscurePassword = !_obscurePassword)),
+                'Contraseña',
+                _passwordController,
+                _obscurePassword,
+                () => setState(() => _obscurePassword = !_obscurePassword),
+              ),
               const SizedBox(height: 16),
               _buildPasswordField(
-                  'Confirmar contraseña',
-                  _confirmPasswordController,
-                  _obscureConfirmPassword,
-                  () => setState(() =>
-                      _obscureConfirmPassword = !_obscureConfirmPassword)),
+                'Confirmar contraseña',
+                _confirmPasswordController,
+                _obscureConfirmPassword,
+                () => setState(
+                  () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                ),
+              ),
               const SizedBox(height: 28),
               SizedBox(
                 width: double.infinity,
@@ -384,22 +437,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _handleRegister,
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: GavacColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12))),
+                    backgroundColor: GavacColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                   child: _isLoading
                       ? const SizedBox(
                           height: 22,
                           width: 22,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white)))
-                      : const Text('Registrarme',
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : const Text(
+                          'Registrarme',
                           style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w700)),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -407,12 +469,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: TextButton(
                   onPressed: () =>
                       Navigator.pushReplacementNamed(context, '/login'),
-                  child: Text('¿Ya tienes cuenta? Inicia sesión',
-                      style: TextStyle(
-                          color: _isDarkMode
-                              ? const Color(0xFFB7D8CC)
-                              : GavacColors.primary,
-                          fontWeight: FontWeight.w600)),
+                  child: Text(
+                    '¿Ya tienes cuenta? Inicia sesión',
+                    style: TextStyle(
+                      color: _isDarkMode
+                          ? const Color(0xFFB7D8CC)
+                          : GavacColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -422,38 +487,55 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildTextField(String label, String hint,
-      TextEditingController controller, IconData icon,
-      [TextInputType? type]) {
+  Widget _buildTextField(
+    String label,
+    String hint,
+    TextEditingController controller,
+    IconData icon, [
+    TextInputType? type,
+  ]) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: TextStyle(
-                fontSize: 14, fontWeight: FontWeight.w600, color: _formText)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: _formText,
+          ),
+        ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           keyboardType: type,
           style: TextStyle(color: _formText, fontSize: 15),
           decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: TextStyle(color: _mutedText),
-              prefixIcon: Icon(icon, color: _mutedText),
-              filled: true,
-              fillColor: _fieldBackground,
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: _fieldBorder)),
-              enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: _fieldBorder)),
-              focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: GavacColors.primary, width: 2)),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16)),
+            hintText: hint,
+            hintStyle: TextStyle(color: _mutedText),
+            prefixIcon: Icon(icon, color: _mutedText),
+            filled: true,
+            fillColor: _fieldBackground,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: _fieldBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: _fieldBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: GavacColors.primary,
+                width: 2,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
           validator: (v) =>
               (v == null || v.isEmpty) ? 'Campo obligatorio' : null,
         ),
@@ -461,44 +543,63 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildPasswordField(String label, TextEditingController controller,
-      bool obscure, VoidCallback toggle) {
+  Widget _buildPasswordField(
+    String label,
+    TextEditingController controller,
+    bool obscure,
+    VoidCallback toggle,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: TextStyle(
-                fontSize: 14, fontWeight: FontWeight.w600, color: _formText)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: _formText,
+          ),
+        ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           obscureText: obscure,
           style: TextStyle(color: _formText, fontSize: 15),
           decoration: InputDecoration(
-              hintText: '••••••••',
-              hintStyle: TextStyle(color: _mutedText),
-              prefixIcon: Icon(Icons.lock_outline, color: _mutedText),
-              suffixIcon: IconButton(
-                  icon: Icon(
-                      obscure
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                      color: _mutedText),
-                  onPressed: toggle),
-              filled: true,
-              fillColor: _fieldBackground,
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: _fieldBorder)),
-              enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: _fieldBorder)),
-              focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: GavacColors.primary, width: 2)),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16)),
+            hintText: '••••••••',
+            hintStyle: TextStyle(color: _mutedText),
+            prefixIcon: Icon(Icons.lock_outline, color: _mutedText),
+            suffixIcon: IconButton(
+              icon: Icon(
+                obscure
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+                color: _mutedText,
+              ),
+              onPressed: toggle,
+            ),
+            filled: true,
+            fillColor: _fieldBackground,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: _fieldBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: _fieldBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: GavacColors.primary,
+                width: 2,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
           validator: (v) => (v == null || v.isEmpty)
               ? 'Campo obligatorio'
               : (v.length < 6 ? 'Mínimo 6 caracteres' : null),
