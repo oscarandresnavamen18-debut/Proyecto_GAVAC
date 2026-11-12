@@ -9,6 +9,7 @@ import '../../../reproduccion/presentation/screens/reproduccion_screen.dart';
 import '../../../sanidad/presentation/screens/sanidad_screen.dart';
 import '../../../admin/presentation/screens/gestion_fincas_screen.dart';
 import '../../../admin/presentation/screens/gestion_usuarios_screen.dart';
+import '../../../../core/theme/theme_controller.dart';
 
 String get _apiBaseUrl => ApiClient.baseUrl;
 
@@ -309,6 +310,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     },
                   ),
                 ),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      leading: Icon(
+                        ThemeController.instance.isDarkMode
+                            ? Icons.wb_sunny
+                            : Icons.nightlight_round,
+                        color: Colors.white,
+                      ),
+                      title: Text(
+                        ThemeController.instance.isDarkMode
+                            ? 'Modo Claro'
+                            : 'Modo Oscuro',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      onTap: () {
+                        // Cambia el tema de toda la app al instante
+                        ThemeController.instance.toggleTheme();
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
 
                 // Separador
                 const Padding(
