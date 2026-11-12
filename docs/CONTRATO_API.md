@@ -155,3 +155,52 @@
 * **Valores Permitidos para `event_type`**:
   - `"VACUNACION"`, `"DESPARASITACION"`, `"PESAJE"`, `"TRATAMIENTO"`
 * **Respuesta Exitosa (201 Created)**: Objeto `EventRead`.
+
+---
+
+### 5. Producción (`/api/v1/production`)
+
+#### `GET /api/v1/production`
+* **Descripción**: Lista las mediciones de producción de los animales de la finca del usuario autenticado, de la más reciente a la más antigua.
+
+#### `POST /api/v1/production`
+* **Descripción**: Registra litros de leche, peso o ambas mediciones en una sola operación. Cada medición se asocia a un animal autorizado y se guarda en la base de datos.
+* **Cuerpo de Solicitud**:
+  ```json
+  {
+    "animal_id": 1,
+    "milk_liters": 18.5,
+    "weight_kg": 420,
+    "recorded_at": "2026-11-10T12:00:00Z"
+  }
+  ```
+  `milk_liters` y `weight_kg` son opcionales, pero se debe enviar al menos uno. `recorded_at` es opcional; por defecto se usa la fecha y hora UTC actuales.
+* **Respuesta Exitosa (201 Created)**: Lista de mediciones creadas. Los litros se guardan como `MILK` en `L`; el peso como `WEIGHT` en `kg`.
+
+#### `DELETE /api/v1/production/{record_id}`
+* **Descripción**: Elimina una medición de producción de la finca autorizada (204 No Content).
+
+---
+
+### 6. Inventario (`/api/v1/inventory`)
+
+#### `GET /api/v1/inventory`
+* **Descripción**: Lista los insumos activos de la finca autenticada e incluye el saldo actual calculado a partir de sus movimientos.
+
+#### `POST /api/v1/inventory`
+* **Descripción**: Registra un insumo y su saldo inicial en una transacción.
+* **Cuerpo de Solicitud**:
+  ```json
+  {
+    "name": "Sal mineral",
+    "category": "GENERAL",
+    "unit": "unidades",
+    "quantity": 12,
+    "minimum_quantity": 0
+  }
+  ```
+  `category`, `unit` y `minimum_quantity` tienen valores predeterminados si se omiten.
+* **Respuesta Exitosa (201 Created)**: Objeto con los datos del insumo y `quantity` correspondiente al saldo actual.
+
+#### `DELETE /api/v1/inventory/{item_id}`
+* **Descripción**: Retira el insumo del inventario activo sin borrar su historial de movimientos (204 No Content).
