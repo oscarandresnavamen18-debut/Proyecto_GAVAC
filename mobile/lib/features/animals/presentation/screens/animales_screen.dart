@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/app_session.dart';
+import '../../../../core/widgets/feature_page_widgets.dart';
 import '../../data/services/animal_api_service.dart';
 
 extension AnimalRecordUiExtension on AnimalRecord {
   String get finca =>
       AppSession.farmName.isNotEmpty ? AppSession.farmName : 'Sin Finca';
-  String get lote => 'Lote 1';
-  String get estado => 'Activo';
 }
 
 class AnimalesScreen extends StatefulWidget {
@@ -21,8 +20,8 @@ class AnimalesScreen extends StatefulWidget {
 }
 
 class _AnimalesScreenState extends State<AnimalesScreen> {
-  static const Color primaryColor = Color(0xFF2E6B57);
-  static const Color accentColor = Color(0xFF3F8069);
+  static const Color primaryColor = Color(0xFF1A3A32);
+  static const Color accentColor = Color(0xFF2E5A4D);
   static const Color backgroundColor = Color(0xFFF7F9F7);
   static const Color cardColor = Colors.white;
   static const Color borderColor = Color(0xFFF1F5F9);
@@ -32,6 +31,7 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
   late final AnimalRepository _repository;
   List<AnimalRecord> _animales = [];
   String _searchQuery = '';
+  String? _error;
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -53,6 +53,7 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
   Future<void> _loadAnimals() async {
     setState(() {
       _isLoading = true;
+      _error = null;
     });
     try {
       final animals = await _repository.listAnimals();
@@ -61,13 +62,21 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
         _animales = animals;
         _isLoading = false;
       });
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+    } on ApiException catch (error) {
+      _setLoadError(error.message);
+    } on FormatException catch (error) {
+      _setLoadError(error.message);
+    } on Exception catch (error) {
+      _setLoadError('No se pudieron cargar los animales: $error');
     }
+  }
+
+  void _setLoadError(String message) {
+    if (!mounted) return;
+    setState(() {
+      _error = message;
+      _isLoading = false;
+    });
   }
 
   @override
@@ -102,7 +111,7 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildHeader(context, constraints.maxWidth),
+                      _buildHeader(constraints.maxWidth),
                       const SizedBox(height: 28),
                       _buildKpiMetricsRow(constraints.maxWidth),
                       const SizedBox(height: 32),
@@ -111,6 +120,8 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                           padding: EdgeInsets.all(48),
                           child: Center(child: CircularProgressIndicator()),
                         )
+                      else if (_error != null)
+                        _buildLoadError()
                       else
                         _buildDataTableSection(context, constraints.maxWidth),
                     ],
@@ -124,72 +135,12 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, double maxWidth) {
-    return Container(
-      width: double.infinity,
-      height: maxWidth < 700 ? 220 : 180,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        image: DecorationImage(
-          image: const AssetImage('assets/imagenes/imagenganado.png'),
-          fit: BoxFit.cover,
-          onError: (exception, stackTrace) {},
-        ),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: LinearGradient(
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            colors: [
-              primaryColor.withValues(alpha: 0.95),
-              primaryColor.withValues(alpha: 0.65),
-              Colors.transparent,
-            ],
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child:
-                  const Icon(Icons.pets_rounded, color: Colors.white, size: 36),
-            ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Módulo de Registro de Animales',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: maxWidth < 700 ? 20 : 26,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Control individual del ganado mediante chapeta única.',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+  Widget _buildHeader(double maxWidth) {
+    return FeaturePageBanner(
+      title: 'Módulo de Registro de Animales',
+      subtitle: 'Control individual del ganado mediante chapeta única.',
+      icon: Icons.pets_rounded,
+      isCompact: maxWidth < 700,
     );
   }
 
@@ -221,14 +172,11 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
       ),
     ];
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (var i = 0; i < cards.length; i++) ...[
-          if (i > 0) const SizedBox(width: 16),
-          Expanded(child: cards[i]),
-        ],
-      ],
+    return FeatureMetricLayout(
+      cards: cards,
+      isCompact: maxWidth < 800,
+      horizontalSpacing: 14,
+      verticalSpacing: 12,
     );
   }
 
@@ -240,66 +188,17 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
     required Color iconBgColor,
     required Color iconColor,
   }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: textMuted,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: iconBgColor,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(icon, color: iconColor, size: 24),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 36,
-              fontWeight: FontWeight.w900,
-              color: primaryColor,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: textMuted,
-            ),
-          ),
-        ],
-      ),
+    return FeatureKpiCard(
+      title: title,
+      value: value,
+      subtitle: subtitle,
+      icon: icon,
+      iconBgColor: iconBgColor,
+      iconColor: iconColor,
+      cardColor: cardColor,
+      borderColor: borderColor,
+      textColor: textMuted,
+      valueColor: primaryColor,
     );
   }
 
@@ -325,20 +224,36 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            runSpacing: 12,
             children: [
-              Text(
-                'Listado de Ganado Registrado',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: primaryColor,
+              if (isNarrow)
+                SizedBox(
+                  width: double.infinity,
+                  child: Text(
+                    'Listado de Ganado Registrado',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: primaryColor,
+                    ),
+                  ),
+                )
+              else
+                Text(
+                  'Listado de Ganado Registrado',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: primaryColor,
+                  ),
                 ),
-              ),
               ElevatedButton.icon(
-                onPressed:
-                    _isSaving ? null : () => _mostrarModalRegistrarAnimal(context),
+                onPressed: _isSaving
+                    ? null
+                    : () => _mostrarModalRegistrarAnimal(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
@@ -377,7 +292,6 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                   _buildDataColumn('Raza', 120),
                   _buildDataColumn('Sexo', 100),
                   _buildDataColumn('Finca', 150),
-                  _buildDataColumn('Lote', 100),
                   _buildDataColumn('Fecha Nac.', 110),
                   _buildDataColumn('Estado', 100),
                   _buildDataColumn('Acciones', 110),
@@ -422,8 +336,8 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                         ),
                       ),
                       DataCell(_cellText(animal.finca, 150)),
-                      DataCell(_cellText(animal.lote, 100)),
-                      DataCell(_cellText(_formatDate(animal.fechaNacimiento), 110)),
+                      DataCell(
+                          _cellText(_formatDate(animal.fechaNacimiento), 110)),
                       DataCell(
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -433,7 +347,7 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                            animal.estado,
+                            animal.estadoSincronizacion,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -583,6 +497,51 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
     );
   }
 
+  Widget _buildLoadError() {
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 560),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: borderColor),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off_outlined, size: 40, color: textMuted),
+            const SizedBox(height: 12),
+            Text(
+              'No se pudieron cargar los animales',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                color: primaryColor,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                color: textMuted,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: _loadAnimals,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Intentar de nuevo'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _confirmarEliminarAnimal(BuildContext context, int index) {
     showDialog<void>(
       context: context,
@@ -623,9 +582,6 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
 
     String? razaSeleccionada = 'Holstein';
     String? sexoSeleccionado = 'Macho';
-    String? fincaSeleccionada =
-        AppSession.farmName.isNotEmpty ? AppSession.farmName : 'Sin Finca';
-    String? loteSeleccionado = 'Lote 1';
     DateTime? fechaNacimiento;
 
     try {
@@ -648,7 +604,8 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                       color: const Color(0xFFECFDF5),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.pets, color: primaryColor, size: 20),
+                    child:
+                        const Icon(Icons.pets, color: primaryColor, size: 20),
                   ),
                   const SizedBox(width: 10),
                   Text(
@@ -703,13 +660,21 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                               ),
                               items: const [
                                 DropdownMenuItem(
-                                    value: 'Holstein', child: Text('Holstein', style: TextStyle(color: primaryColor))),
+                                    value: 'Holstein',
+                                    child: Text('Holstein',
+                                        style: TextStyle(color: primaryColor))),
                                 DropdownMenuItem(
-                                    value: 'Brahman', child: Text('Brahman', style: TextStyle(color: primaryColor))),
+                                    value: 'Brahman',
+                                    child: Text('Brahman',
+                                        style: TextStyle(color: primaryColor))),
                                 DropdownMenuItem(
-                                    value: 'Gyr', child: Text('Gyr', style: TextStyle(color: primaryColor))),
+                                    value: 'Gyr',
+                                    child: Text('Gyr',
+                                        style: TextStyle(color: primaryColor))),
                                 DropdownMenuItem(
-                                    value: 'Angus', child: Text('Angus', style: TextStyle(color: primaryColor))),
+                                    value: 'Angus',
+                                    child: Text('Angus',
+                                        style: TextStyle(color: primaryColor))),
                               ],
                               onChanged: (v) =>
                                   setDialogState(() => razaSeleccionada = v),
@@ -724,8 +689,9 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                             child: TextFormField(
                               controller: fechaController,
                               readOnly: true,
-                              decoration: _formDecoration('Fecha de Nacimiento *')
-                                  .copyWith(
+                              decoration:
+                                  _formDecoration('Fecha de Nacimiento *')
+                                      .copyWith(
                                 prefixIcon: const Icon(
                                     Icons.calendar_today_outlined,
                                     size: 18,
@@ -738,7 +704,8 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                               onTap: () async {
                                 final selectedDate = await showDatePicker(
                                   context: context,
-                                  initialDate: fechaNacimiento ?? DateTime.now(),
+                                  initialDate:
+                                      fechaNacimiento ?? DateTime.now(),
                                   firstDate: DateTime(1950),
                                   lastDate: DateTime.now(),
                                 );
@@ -766,9 +733,13 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                               ),
                               items: const [
                                 DropdownMenuItem(
-                                    value: 'Macho', child: Text('Macho', style: TextStyle(color: primaryColor))),
+                                    value: 'Macho',
+                                    child: Text('Macho',
+                                        style: TextStyle(color: primaryColor))),
                                 DropdownMenuItem(
-                                    value: 'Hembra', child: Text('Hembra', style: TextStyle(color: primaryColor))),
+                                    value: 'Hembra',
+                                    child: Text('Hembra',
+                                        style: TextStyle(color: primaryColor))),
                               ],
                               onChanged: (v) =>
                                   setDialogState(() => sexoSeleccionado = v),
@@ -777,54 +748,23 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              isExpanded: true,
-                              style: GoogleFonts.plusJakartaSans(
-                                  color: const Color(0xFF1E293B), fontSize: 14),
-                              initialValue: fincaSeleccionada,
-                              dropdownColor: Colors.white,
-                              decoration: _formDecoration('Finca *').copyWith(
-                                prefixIcon: const Icon(Icons.home_outlined,
-                                    size: 18, color: accentColor),
-                              ),
-                              items: [
-                                DropdownMenuItem(
-                                    value: fincaSeleccionada,
-                                    child: Text(fincaSeleccionada!,
-                                        style: const TextStyle(color: primaryColor))),
-                              ],
-                              onChanged: (v) =>
-                                  setDialogState(() => fincaSeleccionada = v),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              isExpanded: true,
-                              style: GoogleFonts.plusJakartaSans(
-                                  color: const Color(0xFF1E293B), fontSize: 14),
-                              initialValue: loteSeleccionado,
-                              dropdownColor: Colors.white,
-                              decoration: _formDecoration('Lote *').copyWith(
-                                prefixIcon: const Icon(Icons.layers_outlined,
-                                    size: 18, color: accentColor),
-                              ),
-                              items: const [
-                                DropdownMenuItem(
-                                    value: 'Lote 1', child: Text('Lote 1')),
-                                DropdownMenuItem(
-                                    value: 'Lote 2', child: Text('Lote 2')),
-                                DropdownMenuItem(
-                                    value: 'Lote 3', child: Text('Lote 3')),
-                              ],
-                              onChanged: (v) =>
-                                  setDialogState(() => loteSeleccionado = v),
-                            ),
-                          ),
-                        ],
+                      _buildFormField(
+                        controller: pesoController,
+                        label: 'Peso actual (kg) *',
+                        hint: 'Ej: 450',
+                        icon: Icons.monitor_weight_outlined,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        validator: (value) {
+                          final peso = double.tryParse(
+                            (value ?? '').trim().replaceAll(',', '.'),
+                          );
+                          if (peso == null || peso <= 0) {
+                            return 'Ingresa un peso válido';
+                          }
+                          return null;
+                        },
                       ),
                     ],
                   ),
@@ -848,7 +788,9 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                       'raza': razaSeleccionada!,
                       'sexo': sexoSeleccionado!,
                       'fechaNacimiento': fechaNacimiento!,
-                      'pesoKg': double.tryParse(pesoController.text) ?? 400.0,
+                      'pesoKg': double.parse(
+                        pesoController.text.trim().replaceAll(',', '.'),
+                      ),
                     });
                   },
                   style: ElevatedButton.styleFrom(
@@ -970,9 +912,9 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                         const SizedBox(width: 16),
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                              isExpanded: true,
-                              style: GoogleFonts.plusJakartaSans(
-                                  color: const Color(0xFF1E293B), fontSize: 14),
+                            isExpanded: true,
+                            style: GoogleFonts.plusJakartaSans(
+                                color: const Color(0xFF1E293B), fontSize: 14),
                             initialValue: razaSeleccionada,
                             dropdownColor: Colors.white,
                             decoration: _formDecoration('Raza *').copyWith(
@@ -981,13 +923,21 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                             ),
                             items: const [
                               DropdownMenuItem(
-                                  value: 'Holstein', child: Text('Holstein')),
+                                  value: 'Holstein',
+                                  child: Text('Holstein',
+                                      style: TextStyle(color: primaryColor))),
                               DropdownMenuItem(
-                                  value: 'Brahman', child: Text('Brahman')),
+                                  value: 'Brahman',
+                                  child: Text('Brahman',
+                                      style: TextStyle(color: primaryColor))),
                               DropdownMenuItem(
-                                  value: 'Gyr', child: Text('Gyr')),
+                                  value: 'Gyr',
+                                  child: Text('Gyr',
+                                      style: TextStyle(color: primaryColor))),
                               DropdownMenuItem(
-                                  value: 'Angus', child: Text('Angus')),
+                                  value: 'Angus',
+                                  child: Text('Angus',
+                                      style: TextStyle(color: primaryColor))),
                             ],
                             onChanged: (v) => setDialogState(
                                 () => razaSeleccionada = v ?? razaSeleccionada),
@@ -1029,9 +979,9 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                         const SizedBox(width: 16),
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                              isExpanded: true,
-                              style: GoogleFonts.plusJakartaSans(
-                                  color: const Color(0xFF1E293B), fontSize: 14),
+                            isExpanded: true,
+                            style: GoogleFonts.plusJakartaSans(
+                                color: const Color(0xFF1E293B), fontSize: 14),
                             initialValue: sexoSeleccionado,
                             dropdownColor: Colors.white,
                             decoration: _formDecoration('Sexo *').copyWith(
@@ -1040,9 +990,13 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                             ),
                             items: const [
                               DropdownMenuItem(
-                                  value: 'Macho', child: Text('Macho')),
+                                  value: 'Macho',
+                                  child: Text('Macho',
+                                      style: TextStyle(color: primaryColor))),
                               DropdownMenuItem(
-                                  value: 'Hembra', child: Text('Hembra')),
+                                  value: 'Hembra',
+                                  child: Text('Hembra',
+                                      style: TextStyle(color: primaryColor))),
                             ],
                             onChanged: (v) => setDialogState(
                                 () => sexoSeleccionado = v ?? sexoSeleccionado),
@@ -1071,7 +1025,8 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                       raza: razaSeleccionada,
                       sexo: sexoSeleccionado,
                       fechaNacimiento: fechaNacimiento,
-                      pesoKg: double.tryParse(pesoController.text) ?? animal.pesoKg,
+                      pesoKg:
+                          double.tryParse(pesoController.text) ?? animal.pesoKg,
                     );
                   });
                   _showMessage('Datos del animal actualizados.');
@@ -1154,7 +1109,8 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
       ),
       decoration: _formDecoration(label).copyWith(
         hintText: hint,
-        prefixIcon: icon != null ? Icon(icon, size: 18, color: accentColor) : null,
+        prefixIcon:
+            icon != null ? Icon(icon, size: 18, color: accentColor) : null,
       ),
     );
   }

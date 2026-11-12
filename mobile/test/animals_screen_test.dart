@@ -55,8 +55,30 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('No hay animales registrados en el sistema'),
-        findsOneWidget);
+    expect(
+        find.text('No hay animales registrados en el sistema'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('animals screen reports load errors and supports retry', (
+    WidgetTester tester,
+  ) async {
+    final repository = _RecoveringAnimalRepository();
+
+    await tester.pumpWidget(
+      MaterialApp(home: AnimalesScreen(repository: repository)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('No se pudieron cargar los animales'), findsOneWidget);
+
+    repository.shouldFail = false;
+    await tester.ensureVisible(find.text('Intentar de nuevo'));
+    await tester.tap(find.text('Intentar de nuevo'));
+    await tester.pumpAndSettle();
+
+    expect(repository.loadAttempts, 2);
+    expect(find.text('No se pudieron cargar los animales'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -92,11 +114,42 @@ void main() {
       expect(sexDropdown.style?.color, const Color(0xFF1E293B));
       for (final item in sexDropdown.items!) {
         final itemText = item.child as Text;
-        expect(itemText.style?.color, const Color(0xFF2E6B57));
+        expect(itemText.style?.color, const Color(0xFF1A3A32));
       }
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('animal registration requires an entered weight', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1536, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _FakeAnimalRepository([]);
+
+    await tester.pumpWidget(
+      MaterialApp(home: AnimalesScreen(repository: repository)),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Registrar Animal'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).first, 'GAV-100');
+    final weightField = find.byWidgetPredicate(
+      (widget) =>
+          widget is TextField && widget.decoration?.hintText == 'Ej: 450',
+    );
+    expect(tester.widget<TextField>(weightField).controller!.text, isEmpty);
+    await tester.tap(find.text('Guardar Animal'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ingresa un peso válido'), findsOneWidget);
+
+    await tester.enterText(weightField, '532.5');
+    expect(tester.widget<TextField>(weightField).controller!.text, '532.5');
+    expect(tester.takeException(), isNull);
+  });
 }
 
 class _FakeAnimalRepository implements AnimalRepository {
@@ -123,4 +176,27 @@ class _FakeAnimalRepository implements AnimalRepository {
         fechaNacimiento: fechaNacimiento,
         pesoKg: pesoKg,
       );
+}
+
+class _RecoveringAnimalRepository implements AnimalRepository {
+  bool shouldFail = true;
+  int loadAttempts = 0;
+
+  @override
+  Future<List<AnimalRecord>> listAnimals() async {
+    loadAttempts++;
+    if (shouldFail) throw Exception('sin conexión');
+    return [];
+  }
+
+  @override
+  Future<AnimalRecord> createAnimal({
+    required String chapeta,
+    required String raza,
+    required String sexo,
+    required DateTime fechaNacimiento,
+    required double pesoKg,
+  }) async {
+    throw UnimplementedError();
+  }
 }
