@@ -1,12 +1,12 @@
 import json
 from urllib.parse import urlsplit
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    database_url: str = Field(min_length=1)
+    database_url: str = Field(default="", min_length=1)
     jwt_secret_key: SecretStr = Field(min_length=32)
     jwt_expire_minutes: int = Field(default=60, gt=0)
     environment: str = "production"
@@ -25,9 +25,25 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(".env", "../.env"), extra="ignore")
 
+    @model_validator(mode="before")
+    @classmethod
+    def ensure_database_url_for_environment(cls, values: object) -> object:
+        if not isinstance(values, dict):
+            return values
+
+        environment = str(values.get("environment") or "production").strip().lower()
+        database_url = values.get("database_url")
+        if database_url is None or (isinstance(database_url, str) and not database_url.strip()):
+            if environment == "production":
+                raise ValueError("DATABASE_URL is required when ENVIRONMENT=production")
+            values["database_url"] = "sqlite:///./app.db"
+        return values
+
     @field_validator("database_url", mode="before")
     @classmethod
     def validate_database_url(cls, value: object) -> str:
+        if value is None:
+            return ""
         if not isinstance(value, str):
             value = str(value)
         value = value.strip("'\" \t\r\n")

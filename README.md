@@ -13,7 +13,7 @@ Plataforma para la gestión ganadera con una API REST y una aplicación multipla
 ## Requisitos
 
 - Docker Compose.
-- Flutter SDK compatible con Dart 3.
+- Flutter 3.47 o posterior, con Dart 3.13 o posterior.
 - Python 3.12 para ejecutar las pruebas del backend fuera de Docker.
 
 ## Inicio rápido
@@ -63,7 +63,7 @@ flutter pub get
 flutter analyze
 flutter test
 ```
-<!-- flutter run -d chrome --web-hostname localhost --web-port 61015 --dart-define=API_BASE_URL=https://proyectogavac-gavac-staging.up.railway.app -->
+<!-- flutter run -d chrome --web-hostname localhost --web-port 5173 --dart-define=API_BASE_URL=https://proyectogavac-gavac-staging.up.railway.app -->
 ## Datos locales
 
 Docker Compose conserva la base en el volumen `postgres_api_data`. Evita `docker compose down -v` si necesitas conservar esos datos. Para revisar los registros de la API:
