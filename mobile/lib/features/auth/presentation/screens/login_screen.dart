@@ -26,14 +26,11 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _captchaToken;
   VoidCallback? _resetCaptcha;
 
-  static const String appName = 'GAVAC';
-  static const String appSlogan =
-      'Tecnología inteligente\npara la gestión del campo.';
   static const String welcomeTitle = 'Bienvenido';
   static const String welcomeSubtitle =
       'Ingresa tus credenciales para acceder.';
   static const String emailLabel = 'Correo Electrónico';
-  static const String emailHint = 'usuario@gavac.pro';
+  static const String emailHint = 'correo@ejemplo.com';
   static const String passwordLabel = 'Contraseña';
   static const String passwordHint = '••••••••';
   static const String buttonText = 'Entrar al Sistema';
@@ -257,63 +254,62 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildDesktopLayout() {
     return Row(
       children: [
-        // LADO IZQUIERDO - Imagen de fondo con texto
+        // LADO IZQUIERDO - Imagen de fondo con Buey Nelore blanco (imagenLoginNuevo.png)
         Expanded(
           flex: 1,
           child: Container(
-            color: const Color(0xFF6B8E85),
-            child: const Stack(
+            color: const Color(0xFF1A3A32),
+            child: Stack(
               children: [
                 Positioned.fill(
-                  child: Opacity(
-                    opacity: 0.3,
-                    child: Image(
-                      image: AssetImage('assets/imagenes/imagenlogin.png'),
-                      fit: BoxFit.cover,
-                    ),
+                  child: Image.asset(
+                    'assets/imagenes/imagenLoginNuevo.png',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const SizedBox(),
                   ),
                 ),
                 Positioned.fill(
-                  child: ColoredBox(color: Color(0x33000000)),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.25),
+                          Colors.black.withValues(alpha: 0.55),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
                 Center(
                   child: Padding(
-                    padding: EdgeInsets.all(48.0),
+                    padding: const EdgeInsets.all(48.0),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          appName,
-                          style: TextStyle(
-                            fontSize: 72,
-                            fontWeight: FontWeight.w900,
-                            color: Color.fromARGB(255, 29, 28, 28),
-                            letterSpacing: -2,
-                            shadows: [
-                              Shadow(
-                                color: Color(0x80000000),
-                                offset: Offset(0, 4),
-                                blurRadius: 8,
-                              ),
-                            ],
+                        Image.asset(
+                          'assets/imagenes/imagenLogoNuevo.png',
+                          height: 110,
+                          errorBuilder: (context, error, stackTrace) => const Text(
+                            'GAVAC',
+                            style: TextStyle(
+                              fontSize: 64,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
-                        SizedBox(height: 16),
-                        Text(
-                          appSlogan,
+                        const SizedBox(height: 24),
+                        const Text(
+                          'Tecnología inteligente\npara la gestión del campo.',
+                          textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w400,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w500,
                             color: Colors.white,
                             height: 1.4,
-                            shadows: [
-                              Shadow(
-                                color: Color(0x80000000),
-                                offset: Offset(0, 2),
-                                blurRadius: 4,
-                              ),
-                            ],
                           ),
                         ),
                       ],
@@ -419,7 +415,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // ✅ CAMBIO INTEGRADO: Navegación al Registro (Escritorio)
                       Center(
                         child: TextButton(
                           onPressed: () {
@@ -457,22 +452,26 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 48),
+              const SizedBox(height: 32),
               Center(
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: GavacColors.primary,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'G',
-                      style: TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
+                child: Image.asset(
+                  'assets/imagenes/imagenLogoNuevo.png',
+                  height: 80,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    width: 90,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      color: GavacColors.primary,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'G',
+                        style: TextStyle(
+                          fontSize: 44,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -556,7 +555,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 20),
 
-              // ✅ CAMBIO INTEGRADO: Navegación al Registro (Móvil)
               Center(
                 child: TextButton(
                   onPressed: () {
