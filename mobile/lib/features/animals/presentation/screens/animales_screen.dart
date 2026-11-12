@@ -13,8 +13,8 @@ class AnimalesScreen extends StatefulWidget {
 }
 
 class _AnimalesScreenState extends State<AnimalesScreen> {
-  static const Color primaryColor = Color(0xFF1A3A32);
-  static const Color accentColor = Color(0xFF2E5A4D);
+  static const Color primaryColor = Color(0xFF2E6B57);
+  static const Color accentColor = Color(0xFF3F8069);
   static const Color backgroundColor = Color(0xFFF7F9F7);
   static const Color cardColor = Colors.white;
   static const Color borderColor = Color(0xFFF1F5F9);

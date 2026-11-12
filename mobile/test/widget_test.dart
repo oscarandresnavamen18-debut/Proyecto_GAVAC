@@ -21,32 +21,14 @@ void main() {
     );
   });
 
-  testWidgets('global theme button switches between light and dark modes',
+  testWidgets('GAVAC app keeps the light theme without a theme toggle',
       (WidgetTester tester) async {
     await tester.pumpWidget(const GAVACApp());
 
-    expect(
-      Theme.of(tester.element(find.byType(LoginScreen))).brightness,
-      Brightness.light,
-    );
-    expect(find.byTooltip('Cambiar a modo oscuro'), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Cambiar a modo oscuro'));
-    await tester.pumpAndSettle();
-
-    expect(
-      Theme.of(tester.element(find.byType(LoginScreen))).brightness,
-      Brightness.dark,
-    );
-    expect(find.byTooltip('Cambiar a modo claro'), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Cambiar a modo claro'));
-    await tester.pumpAndSettle();
-
-    expect(
-      Theme.of(tester.element(find.byType(LoginScreen))).brightness,
-      Brightness.light,
-    );
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(find.byKey(const ValueKey('theme-toggle')), findsNothing);
+    expect(app.theme?.colorScheme.primary, const Color(0xFF2E6B57));
+    expect(app.darkTheme, isNull);
   });
 
   testWidgets('Reproduction screen renders without layout errors',
@@ -94,8 +76,8 @@ void main() {
     await tester.pump();
 
     final field = tester.widget<TextField>(emailInput);
-    expect(field.style?.color, GavacColors.textPrimary);
+    expect(field.style?.color, const Color(0xFFF1F5F9));
     expect(field.cursorColor, GavacColors.primary);
-    expect(field.decoration?.fillColor, const Color(0xFFF8FAFC));
+    expect(field.decoration?.fillColor, const Color(0xFF1E293B));
   });
 }

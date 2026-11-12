@@ -40,8 +40,8 @@ class ReproduccionScreen extends StatefulWidget {
 
 class _ReproduccionScreenState extends State<ReproduccionScreen> {
   // Colores Oficiales GAVAC Design System
-  static const Color primaryColor = Color(0xFF1A3A32); // Deep Forest Green
-  static const Color accentColor = Color(0xFF2E5A4D); // Dark Emerald Accent
+  static const Color primaryColor = Color(0xFF2E6B57);
+  static const Color accentColor = Color(0xFF3F8069);
   static const Color backgroundColor =
       Color(0xFFF7F9F7); // Soft Clean Off-White
   static const Color cardColor = Color(0xFFFFFFFF);

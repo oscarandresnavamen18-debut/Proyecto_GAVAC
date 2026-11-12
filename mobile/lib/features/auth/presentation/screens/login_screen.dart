@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
@@ -10,6 +9,7 @@ import '../../../../core/utils/app_session.dart';
 import '../widgets/captcha_widget.dart';
 
 String get _apiBaseUrl => ApiClient.baseUrl;
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -38,6 +38,18 @@ class _LoginScreenState extends State<LoginScreen> {
   static const String passwordHint = '••••••••';
   static const String buttonText = 'Entrar al Sistema';
   static const String registerText = '¿No tienes cuenta? Regístrate aquí';
+
+  bool get _isDarkMode => Theme.of(context).brightness == Brightness.dark;
+  Color get _formBackground =>
+      _isDarkMode ? const Color(0xFF0F172A) : Colors.white;
+  Color get _formText =>
+      _isDarkMode ? const Color(0xFFF1F5F9) : GavacColors.textPrimary;
+  Color get _mutedText =>
+      _isDarkMode ? const Color(0xFFCBD5E1) : GavacColors.textSecondary;
+  Color get _fieldBackground =>
+      _isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC);
+  Color get _fieldBorder =>
+      _isDarkMode ? const Color(0xFF334155) : const Color(0xFFD1D5DB);
 
   @override
   void dispose() {
@@ -317,7 +329,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Expanded(
           flex: 1,
           child: Container(
-            color: Colors.white,
+            color: _formBackground,
             child: Center(
               child: SingleChildScrollView(
                 padding:
@@ -327,20 +339,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         welcomeTitle,
                         style: TextStyle(
                           fontSize: 36,
                           fontWeight: FontWeight.w800,
-                          color: GavacColors.primary,
+                          color: _isDarkMode
+                              ? const Color(0xFFB7D8CC)
+                              : GavacColors.primary,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         welcomeSubtitle,
                         style: TextStyle(
                           fontSize: 16,
-                          color: Color(0xFF757575),
+                          color: _mutedText,
                         ),
                       ),
                       const SizedBox(height: 48),
@@ -411,10 +425,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: () {
                             Navigator.pushNamed(context, '/register');
                           },
-                          child: const Text(
+                          child: Text(
                             registerText,
                             style: TextStyle(
-                              color: GavacColors.primary,
+                              color: _isDarkMode
+                                  ? const Color(0xFFB7D8CC)
+                                  : GavacColors.primary,
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
                             ),
@@ -463,20 +479,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 welcomeTitle,
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w800,
-                  color: GavacColors.primary,
+                  color: _isDarkMode
+                      ? const Color(0xFFB7D8CC)
+                      : GavacColors.primary,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 welcomeSubtitle,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF757575),
+                  color: _mutedText,
                 ),
               ),
               const SizedBox(height: 40),
@@ -544,10 +562,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () {
                     Navigator.pushNamed(context, '/register');
                   },
-                  child: const Text(
+                  child: Text(
                     registerText,
                     style: TextStyle(
-                      color: GavacColors.primary,
+                      color: _isDarkMode
+                          ? const Color(0xFFB7D8CC)
+                          : GavacColors.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -572,31 +592,31 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: GavacColors.textPrimary,
+            color: _formText,
           ),
         ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
-          style: const TextStyle(color: GavacColors.textPrimary),
+          style: TextStyle(color: _formText),
           cursorColor: GavacColors.primary,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: GavacColors.textMuted),
-            prefixIcon: Icon(prefixIcon, color: GavacColors.textMuted),
+            hintStyle: TextStyle(color: _mutedText),
+            prefixIcon: Icon(prefixIcon, color: _mutedText),
             filled: true,
-            fillColor: const Color(0xFFF8FAFC),
+            fillColor: _fieldBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+              borderSide: BorderSide(color: _fieldBorder),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+              borderSide: BorderSide(color: _fieldBorder),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -621,45 +641,44 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           passwordLabel,
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: GavacColors.textPrimary,
+            color: _formText,
           ),
         ),
         const SizedBox(height: 8),
         TextFormField(
           controller: _passwordController,
           obscureText: _obscurePassword,
-          style: const TextStyle(color: GavacColors.textPrimary),
+          style: TextStyle(color: _formText),
           cursorColor: GavacColors.primary,
           decoration: InputDecoration(
             hintText: passwordHint,
-            hintStyle: const TextStyle(color: GavacColors.textMuted),
-            prefixIcon:
-                const Icon(Icons.lock_outline, color: GavacColors.textMuted),
+            hintStyle: TextStyle(color: _mutedText),
+            prefixIcon: Icon(Icons.lock_outline, color: _mutedText),
             suffixIcon: IconButton(
               icon: Icon(
                 _obscurePassword
                     ? Icons.visibility_outlined
                     : Icons.visibility_off_outlined,
-                color: GavacColors.textMuted,
+                color: _mutedText,
               ),
               onPressed: () {
                 setState(() => _obscurePassword = !_obscurePassword);
               },
             ),
             filled: true,
-            fillColor: const Color(0xFFF8FAFC),
+            fillColor: _fieldBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+              borderSide: BorderSide(color: _fieldBorder),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+              borderSide: BorderSide(color: _fieldBorder),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
