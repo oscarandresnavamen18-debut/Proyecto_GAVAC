@@ -1,7 +1,9 @@
-from datetime import date, datetime
-from typing import Literal, Optional
+from datetime import date, datetime, timezone
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+from app.models import CattleGender, CattleStatus, EventType
 
 
 # AUTENTICACION
@@ -53,19 +55,15 @@ class FarmRead(BaseModel):
 
 # ANIMALES
 
-Gender = Literal["MACHO", "HEMBRA"]
-AnimalStatus = Literal["ACTIVO", "VENDIDO", "MUERTO", "TRASLADADO"]
-
-
 class AnimalBase(BaseModel):
     tag_id: str = Field(..., min_length=1, max_length=50)
     name: Optional[str] = Field(None, max_length=100)
-    gender: Gender
+    gender: CattleGender
     birth_date: date
     breed: str = Field(..., min_length=1, max_length=50)
     color: Optional[str] = Field(None, max_length=50)
     current_weight: float = Field(..., gt=0)
-    status: AnimalStatus = "ACTIVO"
+    status: CattleStatus = CattleStatus.ACTIVO
 
 
 class AnimalCreate(AnimalBase):
@@ -76,7 +74,7 @@ class AnimalPatch(BaseModel):
     name: Optional[str] = Field(None, max_length=100)
     color: Optional[str] = Field(None, max_length=50)
     current_weight: Optional[float] = Field(None, gt=0)
-    status: Optional[AnimalStatus] = None
+    status: Optional[CattleStatus] = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -93,16 +91,8 @@ class AnimalRead(AnimalBase):
 
 # EVENTOS
 
-EventKind = Literal[
-    "VACUNACION",
-    "DESPARASITACION",
-    "PESAJE",
-    "TRATAMIENTO",
-]
-
-
 class EventBase(BaseModel):
-    event_type: EventKind
+    event_type: EventType
     event_date: date
     weight: Optional[float] = Field(None, gt=0)
     description: str = Field(..., min_length=1, max_length=255)
@@ -120,6 +110,49 @@ class EventRead(EventBase):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# PRODUCCION
+
+class ProductionCreate(BaseModel):
+    animal_id: int = Field(..., gt=0)
+    milk_liters: Optional[float] = Field(None, gt=0)
+    weight_kg: Optional[float] = Field(None, gt=0)
+    recorded_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc))
+    notes: Optional[str] = Field(None, max_length=2000)
+
+
+class ProductionRead(BaseModel):
+    id: int
+    animal_id: int
+    animal_tag: str
+    record_type: str
+    quantity: float
+    unit: str
+    recorded_at: datetime
+    notes: Optional[str] = None
+
+
+# INVENTARIO
+
+class InventoryCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=120)
+    category: str = Field("GENERAL", min_length=1, max_length=40)
+    unit: str = Field("unidad", min_length=1, max_length=20)
+    quantity: float = Field(..., gt=0)
+    minimum_quantity: float = Field(0, ge=0)
+
+
+class InventoryRead(BaseModel):
+    id: int
+    name: str
+    category: str
+    unit: str
+    quantity: float
+    minimum_quantity: float
+    is_active: bool
+    created_at: datetime
 
 
 # RECUPERACION DE CONTRASENA

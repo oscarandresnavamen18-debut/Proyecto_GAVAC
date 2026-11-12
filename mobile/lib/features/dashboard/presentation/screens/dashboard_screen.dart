@@ -5,8 +5,11 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/gavac_colors.dart';
 import '../../../../core/utils/app_session.dart';
 import '../../../animals/presentation/screens/animales_screen.dart';
+import '../../../animals/presentation/screens/inventario_screen.dart';
 import '../../../reproduccion/presentation/screens/reproduccion_screen.dart';
 import '../../../sanidad/presentation/screens/sanidad_screen.dart';
+import '../../../livestock/presentation/screens/produccion_screen.dart';
+import '../../../reports/presentation/screens/reportes_screen.dart';
 import '../../../admin/presentation/screens/gestion_fincas_screen.dart';
 import '../../../admin/presentation/screens/gestion_usuarios_screen.dart';
 import '../../../../core/theme/theme_controller.dart';
@@ -23,6 +26,13 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
+  Color get _backgroundColor => const Color(0xFFF8FAFC);
+  Color get _surfaceColor => Colors.white;
+  Color get _primaryTextColor => GavacColors.textPrimary;
+  Color get _secondaryTextColor => const Color(0xFF64748B);
+  Color get _borderColor => const Color(0xFFE2E8F0);
+  Color get _headingColor => GavacColors.primary;
+
   final List<Map<String, dynamic>> _menuItems = [
     {'icon': Icons.dashboard_outlined, 'label': 'Inicio'},
     {'icon': Icons.pets_outlined, 'label': 'Animales'},
@@ -34,22 +44,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
     {'icon': Icons.admin_panel_settings_outlined, 'label': 'Admin'},
   ];
 
-  late final List<Widget> _pages;
+  late final List<Widget Function()> _pageBuilders;
+  late final List<Widget?> _pages;
 
   @override
   void initState() {
     super.initState();
 
-    _pages = [
-      _buildInicioView(), // 0: Inicio
-      const AnimalesScreen(), // 1: Animales
-      const SanidadScreen(), // 2: Sanidad
-      const ReproduccionScreen(), // 3: Reproducción
-      _buildPlaceholder('Producción'), // 4: Producción
-      _buildPlaceholder('Inventario'), // 5: Inventario
-      _buildPlaceholder('Reportes'), // 6: Reportes
-      _buildAdminHubView(), // 7: Admin
+    _pageBuilders = [
+      _buildInicioView,
+      () => const AnimalesScreen(),
+      () => const SanidadScreen(),
+      () => const ReproduccionScreen(),
+      () => const ProduccionScreen(),
+      () => const InventarioScreen(),
+      () => const ReportesScreen(),
+      _buildAdminHubView,
     ];
+    _pages = List<Widget?>.filled(_pageBuilders.length, null);
+    _pages[0] = _pageBuilders[0]();
+  }
+
+  void _selectPage(int index) {
+    setState(() {
+      _pages[index] ??= _pageBuilders[index]();
+      _selectedIndex = index;
+    });
   }
 
   // Función para cerrar sesión
@@ -232,13 +252,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: _backgroundColor,
       body: Row(
         children: [
           // SIDEBAR
           Container(
             width: 260,
-            color: GavacColors.primary,
+            color: _headingColor,
             child: Column(
               children: [
                 const SizedBox(height: 30),
@@ -274,7 +294,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           child: InkWell(
                             borderRadius: BorderRadius.circular(12),
                             onTap: () {
-                              setState(() => _selectedIndex = index);
+                              _selectPage(index);
                             },
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
@@ -289,16 +309,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     size: 22,
                                   ),
                                   const SizedBox(width: 16),
-                                  Text(
-                                    _menuItems[index]['label'] as String,
-                                    style: TextStyle(
-                                      color: isSelected
-                                          ? GavacColors.primary
-                                          : Colors.white70,
-                                      fontWeight: isSelected
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                      fontSize: 15,
+                                  Expanded(
+                                    child: Text(
+                                      _menuItems[index]['label'] as String,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? GavacColors.primary
+                                            : Colors.white70,
+                                        fontWeight: isSelected
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
+                                        fontSize: 15,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -405,7 +428,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Expanded(
             child: IndexedStack(
               index: _selectedIndex,
-              children: _pages,
+              children: _pages
+                  .map((page) => page ?? const SizedBox.shrink())
+                  .toList(),
             ),
           ),
         ],
@@ -427,12 +452,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Inicio',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
-                      color: GavacColors.primary,
+                      color: _headingColor,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -440,7 +465,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     'Resumen general de tu finca',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: _secondaryTextColor,
                     ),
                   ),
                 ],
@@ -451,25 +476,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: _surfaceColor,
                       borderRadius: BorderRadius.circular(30),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: _borderColor),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.location_on_outlined,
-                            color: GavacColors.primary, size: 20),
+                        Icon(Icons.location_on_outlined,
+                            color: _headingColor, size: 20),
                         const SizedBox(width: 8),
                         Text(
                           AppSession.farmName,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              color: GavacColors.textPrimary),
+                              color: _primaryTextColor),
                         ),
                         const SizedBox(width: 8),
                         Icon(Icons.keyboard_arrow_down,
-                            color: Colors.grey[600]),
+                            color: _secondaryTextColor),
                       ],
                     ),
                   ),
@@ -477,12 +502,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: _surfaceColor,
                       shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: _borderColor),
                     ),
                     child: Icon(Icons.notifications_outlined,
-                        color: Colors.grey[600]),
+                        color: _secondaryTextColor),
                   ),
                 ],
               ),
@@ -497,8 +522,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
               image: const DecorationImage(
-                image: NetworkImage(
-                    'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'),
+                image: AssetImage('assets/imagenes/imagenganado.png'),
                 fit: BoxFit.cover,
               ),
             ),
@@ -551,8 +575,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Icons.grid_view,
                 const Color(0xFF64748B),
                 const Color(0xFFF1F5F9),
-                onTap: () =>
-                    setState(() => _selectedIndex = 1), // Conexión a Animales
+                onTap: () => _selectPage(1), // Conexión a Animales
               ),
               const SizedBox(width: 24),
               _buildStatCard(
@@ -561,8 +584,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Icons.shield_outlined,
                 const Color(0xFF10B981),
                 const Color(0xFFD1FAE5),
-                onTap: () =>
-                    setState(() => _selectedIndex = 2), // Conexión a Sanidad
+                onTap: () => _selectPage(2), // Conexión a Sanidad
               ),
               const SizedBox(width: 24),
               _buildStatCard(
@@ -571,8 +593,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Icons.favorite_border,
                 const Color(0xFFEF4444),
                 const Color(0xFFFEE2E2),
-                onTap: () => setState(() => _selectedIndex =
-                    3), // <-- 2. Conexión a Reproducción agregada aquí
+                onTap: () => _selectPage(3),
               ),
               const SizedBox(width: 24),
               _buildStatCard('ALERTAS', '0', Icons.warning_amber_rounded,
@@ -601,12 +622,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Administración',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
-                      color: GavacColors.primary,
+                      color: _headingColor,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -614,7 +635,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     'Panel de control maestro y configuración',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: _secondaryTextColor,
                     ),
                   ),
                 ],
@@ -705,9 +726,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: _surfaceColor,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: _borderColor),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.02),
@@ -719,12 +740,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Fincas Registradas',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: GavacColors.primary,
+                          color: _headingColor,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -820,9 +841,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: _surfaceColor,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: _borderColor),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.02),
@@ -834,12 +855,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Gestión de Usuarios y Permisos',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: GavacColors.primary,
+                          color: _headingColor,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -944,19 +965,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Placeholder para otros módulos de compañeros
-  Widget _buildPlaceholder(String title) {
-    return Center(
-      child: Text(
-        'Módulo de $title en desarrollo',
-        style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: GavacColors.primary),
-      ),
-    );
-  }
-
   Widget _buildStatCard(
       String title, String value, IconData icon, Color iconColor, Color iconBg,
       {VoidCallback? onTap}) {
@@ -967,7 +975,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: _surfaceColor,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
@@ -1000,17 +1008,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Colors.grey[600],
+                  color: _secondaryTextColor,
                   letterSpacing: 0.5,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w800,
-                  color: GavacColors.primary,
+                  color: _headingColor,
                 ),
               ),
             ],

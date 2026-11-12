@@ -1,103 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-/// Modelo de datos para la HU-006 (Registro de Animales).
-class AnimalRecord {
-  final String id;
-  final String chapeta;
-  final String especie;
-  final String raza;
-  final String sexo;
-  final String edad;
-  final String peso;
-  final String estadoSincronizacion;
-
-  const AnimalRecord({
-    required this.id,
-    required this.chapeta,
-    required this.especie,
-    required this.raza,
-    required this.sexo,
-    required this.edad,
-    required this.peso,
-    required this.estadoSincronizacion,
-  });
-}
+import '../../../../core/network/api_client.dart';
+import '../../data/services/animal_api_service.dart';
 
 class AnimalesScreen extends StatefulWidget {
-  final String totalAnimales;
-  final String sincronizadosCount;
-  final String pendientesCount;
-  final List<AnimalRecord> animales;
+  final AnimalRepository? repository;
 
-  /// El widget padre debe guardar el registro y actualizar su listado.
-  final Function(Map<String, String>)? onGuardarAnimal;
-
-  const AnimalesScreen({
-    super.key,
-    this.totalAnimales = '3',
-    this.sincronizadosCount = '2',
-    this.pendientesCount = '1',
-    this.animales = const [
-      AnimalRecord(
-        id: '1',
-        chapeta: 'CH-1024',
-        especie: 'Bovino',
-        raza: 'Brahman',
-        sexo: 'Macho',
-        edad: '24 meses',
-        peso: '450 kg',
-        estadoSincronizacion: 'Sincronizado',
-      ),
-      AnimalRecord(
-        id: '2',
-        chapeta: 'CH-1025',
-        especie: 'Bovino',
-        raza: 'Holstein',
-        sexo: 'Hembra',
-        edad: '18 meses',
-        peso: '380 kg',
-        estadoSincronizacion: 'Sincronizado',
-      ),
-      AnimalRecord(
-        id: '3',
-        chapeta: 'CH-1026',
-        especie: 'Bovino',
-        raza: 'Gyr',
-        sexo: 'Hembra',
-        edad: '30 meses',
-        peso: '420 kg',
-        estadoSincronizacion: 'Pendiente Local',
-      ),
-    ],
-    this.onGuardarAnimal,
-  });
+  const AnimalesScreen({super.key, this.repository});
 
   @override
   State<AnimalesScreen> createState() => _AnimalesScreenState();
 }
 
 class _AnimalesScreenState extends State<AnimalesScreen> {
-  static const Color primaryColor = Color(0xFF1A3A32);
-  static const Color accentColor = Color(0xFF2E5A4D);
+  static const Color primaryColor = Color(0xFF2E6B57);
+  static const Color accentColor = Color(0xFF3F8069);
   static const Color backgroundColor = Color(0xFFF7F9F7);
   static const Color cardColor = Colors.white;
   static const Color borderColor = Color(0xFFF1F5F9);
-  static const Color textMuted = Color(0xFF94A3B8);
+  static const Color textMuted = Color(0xFF64748B);
 
   final TextEditingController _searchController = TextEditingController();
+  late final AnimalRepository _repository;
+  List<AnimalRecord> _animales = [];
   String _searchQuery = '';
+  String? _error;
+  bool _isLoading = true;
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
+    _repository = widget.repository ?? const AnimalApiService();
     _searchController.addListener(_handleSearchChanged);
+    _loadAnimals();
   }
 
   void _handleSearchChanged() {
     if (!mounted) return;
     setState(() {
       _searchQuery = _searchController.text.trim().toLowerCase();
+    });
+  }
+
+  Future<void> _loadAnimals() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final animals = await _repository.listAnimals();
+      if (!mounted) return;
+      setState(() {
+        _animales = animals;
+        _isLoading = false;
+      });
+    } on ApiException catch (error) {
+      _setLoadError(error.message);
+    } on FormatException catch (error) {
+      _setLoadError(error.message);
+    } on Exception catch (error) {
+      _setLoadError('No se pudieron cargar los animales: $error');
+    }
+  }
+
+  void _setLoadError(String message) {
+    if (!mounted) return;
+    setState(() {
+      _error = message;
+      _isLoading = false;
     });
   }
 
@@ -110,8 +81,8 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
   }
 
   List<AnimalRecord> get _filteredAnimales {
-    if (_searchQuery.isEmpty) return widget.animales;
-    return widget.animales
+    if (_searchQuery.isEmpty) return _animales;
+    return _animales
         .where((animal) => animal.chapeta.toLowerCase().contains(_searchQuery))
         .toList();
   }
@@ -137,7 +108,15 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                       const SizedBox(height: 28),
                       _buildKpiMetricsRow(constraints.maxWidth),
                       const SizedBox(height: 32),
-                      _buildDataTableSection(context, constraints.maxWidth),
+                      if (_isLoading)
+                        const Padding(
+                          padding: EdgeInsets.all(48),
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      else if (_error != null)
+                        _buildLoadError()
+                      else
+                        _buildDataTableSection(context, constraints.maxWidth),
                     ],
                   ),
                 ),
@@ -164,7 +143,7 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
         ),
         const SizedBox(height: 6),
         Text(
-          'Control individual del ganado mediante chapeta única y sincronización offline/online.',
+          'Consulta y registra el ganado asociado a tu finca.',
           style: GoogleFonts.plusJakartaSans(
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -174,7 +153,7 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
       ],
     );
     final button = ElevatedButton.icon(
-      onPressed: () => _mostrarModalRegistrarAnimal(context),
+      onPressed: _isSaving ? null : () => _mostrarModalRegistrarAnimal(context),
       style: ElevatedButton.styleFrom(
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
@@ -215,24 +194,24 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
     final cards = [
       _buildKpiCard(
         title: 'Total Animales',
-        value: widget.totalAnimales,
-        subtitle: 'Inventario general activo',
+        value: _isLoading ? '—' : '${_animales.length}',
+        subtitle: 'Registrados en tu finca',
         icon: Icons.pets_rounded,
         iconBgColor: const Color(0xFFEFF6FF),
         iconColor: const Color(0xFF2563EB),
       ),
       _buildKpiCard(
         title: 'Sincronizados',
-        value: widget.sincronizadosCount,
-        subtitle: 'Actualizados en servidor',
+        value: _isLoading ? '—' : '${_animales.length}',
+        subtitle: 'Guardados en la base de datos',
         icon: Icons.cloud_done_rounded,
         iconBgColor: const Color(0xFFECFDF5),
         iconColor: const Color(0xFF059669),
       ),
       _buildKpiCard(
-        title: 'Pendientes Local',
-        value: widget.pendientesCount,
-        subtitle: 'A la espera de conexión',
+        title: 'Pendientes locales',
+        value: '0',
+        subtitle: 'Sin registros pendientes',
         icon: Icons.cloud_off_rounded,
         iconBgColor: const Color(0xFFFFFBEB),
         iconColor: const Color(0xFFD97706),
@@ -251,7 +230,7 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
     }
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (var i = 0; i < cards.length; i++) ...[
           if (i > 0) const SizedBox(width: 16),
@@ -391,35 +370,40 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                 headingRowColor: WidgetStateProperty.all(backgroundColor),
                 dataRowMinHeight: 64,
                 dataRowMaxHeight: 72,
-                columnSpacing: 22,
+                columnSpacing: 12,
                 columns: [
-                  _buildDataColumn('CHAPETA ÚNICA'),
-                  _buildDataColumn('ESPECIE'),
-                  _buildDataColumn('RAZA'),
-                  _buildDataColumn('SEXO'),
-                  _buildDataColumn('EDAD'),
-                  _buildDataColumn('PESO'),
-                  _buildDataColumn('ESTADO SINCRONIZACIÓN'),
-                  _buildDataColumn('ACCIONES'),
+                  _buildDataColumn('CHAPETA ÚNICA', 130),
+                  _buildDataColumn('ESPECIE', 100),
+                  _buildDataColumn('RAZA', 130),
+                  _buildDataColumn('SEXO', 90),
+                  _buildDataColumn('EDAD', 100),
+                  _buildDataColumn('PESO', 100),
+                  _buildDataColumn('ESTADO SINCRONIZACIÓN', 180),
+                  _buildDataColumn('ACCIONES', 90),
                 ],
                 rows: animalesMostrados.map((animal) {
                   return DataRow(
                     cells: [
                       DataCell(
-                        Text(
-                          animal.chapeta,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: primaryColor,
+                        SizedBox(
+                          width: 130,
+                          child: Text(
+                            animal.chapeta,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: primaryColor,
+                            ),
                           ),
                         ),
                       ),
-                      DataCell(_cellText(animal.especie)),
-                      DataCell(_cellText(animal.raza)),
-                      DataCell(_cellText(animal.sexo)),
-                      DataCell(_cellText(animal.edad)),
-                      DataCell(_cellText(animal.peso)),
+                      DataCell(_cellText(animal.especie, 100)),
+                      DataCell(_cellText(animal.raza, 130)),
+                      DataCell(_cellText(animal.sexo, 90)),
+                      DataCell(_cellText(animal.edad, 100)),
+                      DataCell(_cellText(animal.peso, 100)),
                       DataCell(_buildSyncBadge(animal.estadoSincronizacion)),
                       DataCell(
                         IconButton(
@@ -443,8 +427,10 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
     );
   }
 
-  DataColumn _buildDataColumn(String title) {
-    return DataColumn(label: _buildTableHeader(title));
+  DataColumn _buildDataColumn(String title, double width) {
+    return DataColumn(
+      label: SizedBox(width: width, child: _buildTableHeader(title)),
+    );
   }
 
   Widget _buildSearchField() {
@@ -492,10 +478,18 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
     );
   }
 
-  Widget _cellText(String value) {
-    return Text(
-      value,
-      style: GoogleFonts.plusJakartaSans(fontSize: 14),
+  Widget _cellText(String value, double width) {
+    return SizedBox(
+      width: width,
+      child: Text(
+        value,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 14,
+          color: const Color(0xFF334155),
+        ),
+      ),
     );
   }
 
@@ -505,14 +499,14 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
       style: GoogleFonts.plusJakartaSans(
         fontSize: 12,
         fontWeight: FontWeight.w800,
-        color: textMuted,
+        color: const Color(0xFF475569),
       ),
     );
   }
 
   Widget _buildEmptyState() {
     final message = _searchQuery.isEmpty
-        ? 'No hay animales registrados en el sistema'
+        ? 'Aún no hay animales registrados en tu finca.'
         : 'No se encontró ningún animal con la chapeta "$_searchQuery"';
 
     return Padding(
@@ -530,6 +524,51 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                 fontWeight: FontWeight.w600,
                 color: textMuted,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadError() {
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 560),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: borderColor),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off_outlined,
+                color: Color(0xFFB45309), size: 36),
+            const SizedBox(height: 12),
+            Text(
+              'No se pudieron cargar los animales',
+              style: GoogleFonts.plusJakartaSans(
+                color: primaryColor,
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                color: const Color(0xFF475569),
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: _loadAnimals,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Intentar de nuevo'),
             ),
           ],
         ),
@@ -692,79 +731,115 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
   Future<void> _mostrarModalRegistrarAnimal(BuildContext context) async {
     final formKey = GlobalKey<FormState>();
     final chapetaController = TextEditingController();
-    final especieController = TextEditingController(text: 'Bovino');
     final razaController = TextEditingController();
-    final edadController = TextEditingController();
+    final fechaController = TextEditingController();
     final pesoController = TextEditingController();
     String? sexoSeleccionado;
+    DateTime? fechaNacimiento;
 
     try {
-      final datos = await showDialog<Map<String, String>>(
+      final datos = await showDialog<Map<String, Object>>(
         context: context,
         barrierDismissible: false,
         builder: (dialogContext) => StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.white,
+              scrollable: true,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(20),
               ),
               title: Text(
-                'Registrar Nuevo Animal (HU-006)',
+                'Registrar animal',
                 style: GoogleFonts.plusJakartaSans(
                   fontWeight: FontWeight.w800,
                   color: primaryColor,
+                  fontSize: 20,
                 ),
               ),
-              content: SizedBox(
-                width: 440,
-                child: SingleChildScrollView(
+              content: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(context).height * 0.62,
+                ),
+                child: SizedBox(
+                  width: 500,
                   child: Form(
                     key: formKey,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'Especie: Bovino',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: primaryColor,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                         _buildFormField(
                           controller: chapetaController,
-                          label: 'Chapeta / Arete único',
+                          label: 'Chapeta / arete',
                           hint: 'Ej. CH-1027',
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Ingresa la chapeta del animal';
                             }
-                            final exists = widget.animales.any(
+                            final exists = _animales.any(
                               (animal) =>
                                   animal.chapeta.toLowerCase() ==
                                   value.trim().toLowerCase(),
                             );
-                            if (exists)
-                              // ignore: curly_braces_in_flow_control_structures
-                              return 'Esta chapeta ya está registrada';
-                            return null;
+                            return exists
+                                ? 'Esta chapeta ya está registrada'
+                                : null;
                           },
                         ),
-                        const SizedBox(height: 12),
-                        _buildFormField(
-                          controller: especieController,
-                          label: 'Especie',
-                          hint: 'Ej. Bovino, Bufalino',
-                          validator: _requiredValidator,
-                        ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
                         _buildFormField(
                           controller: razaController,
                           label: 'Raza',
                           hint: 'Ej. Brahman, Holstein',
                           validator: _requiredValidator,
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
                         DropdownButtonFormField<String>(
                           initialValue: sexoSeleccionado,
+                          dropdownColor: Colors.white,
+                          iconEnabledColor: accentColor,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: const Color(0xFF1E293B),
+                            fontSize: 14,
+                          ),
                           decoration: _formDecoration('Sexo'),
                           items: const [
                             DropdownMenuItem(
-                                value: 'Macho', child: Text('Macho')),
+                              value: 'Macho',
+                              child: Text(
+                                'Macho',
+                                style: TextStyle(color: primaryColor),
+                              ),
+                            ),
                             DropdownMenuItem(
-                                value: 'Hembra', child: Text('Hembra')),
+                              value: 'Hembra',
+                              child: Text(
+                                'Hembra',
+                                style: TextStyle(color: primaryColor),
+                              ),
+                            ),
                           ],
                           validator: (value) =>
                               value == null ? 'Selecciona el sexo' : null,
@@ -772,28 +847,69 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                             setDialogState(() => sexoSeleccionado = value);
                           },
                         ),
-                        const SizedBox(height: 12),
-                        _buildFormField(
-                          controller: edadController,
-                          label: 'Edad',
-                          hint: 'Ej. 24 meses',
-                          validator: _requiredValidator,
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          controller: fechaController,
+                          readOnly: true,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: const Color(0xFF1E293B),
+                            fontSize: 14,
+                          ),
+                          decoration:
+                              _formDecoration('Fecha de nacimiento').copyWith(
+                            hintText: 'Selecciona la fecha',
+                            suffixIcon: const Icon(
+                              Icons.calendar_today_outlined,
+                              size: 18,
+                              color: accentColor,
+                            ),
+                          ),
+                          validator: (_) => fechaNacimiento == null
+                              ? 'Selecciona la fecha de nacimiento'
+                              : null,
+                          onTap: () async {
+                            final selectedDate = await showDatePicker(
+                              context: context,
+                              initialDate: fechaNacimiento ?? DateTime.now(),
+                              firstDate: DateTime(1950),
+                              lastDate: DateTime.now(),
+                              builder: (context, child) => Theme(
+                                data: ThemeData.light().copyWith(
+                                  colorScheme: const ColorScheme.light(
+                                    primary: primaryColor,
+                                    onPrimary: Colors.white,
+                                    surface: Colors.white,
+                                    onSurface: Color(0xFF1E293B),
+                                  ),
+                                ),
+                                child: child!,
+                              ),
+                            );
+                            if (selectedDate != null) {
+                              setDialogState(() {
+                                fechaNacimiento = selectedDate;
+                                fechaController.text =
+                                    _formatDate(selectedDate);
+                              });
+                            }
+                          },
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
                         _buildFormField(
                           controller: pesoController,
-                          label: 'Peso (kg)',
+                          label: 'Peso actual (kg)',
                           hint: 'Ej. 450',
                           keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
+                            decimal: true,
+                          ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Ingresa el peso';
                             }
-                            final peso = double.tryParse(
+                            final weight = double.tryParse(
                               value.trim().replaceAll(',', '.'),
                             );
-                            if (peso == null || peso <= 0) {
+                            if (weight == null || weight <= 0) {
                               return 'Ingresa un peso válido mayor que cero';
                             }
                             return null;
@@ -804,48 +920,29 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                   ),
                 ),
               ),
+              actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: Text(
-                    'Cancelar',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontWeight: FontWeight.w700,
-                      color: textMuted,
-                    ),
-                  ),
+                  child: const Text('Cancelar'),
                 ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                  ),
-                  onPressed: () {
-                    if (!formKey.currentState!.validate()) return;
-                    Navigator.pop(dialogContext, {
-                      'chapeta': chapetaController.text.trim(),
-                      'especie': especieController.text.trim(),
-                      'raza': razaController.text.trim(),
-                      'sexo': sexoSeleccionado!,
-                      'edad': edadController.text.trim(),
-                      'peso':
-                          '${pesoController.text.trim().replaceAll(',', '.')} kg',
-                      'estadoSincronizacion': 'Pendiente Local',
-                    });
-                  },
-                  child: Text(
-                    'Guardar Animal',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                FilledButton.icon(
+                  onPressed: _isSaving
+                      ? null
+                      : () {
+                          if (!formKey.currentState!.validate()) return;
+                          Navigator.pop(dialogContext, {
+                            'chapeta': chapetaController.text.trim(),
+                            'raza': razaController.text.trim(),
+                            'sexo': sexoSeleccionado!,
+                            'fechaNacimiento': fechaNacimiento!,
+                            'pesoKg': double.parse(
+                              pesoController.text.trim().replaceAll(',', '.'),
+                            ),
+                          });
+                        },
+                  icon: const Icon(Icons.save_outlined),
+                  label: const Text('Guardar animal'),
                 ),
               ],
             );
@@ -854,38 +951,52 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
       );
 
       if (!mounted || datos == null) return;
-
-      final callback = widget.onGuardarAnimal;
-      if (callback == null) {
-        // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Formulario validado, pero falta conectar onGuardarAnimal en el widget padre.',
-            ),
-          ),
-        );
-        return;
-      }
-
-      callback(datos);
-      if (!mounted) return;
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Datos enviados al componente padre. El registro aún debe persistirse en la aplicación.',
-          ),
-        ),
+      setState(() {
+        _isSaving = true;
+        _error = null;
+      });
+      final animal = await _repository.createAnimal(
+        chapeta: datos['chapeta']! as String,
+        raza: datos['raza']! as String,
+        sexo: datos['sexo']! as String,
+        fechaNacimiento: datos['fechaNacimiento']! as DateTime,
+        pesoKg: datos['pesoKg']! as double,
       );
+      if (!mounted) return;
+      setState(() {
+        _animales.insert(0, animal);
+        _isSaving = false;
+      });
+      _showMessage('Animal registrado correctamente.');
+    } on ApiException catch (error) {
+      _finishSaveWithError(error.message);
+    } on FormatException catch (error) {
+      _finishSaveWithError(error.message);
+    } on Exception catch (error) {
+      _finishSaveWithError('No se pudo registrar el animal: $error');
     } finally {
       chapetaController.dispose();
-      especieController.dispose();
       razaController.dispose();
-      edadController.dispose();
+      fechaController.dispose();
       pesoController.dispose();
     }
   }
+
+  void _finishSaveWithError(String message) {
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+    _showMessage(message);
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  String _formatDate(DateTime date) =>
+      '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
 
   String? _requiredValidator(String? value) {
     if (value == null || value.trim().isEmpty) {
@@ -897,19 +1008,28 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
   InputDecoration _formDecoration(String label) {
     return InputDecoration(
       labelText: label,
+      labelStyle: GoogleFonts.plusJakartaSans(
+        color: const Color(0xFF475569),
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      ),
+      hintStyle: GoogleFonts.plusJakartaSans(
+        color: const Color(0xFF94A3B8),
+        fontSize: 13,
+      ),
       filled: true,
       fillColor: const Color(0xFFF8FAFC),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: borderColor),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: borderColor),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: primaryColor, width: 1.5),
       ),
     );
@@ -926,6 +1046,10 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
+      style: GoogleFonts.plusJakartaSans(
+        color: const Color(0xFF1E293B),
+        fontSize: 14,
+      ),
       decoration: _formDecoration(label).copyWith(hintText: hint),
     );
   }

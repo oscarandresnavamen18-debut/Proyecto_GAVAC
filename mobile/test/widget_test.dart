@@ -21,13 +21,45 @@ void main() {
     );
   });
 
+  testWidgets('GAVAC app keeps the light theme without a theme toggle',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const GAVACApp());
+
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(find.byKey(const ValueKey('theme-toggle')), findsNothing);
+    expect(app.theme?.colorScheme.primary, const Color(0xFF2E6B57));
+    expect(app.darkTheme, isNull);
+  });
+
   testWidgets('Reproduction screen renders without layout errors',
       (WidgetTester tester) async {
     await tester.pumpWidget(const MaterialApp(home: ReproduccionScreen()));
     await tester.pumpAndSettle();
     expect(find.text('Control de Eventos Reproductivos'), findsOneWidget);
     expect(find.text('Historial de Eventos Reproductivos'), findsOneWidget);
+    expect(find.text('No hay eventos registrados'), findsOneWidget);
+    expect(find.text('CH-1024'), findsNothing);
+    expect(find.text('CH-1025'), findsNothing);
+    expect(find.text('CH-1026'), findsNothing);
+    expect(find.text('0'), findsWidgets);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('reproduction registration does not report unsaved events',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: ReproduccionScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Registrar Evento'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'El registro de eventos reproductivos aún no está conectado a la base de datos.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('registrado exitosamente'), findsNothing);
   });
 
   testWidgets('login text remains readable when the system theme is dark',
@@ -44,8 +76,8 @@ void main() {
     await tester.pump();
 
     final field = tester.widget<TextField>(emailInput);
-    expect(field.style?.color, GavacColors.textPrimary);
+    expect(field.style?.color, const Color(0xFFF1F5F9));
     expect(field.cursorColor, GavacColors.primary);
-    expect(field.decoration?.fillColor, const Color(0xFFF8FAFC));
+    expect(field.decoration?.fillColor, const Color(0xFF1E293B));
   });
 }
