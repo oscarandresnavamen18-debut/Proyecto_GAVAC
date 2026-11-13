@@ -1,21 +1,18 @@
+
 import json
 from urllib.parse import urlsplit
-
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
 
 class Settings(BaseSettings):
     database_url: str = Field(min_length=1)
     jwt_secret_key: SecretStr = Field(min_length=32)
     jwt_expire_minutes: int = Field(default=60, gt=0)
-    environment: str = "production"
-    cors_origins: str = ""
+    environment: str = "development"
+    cors_origins: str = "http://localhost:3000,http://localhost:5173"
     recaptcha_secret_key: SecretStr = SecretStr("")
-    recaptcha_allowed_hostnames: str = (
-        "proyectogestionganadera-production.up.railway.app,localhost,127.0.0.1,testserver"
-    )
-
+    recaptcha_site_key: SecretStr = SecretStr("")
+    recaptcha_allowed_hostnames: str = "proyectogestionganadera-production.up.railway.app,localhost,127.0.0.1"
     smtp_host: str = ""
     smtp_port: int = Field(default=587, ge=1, le=65535)
     smtp_username: str = ""
@@ -23,7 +20,9 @@ class Settings(BaseSettings):
     smtp_from_email: str = ""
 
     model_config = SettingsConfigDict(
-        env_file=(".env", "../.env"), extra="ignore")
+        env_file=(".env", "../.env"),
+        extra="ignore",
+    )
 
     @field_validator("database_url", mode="before")
     @classmethod
@@ -32,9 +31,11 @@ class Settings(BaseSettings):
             value = str(value)
         value = value.strip("'\" \t\r\n")
         if value.startswith("postgres://"):
-            return value.replace("postgres://", "postgresql+psycopg://", 1)
-        if value.startswith("postgresql://") and not value.startswith("postgresql+psycopg://"):
-            return value.replace("postgresql://", "postgresql+psycopg://", 1)
+            value = value.replace("postgres://", "postgresql+psycopg://", 1)
+        elif value.startswith("postgresql://"):
+            value = value.replace("postgresql://", "postgresql+psycopg://", 1)
+        elif value.startswith("postgresql+asyncpg://"):
+            value = value.replace("postgresql+asyncpg://", "postgresql+psycopg://", 1)
         return value
 
     @field_validator("cors_origins", mode="before")
@@ -64,7 +65,6 @@ class Settings(BaseSettings):
             origin = configured_origin.strip()
             if not origin:
                 continue
-
             parsed = urlsplit(origin)
             hostname = parsed.hostname
             if (
@@ -78,22 +78,20 @@ class Settings(BaseSettings):
                 or parsed.fragment
             ):
                 raise ValueError(
-                    "CORS_ORIGINS debe contener orígenes HTTP(S) exactos, sin rutas ni comodines")
-
+                    "CORS_ORIGINS debe contener orígenes HTTP(S) exactos, sin rutas ni comodines"
+                )
             try:
                 parsed.port
             except ValueError as error:
-                raise ValueError(
-                    "CORS_ORIGINS contiene un puerto inválido") from error
+                raise ValueError("CORS_ORIGINS contiene un puerto inválido") from error
             if parsed.netloc.endswith(":"):
                 raise ValueError("CORS_ORIGINS contiene un puerto vacío")
-
-            if parsed.scheme == "http" and hostname.lower() not in {"localhost", "127.0.0.1", "::1"}:
-                raise ValueError(
-                    "Los orígenes HTTP solo se permiten en loopback")
-
+            if (
+                parsed.scheme == "http"
+                and hostname.lower() not in {"localhost", "127.0.0.1", "::1"}
+            ):
+                raise ValueError("Los orígenes HTTP solo se permiten en loopback")
             origins.append(origin.rstrip("/"))
-
         return ",".join(dict.fromkeys(origins))
 
     @property
@@ -110,14 +108,11 @@ class Settings(BaseSettings):
 
     @property
     def smtp_is_configured(self) -> bool:
-        return all(
-            (
-                self.smtp_host,
-                self.smtp_username,
-                self.smtp_password.get_secret_value(),
-                self.smtp_from_email,
-            )
-        )
-
+        return all((
+            self.smtp_host,
+            self.smtp_username,
+            self.smtp_password.get_secret_value(),
+            self.smtp_from_email,
+        ))
 
 settings = Settings()

@@ -1,27 +1,30 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-
+from sqlalchemy import create_engine, make_url
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.pool import StaticPool
 from app.config import settings
 
-DATABASE_URL = settings.database_url
+database_url = make_url(settings.database_url)
+environment = settings.environment.lower()
 
-# Configuración del motor según la base de datos utilizada.
-if DATABASE_URL.startswith("sqlite"):
+if database_url.get_backend_name() == "sqlite":
+    if environment != "test":
+        raise RuntimeError("La aplicación requiere PostgreSQL fuera del entorno de pruebas.")
     engine = create_engine(
-        DATABASE_URL,
+        database_url,
         connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+        echo=False,
     )
+elif database_url.get_backend_name() == "postgresql":
+    database_url = database_url.set(drivername="postgresql+psycopg")
+    engine = create_engine(database_url, echo=False, pool_pre_ping=True)
 else:
-    engine = create_engine(
-        DATABASE_URL,
-        pool_pre_ping=True,
-        pool_size=10,
-        max_overflow=20,
-    )
+    raise RuntimeError("Motor de base de datos no permitido. Revisa DATABASE_URL.")
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 def get_db():
     db = SessionLocal()
