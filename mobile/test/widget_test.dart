@@ -35,9 +35,9 @@ void main() {
       (WidgetTester tester) async {
     await tester.pumpWidget(const MaterialApp(home: ReproduccionScreen()));
     await tester.pumpAndSettle();
-    expect(find.text('Control de Eventos Reproductivos'), findsOneWidget);
-    expect(find.text('Historial de Eventos Reproductivos'), findsOneWidget);
-    expect(find.text('No hay eventos registrados'), findsOneWidget);
+    expect(find.text('Control Reproducción'), findsOneWidget);
+    expect(find.text('Historial Reproductivo'), findsOneWidget);
+    expect(find.text('No hay eventos reproductivos registrados'), findsOneWidget);
     expect(find.text('CH-1024'), findsNothing);
     expect(find.text('CH-1025'), findsNothing);
     expect(find.text('CH-1026'), findsNothing);
@@ -45,20 +45,18 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('reproduction registration does not report unsaved events',
+  testWidgets('reproduction registration opens event registration dialog',
       (WidgetTester tester) async {
     await tester.pumpWidget(const MaterialApp(home: ReproduccionScreen()));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Registrar Evento'));
+    final button = find.text('Registrar Evento').first;
+    await tester.ensureVisible(button);
+    await tester.tap(button);
     await tester.pumpAndSettle();
 
-    expect(
-      find.text(
-        'El registro de eventos reproductivos aún no está conectado a la base de datos.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Registrar Evento Reproductivo'), findsOneWidget);
+    expect(find.text('Guardar Evento'), findsOneWidget);
     expect(find.textContaining('registrado exitosamente'), findsNothing);
   });
 
