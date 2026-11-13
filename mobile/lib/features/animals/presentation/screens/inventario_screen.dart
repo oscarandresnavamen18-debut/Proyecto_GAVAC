@@ -20,6 +20,12 @@ class InventarioScreen extends StatefulWidget {
 }
 
 class _InventarioScreenState extends State<InventarioScreen> {
+  static const Color primaryColor = Color(0xFF1A3A32);
+  static const Color backgroundColor = Color(0xFFF7F9F7);
+  static const Color cardColor = Color(0xFFFFFFFF);
+  static const Color borderColor = Color(0xFFF1F5F9);
+  static const Color textMuted = Color(0xFF64748B);
+
   final _nameController = TextEditingController();
   final _quantityController = TextEditingController();
   List<InventoryItem> _items = [];
@@ -77,10 +83,13 @@ class _InventarioScreenState extends State<InventarioScreen> {
     final draft = await showDialog<_InventoryDraft>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          'Registrar insumo',
+          'Registrar Insumo',
           style: GoogleFonts.plusJakartaSans(
-            color: GavacColors.primary,
+            color: primaryColor,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -134,11 +143,16 @@ class _InventarioScreenState extends State<InventarioScreen> {
           ),
         ),
         actions: [
-          TextButton(
+          OutlinedButton(
             onPressed: () => Navigator.pop(dialogContext),
+            style: OutlinedButton.styleFrom(foregroundColor: primaryColor),
             child: const Text('Cancelar'),
           ),
           FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: primaryColor,
+              foregroundColor: Colors.white,
+            ),
             onPressed: _isSaving
                 ? null
                 : () {
@@ -192,6 +206,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
             child: const Text('Cancelar'),
           ),
           FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Retirar'),
           ),
@@ -223,37 +238,29 @@ class _InventarioScreenState extends State<InventarioScreen> {
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
-    final pagePadding = MediaQuery.sizeOf(context).width < 600 ? 16.0 : 32.0;
-
     return Scaffold(
-      backgroundColor: GavacColors.background,
+      backgroundColor: backgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(pagePadding),
+          padding: const EdgeInsets.all(32.0),
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1200),
+              constraints: const BoxConstraints(maxWidth: 1400),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const FeaturePageHeader(
-                    icon: Icons.inventory_2_outlined,
-                    title: 'Inventario',
-                    subtitle:
-                        'Organiza y lleva el control de los insumos y recursos de tu finca.',
-                  ),
-                  const SizedBox(height: 24),
+                  _buildHeader(),
+                  const SizedBox(height: 28),
                   _buildMetrics(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
                   FeaturePanel(
-                    title: 'Insumos registrados',
+                    title: 'Listado de Inventario',
                     subtitle:
                         'El inventario se actualiza y sincroniza con la finca.',
                     child: Column(
@@ -262,6 +269,17 @@ class _InventarioScreenState extends State<InventarioScreen> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: primaryColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 14,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
                             onPressed: _isSaving ? null : _showRegisterDialog,
                             icon: _isSaving
                                 ? const SizedBox(
@@ -269,11 +287,18 @@ class _InventarioScreenState extends State<InventarioScreen> {
                                     height: 18,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
                                     ),
                                   )
-                                : const Icon(Icons.add),
+                                : const Icon(Icons.add, size: 18),
                             label: Text(
-                              _isSaving ? 'Guardando...' : 'Nuevo insumo',
+                              _isSaving ? 'Guardando...' : 'Registrar Insumo',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         ),
@@ -303,43 +328,137 @@ class _InventarioScreenState extends State<InventarioScreen> {
     );
   }
 
-  Widget _buildMetrics() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const spacing = 12.0;
-        final cardWidth = (constraints.maxWidth - spacing) / 2;
-        final lowStockCount = _items.where((item) => item.isLowStock).length;
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        image: DecorationImage(
+          image: const AssetImage('assets/imagenes/imagenganado.png'),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              primaryColor.withValues(alpha: 0.95),
+              primaryColor.withValues(alpha: 0.65),
+              Colors.transparent,
+            ],
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        child: Row(
           children: [
-            SizedBox(
-              width: cardWidth,
-              child: FeatureMetricCard(
-                value: _isLoading ? '—' : '${_items.length}',
-                label: 'Insumos activos',
-                icon: Icons.inventory_2_outlined,
-                color: GavacColors.infoText,
-                backgroundColor: GavacColors.infoBg,
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.inventory_2_outlined,
+                color: Colors.white,
+                size: 36,
               ),
             ),
-            SizedBox(
-              width: cardWidth,
-              child: FeatureMetricCard(
-                value: _isLoading ? '—' : '$lowStockCount',
-                label: 'En nivel mínimo',
-                icon: Icons.warning_amber_outlined,
-                color: lowStockCount > 0
-                    ? GavacColors.warningText
-                    : GavacColors.successText,
-                backgroundColor: lowStockCount > 0
-                    ? GavacColors.warningBg
-                    : GavacColors.successBg,
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Módulo de Inventario',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Organiza y lleva el control de los insumos y recursos de tu finca.',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
-        );
-      },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetrics() {
+    final lowStockCount = _items.where((item) => item.isLowStock).length;
+    final optimalStockCount = _items.where((item) => !item.isLowStock).length;
+
+    final cards = [
+      _buildKpiCard(
+        title: 'Total Insumos',
+        value: _isLoading ? '0' : '${_items.length}',
+        subtitle: 'Total Insumos',
+        icon: Icons.inventory_2_outlined,
+        iconBgColor: const Color(0xFFEFF6FF),
+        iconColor: const Color(0xFF2563EB),
+      ),
+      _buildKpiCard(
+        title: 'Stock Óptimo',
+        value: _isLoading ? '0' : '$optimalStockCount',
+        subtitle: 'Stock Óptimo',
+        icon: Icons.check_circle_outline_rounded,
+        iconBgColor: const Color(0xFFECFDF5),
+        iconColor: const Color(0xFF059669),
+      ),
+      _buildKpiCard(
+        title: 'Stock Bajo',
+        value: _isLoading ? '0' : '$lowStockCount',
+        subtitle: 'Stock Bajo',
+        icon: Icons.warning_amber_rounded,
+        iconBgColor: const Color(0xFFFEF2F2),
+        iconColor: const Color(0xFFDC2626),
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) => FeatureMetricLayout(
+        cards: cards,
+        isCompact: constraints.maxWidth < 800,
+        horizontalSpacing: 14,
+        verticalSpacing: 12,
+      ),
+    );
+  }
+
+  Widget _buildKpiCard({
+    required String title,
+    required String value,
+    required String subtitle,
+    required IconData icon,
+    required Color iconBgColor,
+    required Color iconColor,
+  }) {
+    return FeatureKpiCard(
+      title: title,
+      value: value,
+      subtitle: subtitle,
+      icon: icon,
+      iconBgColor: iconBgColor,
+      iconColor: iconColor,
+      cardColor: cardColor,
+      borderColor: borderColor,
+      textColor: textMuted,
+      valueColor: primaryColor,
     );
   }
 }
@@ -368,8 +487,9 @@ class _InventoryItemTile extends StatelessWidget {
       ),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor:
-              isLowStock ? GavacColors.warningBg : GavacColors.infoBg,
+          backgroundColor: isLowStock
+              ? GavacColors.warningBg
+              : GavacColors.infoBg,
           child: Icon(
             Icons.inventory_2_outlined,
             color: isLowStock ? GavacColors.warningText : GavacColors.infoText,
@@ -412,10 +532,12 @@ class _StockBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        isLowStock ? GavacColors.warningText : GavacColors.successText;
-    final background =
-        isLowStock ? GavacColors.warningBg : GavacColors.successBg;
+    final color = isLowStock
+        ? GavacColors.warningText
+        : GavacColors.successText;
+    final background = isLowStock
+        ? GavacColors.warningBg
+        : GavacColors.successBg;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -450,17 +572,12 @@ class _InventoryEmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Tu inventario está vacío',
+            'Inventario vacío',
             style: GoogleFonts.plusJakartaSans(
               color: GavacColors.textPrimary,
               fontWeight: FontWeight.w700,
+              fontSize: 16,
             ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Registra el primer insumo para comenzar a organizar tus recursos.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: GavacColors.textSecondary, height: 1.5),
           ),
         ],
       ),

@@ -46,7 +46,7 @@ void main() {
     await tester.pumpAndSettle();
     final registerButton = find.widgetWithText(
       FilledButton,
-      'Nuevo insumo',
+      'Registrar Insumo',
     );
     await tester.ensureVisible(registerButton);
     await tester.tap(registerButton);
@@ -68,12 +68,13 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-          home: InventarioScreen(repository: _FakeInventoryRepository())),
+        home: InventarioScreen(repository: _FakeInventoryRepository()),
+      ),
     );
     await tester.pumpAndSettle();
     final registerButton = find.widgetWithText(
       FilledButton,
-      'Nuevo insumo',
+      'Registrar Insumo',
     );
     await tester.ensureVisible(registerButton);
     await tester.tap(registerButton);
@@ -84,7 +85,7 @@ void main() {
 
     expect(find.text('Ingresa el nombre del insumo.'), findsOneWidget);
     expect(find.text('Ingresa la cantidad.'), findsOneWidget);
-    expect(find.text('Registrar insumo'), findsOneWidget);
+    expect(find.text('Registrar Insumo'), findsWidgets);
   });
 
   testWidgets('inventory data reloads from its repository', (
