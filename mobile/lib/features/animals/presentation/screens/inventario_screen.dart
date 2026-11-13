@@ -333,8 +333,8 @@ class _InventarioScreenState extends State<InventarioScreen> {
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        image: DecorationImage(
-          image: const AssetImage('assets/imagenes/imagenganado.png'),
+        image: const DecorationImage(
+          image: AssetImage('assets/imagenes/imagenganado.png'),
           fit: BoxFit.cover,
         ),
       ),
