@@ -1,52 +1,114 @@
 # GAVAC — Gestión Ganadera
 
-Plataforma para la gestión ganadera con una API REST y una aplicación multiplataforma. El backend usa FastAPI y PostgreSQL; el cliente está desarrollado en Flutter.
+**Plataforma de gestión y administración ganadera**
 
-## Componentes
+GAVAC es una plataforma multiplataforma diseñada para facilitar la administración de la actividad ganadera mediante una API REST y una aplicación desarrollada en Flutter.
 
-- `backend/`: API, modelos, esquemas, autenticación, migraciones Alembic y pruebas.
-- `mobile/`: aplicación Flutter para Android, iOS, web y escritorio.
-- `docs/`: arquitectura, alcance, casos de uso, contrato de API y decisiones del proyecto.
-- `docker-compose.yml`: entorno local para PostgreSQL y la API.
-- `CONTRIBUTING.md`: flujo de ramas, revisiones y validaciones.
+Su arquitectura utiliza FastAPI, PostgreSQL y Flutter, ofreciendo una base tecnológica para gestionar la información y las operaciones del negocio ganadero.
+
+## Tecnologías
+
+- **Backend:** Python 3.12 y FastAPI.
+- **Base de datos:** PostgreSQL 16.
+- **ORM:** SQLAlchemy 2.0.
+- **Migraciones:** Alembic.
+- **Aplicación:** Flutter y Dart 3.
+- **Interfaz:** Material 3.
+- **Contenedores:** Docker Compose.
+- **Documentación API:** Swagger / OpenAPI.
+
+## Estructura del proyecto
+
+```text
+GAVAC/
+├── backend/                # API, modelos, autenticación y pruebas
+├── mobile/                 # Aplicación multiplataforma Flutter
+├── docs/                   # Documentación técnica
+├── .github/                # Configuración de GitHub
+├── docker-compose.yml      # Servicios locales
+├── .env.example            # Plantilla de configuración
+├── .gitignore
+├── README.md
+├── INSTRUCCIONES.md
+└── CONTRIBUTING.md
+```
 
 ## Requisitos
 
-- Docker Compose.
+Antes de iniciar necesitas:
+
+- Docker Desktop con Docker Compose.
 - Flutter SDK compatible con Dart 3.
-- Python 3.12 para ejecutar las pruebas del backend fuera de Docker.
+- Python 3.12 (para pruebas locales del backend).
+- Git.
 
-## Inicio rápido
+## Instalación y ejecución
 
-1. Crea la configuración local:
+### 1. Obtener el proyecto
 
-   ```powershell
-   Copy-Item .env.example .env
-   ```
+```powershell
+git clone URL_DEL_REPOSITORIO
+cd Proyecto_GAVAC
+```
 
-2. Edita `.env`. Establece una contraseña para PostgreSQL y un `JWT_SECRET_KEY` aleatorio de al menos 32 caracteres. No compartas ni confirmes el archivo `.env`.
+### 2. Configurar variables de entorno
 
-3. Inicia la base de datos y la API:
+```powershell
+Copy-Item .env.example .env
+```
 
-   ```powershell
-   docker compose up -d --build
-   ```
+Edita `.env` y configura:
 
-   La API está disponible en <http://localhost:8001/docs> y PostgreSQL en el puerto `5433`. Las migraciones se aplican al iniciar la API.
+- Credenciales de PostgreSQL.
+- `DATABASE_URL`.
+- `JWT_SECRET_KEY` con una clave aleatoria de al menos 32 caracteres.
 
-4. Inicia el cliente Flutter en otra terminal:
+No compartas el archivo `.env` ni publiques sus credenciales.
 
-   ```powershell
-   Set-Location mobile
-   flutter pub get
-   flutter run
-   ```
+### 3. Iniciar backend y base de datos
 
-   La URL de la API se configura en [api_client.dart](mobile/lib/core/network/api_client.dart). En Flutter Web puede reemplazarse con `--dart-define=API_BASE_URL=http://localhost:8001`.
+Desde la raíz del proyecto:
 
-## Validación
+```powershell
+docker compose up -d --build
+```
 
-Backend:
+Servicios locales:
+
+| Servicio | Dirección |
+| --- | --- |
+| API REST | <http://localhost:8001> |
+| Swagger | <http://localhost:8001/docs> |
+| Health Check | <http://localhost:8001/health> |
+| PostgreSQL | Puerto 5433 |
+
+Las migraciones Alembic se aplican durante el inicio de la API, según la configuración de Docker.
+
+### 4. Iniciar aplicación Flutter
+
+Abre otra terminal:
+
+```powershell
+Set-Location mobile
+flutter pub get
+flutter run
+```
+
+La URL del backend se configura en:
+
+`mobile/lib/core/network/api_client.dart`
+
+Para Flutter Web puedes establecer otra dirección:
+
+```powershell
+flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8001
+```
+
+## Validaciones
+
+### Backend
+
+Desde la raíz del proyecto:
 
 ```powershell
 Set-Location backend
@@ -55,7 +117,7 @@ python -m pytest -q
 alembic heads
 ```
 
-Aplicación móvil:
+### Flutter
 
 ```powershell
 Set-Location mobile
@@ -64,13 +126,50 @@ flutter analyze
 flutter test
 ```
 
-## Datos locales
+## Base de datos y registros
 
-Docker Compose conserva la base en el volumen `postgres_api_data`. Evita `docker compose down -v` si necesitas conservar esos datos. Para revisar los registros de la API:
+Docker Compose utiliza el volumen `postgres_api_data` para conservar los datos de PostgreSQL.
+
+Consultar registros:
 
 ```powershell
 docker compose logs -f api
 ```
 
-Consulta [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) para el diseño del sistema y [docs/CONTRATO_API.md](docs/CONTRATO_API.md) para el contrato de la API.
-Para publicar el proyecto en un repositorio nuevo, revisa [docs/CREAR_REPOSITORIO.md](docs/CREAR_REPOSITORIO.md).
+Consultar servicios:
+
+```powershell
+docker compose ps
+```
+
+Detener los servicios:
+
+```powershell
+docker compose down
+```
+
+**Importante:** no ejecutes `docker compose down -v` si necesitas conservar la información almacenada en PostgreSQL.
+
+## Documentación adicional
+
+Consulta los siguientes documentos para conocer el funcionamiento interno de GAVAC:
+
+- `INSTRUCCIONES.md`: configuración, desarrollo y despliegue.
+- `CONTRIBUTING.md`: normas de colaboración y flujo de trabajo.
+- `docs/ARQUITECTURA.md`: arquitectura general del sistema.
+- `docs/CONTRATO_API.md`: endpoints y contratos de la API.
+- `docs/CREAR_REPOSITORIO.md`: instrucciones para publicar el proyecto.
+
+## Seguridad
+
+- No publiques archivos `.env`.
+- No compartas claves JWT ni contraseñas.
+- Mantén las credenciales de producción en variables seguras.
+- Ejecuta las pruebas antes de publicar cambios.
+- No ejecutes migraciones de producción desde las pruebas locales.
+
+---
+
+**GAVAC — Gestión Ganadera**
+
+*Tecnología para organizar, administrar y optimizar la gestión ganadera.*
