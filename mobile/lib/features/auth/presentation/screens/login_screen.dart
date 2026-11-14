@@ -1,5 +1,5 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:http/http.dart' as http;
 
 import 'dart:convert';
@@ -12,6 +12,24 @@ import '../../../../core/widgets/gavac_brand.dart';
 import '../widgets/captcha_widget.dart';
 
 String get _apiBaseUrl => ApiClient.baseUrl;
+
+/// Tipos de usuario que pueden iniciar sesión. El valor coincide con el enum
+/// `UserRole` del backend; "Trabajador de campo" corresponde a `MAYORDOMO`.
+enum LoginUserType {
+  admin('ADMIN', 'Administrador', Icons.admin_panel_settings_outlined),
+  trabajadorCampo(
+    'MAYORDOMO',
+    'Trabajador de campo',
+    Icons.agriculture_outlined,
+  ),
+  veterinario('VETERINARIO', 'Veterinario', Icons.medical_services_outlined);
+
+  const LoginUserType(this.apiValue, this.label, this.icon);
+
+  final String apiValue;
+  final String label;
+  final IconData icon;
+}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,6 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
+  LoginUserType? _userType;
   String? _captchaToken;
   VoidCallback? _resetCaptcha;
 
@@ -34,6 +53,8 @@ class _LoginScreenState extends State<LoginScreen> {
   static const String welcomeTitle = 'Bienvenido';
   static const String welcomeSubtitle =
       'Ingresa tus credenciales para acceder.';
+  static const String userTypeLabel = 'Tipo de usuario';
+  static const String userTypeHint = 'Selecciona tu tipo de usuario';
   static const String emailLabel = 'Correo Electrónico';
   static const String emailHint = 'usuario@gavac.pro';
   static const String passwordLabel = 'Contraseña';
@@ -75,22 +96,31 @@ class _LoginScreenState extends State<LoginScreen> {
         body: jsonEncode({
           'email': _emailController.text.trim().replaceAll(' ', ''),
           'password': _passwordController.text,
+          'role': _userType!.apiValue,
           if (kIsWeb) 'captcha_token': _captchaToken,
         }),
       );
       if (!mounted) return;
       if (response.statusCode == 200) {
-        AppSession.accessToken =
-            (jsonDecode(response.body) as Map<String, dynamic>)['access_token']
-                as String;
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        AppSession.accessToken = body['access_token'] as String;
+        AppSession.role = body['role'] as String? ?? _userType!.apiValue;
+        try {
+          await AppSession.loadProfile();
+        } catch (error) {
+          // El dashboard funciona sin el perfil; el backend sigue validando permisos.
+          debugPrint('No se pudo cargar el perfil: $error');
+        }
+        if (!mounted) return;
         Navigator.pushReplacementNamed(context, '/dashboard');
       } else {
         _resetCaptcha?.call();
-        _showMessage(
-          response.statusCode == 401
-              ? 'Correo o contraseña incorrectos.'
-              : 'No se pudo iniciar sesión. Inténtalo de nuevo.',
-        );
+        _showMessage(switch (response.statusCode) {
+          401 => 'Correo o contraseña incorrectos.',
+          403 =>
+            'Esta cuenta no está registrada como ${_userType!.label.toLowerCase()}.',
+          _ => 'No se pudo iniciar sesión. Inténtalo de nuevo.',
+        });
       }
     } on http.ClientException {
       if (mounted) {
@@ -358,6 +388,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 48),
 
+                      _buildUserTypeField(),
+                      const SizedBox(height: 24),
+
                       _buildTextField(
                         label: emailLabel,
                         hint: emailHint,
@@ -486,6 +519,9 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 40),
 
+              _buildUserTypeField(),
+              const SizedBox(height: 20),
+
               _buildTextField(
                 label: emailLabel,
                 hint: emailHint,
@@ -562,6 +598,64 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  InputBorder _fieldBorderStyle({Color? color, double width = 1}) =>
+      OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: color ?? _fieldBorder, width: width),
+      );
+
+  Widget _buildUserTypeField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          userTypeLabel,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: _formText,
+          ),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<LoginUserType>(
+          key: const Key('login_user_type'),
+          initialValue: _userType,
+          isExpanded: true,
+          dropdownColor: _formBackground,
+          style: TextStyle(color: _formText, fontSize: 16),
+          hint: Text(userTypeHint, style: TextStyle(color: _mutedText)),
+          decoration: InputDecoration(
+            prefixIcon: Icon(
+              _userType?.icon ?? Icons.badge_outlined,
+              color: _mutedText,
+            ),
+            filled: true,
+            fillColor: _fieldBackground,
+            border: _fieldBorderStyle(),
+            enabledBorder: _fieldBorderStyle(),
+            focusedBorder: _fieldBorderStyle(
+              color: GavacColors.primary,
+              width: 2,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+          items: [
+            for (final type in LoginUserType.values)
+              DropdownMenuItem(value: type, child: Text(type.label)),
+          ],
+          onChanged: _isLoading
+              ? null
+              : (value) => setState(() => _userType = value),
+          validator: (value) =>
+              value == null ? 'Selecciona el tipo de usuario' : null,
+        ),
+      ],
     );
   }
 

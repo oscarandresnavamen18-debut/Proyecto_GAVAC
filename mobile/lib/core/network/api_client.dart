@@ -47,6 +47,24 @@ class ApiClient {
         'El servidor devolvió una respuesta no válida.');
   }
 
+  static Future<Map<String, dynamic>> patch(
+    String endpoint,
+    Map<String, dynamic> body, {
+    String? token,
+  }) async {
+    final response = await _send(
+      () => http.patch(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: _headers(token, json: true),
+        body: jsonEncode(body),
+      ),
+    );
+    final data = _decodeResponse(response);
+    if (data is Map<String, dynamic>) return data;
+    throw const FormatException(
+        'El servidor devolvió una respuesta no válida.');
+  }
+
   static Future<dynamic> get(String endpoint, {String? token}) async {
     final response = await _send(
       () => http.get(

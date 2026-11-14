@@ -1,26 +1,54 @@
+/// Roles que el administrador puede asignar. El valor coincide con el backend;
+/// "Trabajador de campo" corresponde a `MAYORDOMO`.
+const Map<String, String> rolesAsignables = {
+  'VETERINARIO': 'Veterinario',
+  'MAYORDOMO': 'Trabajador de campo',
+};
+
+/// Módulos con permiso configurable: clave del backend → nombre visible.
+const Map<String, String> modulosConPermiso = {
+  'registro': 'Registro animal',
+  'sanidad': 'Sanidad',
+  'reproduccion': 'Reproducción',
+  'produccion': 'Producción',
+  'insumos': 'Insumos',
+  'reportes': 'Reportes',
+};
+
+String etiquetaRol(String rol) => switch (rol) {
+      'ADMIN' => 'Administrador',
+      _ => rolesAsignables[rol] ?? rol,
+    };
+
 class AdminUsuarioModel {
-  final String id;
+  final int id;
   final String nombre;
   final String correo;
-  final String fincaId;
+  final int? fincaId;
   final String rol;
-  bool activo;
-  Map<String, bool> permisos;
+  final bool activo;
+  final List<String> permisos;
 
-  AdminUsuarioModel({
+  const AdminUsuarioModel({
     required this.id,
     required this.nombre,
     required this.correo,
     required this.fincaId,
     required this.rol,
-    this.activo = true,
-    Map<String, bool>? permisos,
-  }) : permisos = permisos ?? {
-         'registro': true,
-         'sanidad': true,
-         'productividad': true,
-         'reproduccion': true,
-         'reportes': true,
-         'admin': true,
-       };
+    required this.activo,
+    required this.permisos,
+  });
+
+  factory AdminUsuarioModel.fromJson(Map<String, dynamic> json) =>
+      AdminUsuarioModel(
+        id: json['id'] as int,
+        nombre: json['full_name'] as String,
+        correo: json['email'] as String,
+        fincaId: json['farm_id'] as int?,
+        rol: json['role'] as String,
+        activo: json['is_active'] as bool? ?? true,
+        permisos: (json['permissions'] as List<dynamic>? ?? const [])
+            .cast<String>()
+            .toList(),
+      );
 }

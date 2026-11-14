@@ -98,7 +98,11 @@ class AnimalApiService implements AnimalRepository {
         'Tu cuenta no tiene una finca asignada. Contacta al administrador.',
       );
     }
-    final farm = farms.first as Map<String, dynamic>;
+    // El administrador puede tener varias fincas: se usa la finca activa.
+    final farm = farms.cast<Map<String, dynamic>>().firstWhere(
+          (f) => f['id'] == AppSession.farmId,
+          orElse: () => farms.first as Map<String, dynamic>,
+        );
     final response = await ApiClient.post(
       '/api/v1/animals',
       {

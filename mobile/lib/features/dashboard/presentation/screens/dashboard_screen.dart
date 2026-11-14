@@ -28,16 +28,29 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
+  // 'module' es la clave de permiso del backend; null = siempre visible.
   final List<Map<String, dynamic>> _menuItems = [
-    {'icon': Icons.dashboard_outlined, 'label': 'Inicio'},
-    {'icon': Icons.person_add_outlined, 'label': 'Registro'},
-    {'icon': Icons.shield_outlined, 'label': 'Salud'},
-    {'icon': Icons.favorite_border, 'label': 'Reproducción'},
-    {'icon': Icons.water_drop_outlined, 'label': 'Producción'},
-    {'icon': Icons.inventory_2_outlined, 'label': 'Inventario'},
-    {'icon': Icons.bar_chart_outlined, 'label': 'Reportes'},
-    {'icon': Icons.admin_panel_settings_outlined, 'label': 'Administración'},
+    {'icon': Icons.dashboard_outlined, 'label': 'Inicio', 'module': null},
+    {'icon': Icons.person_add_outlined, 'label': 'Registro', 'module': 'registro'},
+    {'icon': Icons.shield_outlined, 'label': 'Salud', 'module': 'sanidad'},
+    {'icon': Icons.favorite_border, 'label': 'Reproducción', 'module': 'reproduccion'},
+    {'icon': Icons.water_drop_outlined, 'label': 'Producción', 'module': 'produccion'},
+    {'icon': Icons.inventory_2_outlined, 'label': 'Inventario', 'module': 'insumos'},
+    {'icon': Icons.bar_chart_outlined, 'label': 'Reportes', 'module': 'reportes'},
+    {'icon': Icons.admin_panel_settings_outlined, 'label': 'Administración', 'module': 'admin'},
   ];
+
+  /// Índices del menú que el usuario puede ver según su rol y permisos.
+  List<int> get _visibleMenuIndexes => [
+        for (var i = 0; i < _menuItems.length; i++)
+          if (_canSee(_menuItems[i]['module'] as String?)) i,
+      ];
+
+  bool _canSee(String? module) {
+    if (module == null) return true;
+    if (module == 'admin') return AppSession.isAdmin;
+    return AppSession.canAccess(module);
+  }
 
   late final List<Widget Function()> _pageBuilders;
   late final List<Widget?> _pages;
@@ -320,8 +333,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 30),
           Expanded(
             child: ListView.builder(
-              itemCount: _menuItems.length,
-              itemBuilder: (context, index) {
+              itemCount: _visibleMenuIndexes.length,
+              itemBuilder: (context, position) {
+                final index = _visibleMenuIndexes[position];
                 final isSelected = index == _selectedIndex;
                 return Padding(
                   padding: const EdgeInsets.symmetric(

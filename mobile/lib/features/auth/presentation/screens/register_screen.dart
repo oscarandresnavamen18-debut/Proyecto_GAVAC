@@ -83,6 +83,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         final token = data['access_token'] as String;
 
         AppSession.accessToken = token;
+        AppSession.role = data['role'] as String? ?? 'ADMIN';
         AppSession.userName = _nombreController.text.trim();
 
         final farmName = _fincaController.text.trim();
@@ -103,7 +104,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             if (farmResponse.statusCode == 201) {
               final farmData =
                   jsonDecode(farmResponse.body) as Map<String, dynamic>;
-              AppSession.farmName = farmData['nombre'] as String? ?? farmName;
+              AppSession.farmName = farmData['name'] as String? ?? farmName;
+              AppSession.farmId = farmData['id'] as int?;
               farmCreated = true;
             } else {
               debugPrint(
