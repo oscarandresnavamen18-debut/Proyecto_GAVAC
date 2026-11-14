@@ -2,7 +2,7 @@ import smtplib
 import ssl
 from email.message import EmailMessage
 
-from app.config import settings
+from app.core.config import settings
 
 
 def send_password_reset_email(recipient: str, code: str) -> None:

@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db import get_db
-from app.deps import require_module
+from app.core.db import get_db
+from app.core.deps import require_module
 from app.models import Animal, BreedingRecord, CattleGender, User
 from app.routers.farms import get_authorized_farm
 from app.routers.health_records import get_farm_animal, to_date, to_datetime

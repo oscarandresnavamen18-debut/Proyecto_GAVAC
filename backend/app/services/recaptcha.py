@@ -1,6 +1,6 @@
 ﻿import httpx
 
-from app.config import settings
+from app.core.config import settings
 
 
 VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"

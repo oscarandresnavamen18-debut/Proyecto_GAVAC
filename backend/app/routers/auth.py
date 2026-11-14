@@ -8,12 +8,12 @@ from sqlalchemy import and_, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.db import get_db
-from app.deps import current_user
-from app.mailer import send_alternate_email_verification, send_password_reset_email
+from app.core.db import get_db
+from app.core.deps import current_user
+from app.services.mailer import send_alternate_email_verification, send_password_reset_email
 from app.models import AlternateEmailVerificationCode, PasswordResetCode, User, UserRole
-from app.permissions import effective_permissions
-from app.recaptcha import RecaptchaRejectedError, RecaptchaUnavailableError, verify_recaptcha
+from app.core.permissions import effective_permissions
+from app.services.recaptcha import RecaptchaRejectedError, RecaptchaUnavailableError, verify_recaptcha
 from app.schemas import (
     AlternateEmailConfirm,
     AlternateEmailRequest,
@@ -25,7 +25,7 @@ from app.schemas import (
     TokenOut,
     UserRead,
 )
-from app.security import (
+from app.core.security import (
     create_access_token,
     hash_one_time_code,
     hash_password,

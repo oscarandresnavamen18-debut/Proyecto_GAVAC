@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
-from app.db import get_db
-from app.deps import current_user, require_module
+from app.core.db import get_db
+from app.core.deps import current_user, require_module
 from app.models import InventoryItem, InventoryMovement, User
 from app.routers.farms import get_authorized_farm
 from app.schemas import InventoryCreate, InventoryRead

@@ -1,8 +1,8 @@
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
-from app.config import settings
-from app.db import Base
+from app.core.config import settings
+from app.core.db import Base
 from app.models import User, Farm, Animal, AnimalEvent, PasswordResetCode  # noqa: F401
 
 config = context.config

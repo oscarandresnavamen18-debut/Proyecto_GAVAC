@@ -89,6 +89,13 @@ class FarmRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class FarmSummary(BaseModel):
+    farm_id: int
+    total_animales: int
+    por_estado: dict[str, int]
+    total_eventos: int
+
+
 # ANIMALES
 
 class AnimalBase(BaseModel):

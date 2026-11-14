@@ -4,11 +4,11 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
-from app.db import get_db
-from app.deps import require_module
+from app.core.db import get_db
+from app.core.deps import require_module
 from app.models import Farm, User
-from app.permissions import has_module
-from app.reports import (
+from app.core.permissions import has_module
+from app.services.reports import (
     REPORTS,
     build_general,
     build_report,

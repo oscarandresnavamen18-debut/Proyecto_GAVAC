@@ -3,13 +3,13 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.db import get_db
-from app.deps import require_admin
+from app.core.db import get_db
+from app.core.deps import require_admin
 from app.models import Farm, User, UserRole
 from app.routers.auth import user_read
 from app.routers.farms import get_owned_farm
 from app.schemas import ManagedUserCreate, ManagedUserUpdate, UserRead
-from app.security import hash_password
+from app.core.security import hash_password
 
 router = APIRouter(prefix="/api/v1/users", tags=["Administración de usuarios"])
 

@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Optional
 from sqlalchemy import JSON, Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Numeric, String, Text, UniqueConstraint, func, text
 from sqlalchemy.orm import Mapped, mapped_column
-from app.db import Base
+from app.core.db import Base
 
 
 def utc_now():

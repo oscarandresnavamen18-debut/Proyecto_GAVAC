@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.db import get_db
-from app.deps import current_user, require_admin
-from app.models import Farm, User, UserRole
-from app.schemas import FarmCreate, FarmRead, FarmUpdate
+from app.core.db import get_db
+from app.core.deps import current_user, require_admin
+from app.models import Animal, AnimalEvent, Farm, User, UserRole
+from app.schemas import FarmCreate, FarmRead, FarmSummary, FarmUpdate
 
 router = APIRouter(prefix="/api/v1/farms", tags=["Fincas"])
 
@@ -89,3 +89,34 @@ def activate_farm(farm_id: int, db: Session = Depends(get_db), user: User = Depe
     db.commit()
     db.refresh(farm)
     return farm
+
+
+@router.get("/{farm_id}", response_model=FarmRead)
+def get_farm(farm_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    return get_authorized_farm(db, user, farm_id)
+
+
+@router.get("/{farm_id}/summary", response_model=FarmSummary)
+def farm_summary(farm_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    """Animales activos por estado y total de eventos de la finca."""
+    get_authorized_farm(db, user, farm_id)
+
+    filas = db.execute(
+        select(Animal.status, func.count(Animal.id))
+        .where(Animal.finca_id == farm_id, Animal.is_active.is_(True))
+        .group_by(Animal.status)
+    ).all()
+    por_estado = {status_val: total for status_val, total in filas}
+
+    total_eventos = db.scalar(
+        select(func.count(AnimalEvent.id))
+        .join(Animal, Animal.id == AnimalEvent.animal_id)
+        .where(Animal.finca_id == farm_id)
+    ) or 0
+
+    return FarmSummary(
+        farm_id=farm_id,
+        total_animales=sum(por_estado.values()),
+        por_estado=por_estado,
+        total_eventos=total_eventos,
+    )

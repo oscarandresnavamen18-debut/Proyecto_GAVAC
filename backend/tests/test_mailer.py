@@ -1,7 +1,7 @@
 from pydantic import SecretStr
 
-from app.config import settings
-from app.mailer import send_password_reset_email
+from app.core.config import settings
+from app.services.mailer import send_password_reset_email
 
 
 def test_reset_email_uses_authenticated_starttls(monkeypatch):
@@ -34,7 +34,7 @@ def test_reset_email_uses_authenticated_starttls(monkeypatch):
     monkeypatch.setattr(settings, "smtp_username", "mailer")
     monkeypatch.setattr(settings, "smtp_password", SecretStr("mail-secret"))
     monkeypatch.setattr(settings, "smtp_from_email", "noreply@test.invalid")
-    monkeypatch.setattr("app.mailer.smtplib.SMTP", FakeSMTP)
+    monkeypatch.setattr("app.services.mailer.smtplib.SMTP", FakeSMTP)
 
     send_password_reset_email("user@test.invalid", "01234567")
 

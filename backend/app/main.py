@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import settings
+from app.core.config import settings
 from app.routers import (
-    animals, auth, breeding, events, extras, farms, health_records, inventory, production,
+    animals, auth, breeding, events, farms, health_records, inventory, production,
     reports, social_auth, users,
 )
 
@@ -27,7 +27,6 @@ for router in (
     farms.router,
     animals.router,
     events.router,
-    extras.router,
     inventory.router,
     production.router,
     health_records.router,

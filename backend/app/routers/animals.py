@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.db import get_db
-from app.deps import current_user, require_module
-from app.models import Animal, User
+from app.core.db import get_db
+from app.core.deps import current_user, require_module
+from app.models import Animal, User, utc_now
 from app.routers.farms import get_authorized_farm
 from app.schemas import AnimalCreate, AnimalPatch, AnimalRead
 
@@ -80,3 +80,18 @@ def update_animal(animal_id: int, data: AnimalPatch, db: Session = Depends(get_d
         )
     db.refresh(animal)
     return animal
+
+
+@router.delete("/{animal_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_animal(animal_id: int, db: Session = Depends(get_db), user: User = Depends(require_module("registro"))):
+    animal = db.get(Animal, animal_id)
+    if animal is None or not animal.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Animal no encontrado")
+    get_authorized_farm(db, user, animal.finca_id)
+    # Borrado lógico: se conserva el historial sanitario, reproductivo y de
+    # producción del animal para los reportes.
+    animal.is_active = False
+    animal.deleted_at = utc_now()
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
