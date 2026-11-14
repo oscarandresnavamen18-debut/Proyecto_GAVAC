@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.deps import current_user
 from app.mailer import send_alternate_email_verification, send_password_reset_email
-from app.models import AlternateEmailVerificationCode, PasswordResetCode, User
+from app.models import AlternateEmailVerificationCode, PasswordResetCode, User, UserRole
+from app.permissions import effective_permissions
 from app.recaptcha import RecaptchaRejectedError, RecaptchaUnavailableError, verify_recaptcha
 from app.schemas import (
     AlternateEmailConfirm,
@@ -33,6 +34,12 @@ from app.security import (
 )
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Autenticación"])
+
+
+def user_read(user: User) -> UserRead:
+    data = UserRead.model_validate(user)
+    data.permissions = effective_permissions(user)
+    return data
 
 logger = logging.getLogger(__name__)
 PASSWORD_RESET_RESPONSE = {
@@ -60,6 +67,9 @@ def register(data: RegisterIn, db: Session = Depends(get_db)):
         full_name=data.nombre.strip(),
         email=str(data.email).lower(),
         hashed_password=hash_password(data.password),
+        # El registro público lo realiza el administrador de la finca; los
+        # veterinarios y trabajadores de campo los crea él desde Administración.
+        role=UserRole.ADMIN,
     )
     db.add(user)
     try:
@@ -69,7 +79,10 @@ def register(data: RegisterIn, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail="El correo ya está registrado")
-    return TokenOut(access_token=create_access_token(user.id, user.token_version))
+    return TokenOut(
+        access_token=create_access_token(user.id, user.token_version),
+        role=user.role,
+    )
 
 
 @router.post("/login", response_model=TokenOut)
@@ -104,7 +117,20 @@ def login(data: LoginIn, db: Session = Depends(get_db)):
     if user is None or user.hashed_password is None or not verify_password(data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales inválidas")
-    return TokenOut(access_token=create_access_token(user.id, user.token_version))
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tu cuenta está desactivada. Contacta al administrador.",
+        )
+    if data.role is not None and user.role != data.role:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="El tipo de usuario seleccionado no corresponde a esta cuenta",
+        )
+    return TokenOut(
+        access_token=create_access_token(user.id, user.token_version),
+        role=user.role,
+    )
 
 
 @router.post(
@@ -369,4 +395,4 @@ def confirm_alternate_email(
 
 @router.get("/me", response_model=UserRead)
 def get_me(user: User = Depends(current_user)):
-    return user
+    return user_read(user)

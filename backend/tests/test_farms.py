@@ -14,10 +14,12 @@ def test_farm_lifecycle(client):
     assert farm_res.status_code == 201
     farm_id = farm_res.json()["id"]
 
+    # El administrador puede tener varias fincas; la primera queda como activa.
     farm2_res = client.post("/api/v1/farms", json={"nombre": "Finca La Segunda"}, headers=headers)
-    assert farm2_res.status_code == 403
+    assert farm2_res.status_code == 201
+    farm2_id = farm2_res.json()["id"]
 
     list_res = client.get("/api/v1/farms", headers=headers)
     assert list_res.status_code == 200
-    assert len(list_res.json()) == 1
-    assert list_res.json()[0]["id"] == farm_id
+    assert [farm["id"] for farm in list_res.json()] == [farm_id, farm2_id]
+    assert client.get("/api/v1/auth/me", headers=headers).json()["farm_id"] == farm_id

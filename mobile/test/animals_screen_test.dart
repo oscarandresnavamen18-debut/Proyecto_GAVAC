@@ -144,11 +144,90 @@ void main() {
     expect(tester.widget<TextField>(weightField).controller!.text, isEmpty);
     await tester.tap(find.text('Guardar Animal'));
     await tester.pumpAndSettle();
-    expect(find.text('Ingresa un peso válido'), findsOneWidget);
+    expect(find.text('Ingresa un peso válido, ej: 230'), findsOneWidget);
 
     await tester.enterText(weightField, '532.5');
     expect(tester.widget<TextField>(weightField).controller!.text, '532.5');
     expect(tester.takeException(), isNull);
+  });
+
+  test('weight accepts units and decimal commas', () {
+    expect(parsePesoKg('230'), 230);
+    expect(parsePesoKg('230KG'), 230);
+    expect(parsePesoKg(' 230 kg '), 230);
+    expect(parsePesoKg('230,5 kilos'), 230.5);
+    expect(parsePesoKg('0'), isNull);
+    expect(parsePesoKg('doscientos'), isNull);
+    expect(parsePesoKg(''), isNull);
+  });
+
+  testWidgets('editing an animal saves the new weight through the repository', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1536, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repository = _FakeAnimalRepository([
+      AnimalRecord(
+        id: 8,
+        chapeta: 'GAV-008',
+        raza: 'Brahman',
+        sexo: 'Hembra',
+        fechaNacimiento: DateTime(2023, 5, 1),
+        pesoKg: 410,
+      ),
+    ]);
+    await tester.pumpWidget(
+      MaterialApp(home: AnimalesScreen(repository: repository)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Editar animal'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Peso actual (kg) *'),
+      '230KG',
+    );
+    await tester.tap(find.text('Actualizar Animal'));
+    await tester.pumpAndSettle();
+
+    expect(repository.updates, {8: 230});
+    expect(find.text('230 kg'), findsOneWidget);
+    expect(find.text('Datos del animal actualizados.'), findsOneWidget);
+  });
+
+  testWidgets('deleting an animal calls the repository', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1536, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repository = _FakeAnimalRepository([
+      AnimalRecord(
+        id: 8,
+        chapeta: 'GAV-008',
+        raza: 'Brahman',
+        sexo: 'Hembra',
+        fechaNacimiento: DateTime(2023, 5, 1),
+        pesoKg: 410,
+      ),
+    ]);
+    await tester.pumpWidget(
+      MaterialApp(home: AnimalesScreen(repository: repository)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Eliminar animal'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Eliminar'));
+    await tester.pumpAndSettle();
+
+    expect(repository.deleted, [8]);
+    expect(find.text('GAV-008'), findsNothing);
   });
 }
 
@@ -156,6 +235,31 @@ class _FakeAnimalRepository implements AnimalRepository {
   _FakeAnimalRepository(this.animals);
 
   final List<AnimalRecord> animals;
+  final updates = <int, double>{};
+  final deleted = <int>[];
+
+  @override
+  Future<AnimalRecord> updateAnimal(
+    int id, {
+    required String chapeta,
+    required String raza,
+    required String sexo,
+    required DateTime fechaNacimiento,
+    required double pesoKg,
+  }) async {
+    updates[id] = pesoKg;
+    return AnimalRecord(
+      id: id,
+      chapeta: chapeta,
+      raza: raza,
+      sexo: sexo,
+      fechaNacimiento: fechaNacimiento,
+      pesoKg: pesoKg,
+    );
+  }
+
+  @override
+  Future<void> deleteAnimal(int id) async => deleted.add(id);
 
   @override
   Future<List<AnimalRecord>> listAnimals() async => animals;
@@ -181,6 +285,20 @@ class _FakeAnimalRepository implements AnimalRepository {
 class _RecoveringAnimalRepository implements AnimalRepository {
   bool shouldFail = true;
   int loadAttempts = 0;
+
+  @override
+  Future<AnimalRecord> updateAnimal(
+    int id, {
+    required String chapeta,
+    required String raza,
+    required String sexo,
+    required DateTime fechaNacimiento,
+    required double pesoKg,
+  }) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> deleteAnimal(int id) => throw UnimplementedError();
 
   @override
   Future<List<AnimalRecord>> listAnimals() async {

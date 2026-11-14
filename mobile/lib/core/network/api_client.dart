@@ -47,6 +47,43 @@ class ApiClient {
         'El servidor devolvió una respuesta no válida.');
   }
 
+  static Future<Map<String, dynamic>> patch(
+    String endpoint,
+    Map<String, dynamic> body, {
+    String? token,
+  }) async {
+    final response = await _send(
+      () => http.patch(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: _headers(token, json: true),
+        body: jsonEncode(body),
+      ),
+    );
+    final data = _decodeResponse(response);
+    if (data is Map<String, dynamic>) return data;
+    throw const FormatException(
+        'El servidor devolvió una respuesta no válida.');
+  }
+
+  /// Descarga un archivo binario (por ejemplo, un reporte PDF o Excel).
+  static Future<Uint8List> getBytes(String endpoint, {String? token}) async {
+    final response = await _send(
+      () => http.get(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: _headers(token),
+      ),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      // Los errores del API llegan en JSON; se reutiliza el mismo manejo.
+      _decodeResponse(response);
+      throw ApiException(
+        response.statusCode,
+        'Error del servidor (${response.statusCode}).',
+      );
+    }
+    return response.bodyBytes;
+  }
+
   static Future<dynamic> get(String endpoint, {String? token}) async {
     final response = await _send(
       () => http.get(

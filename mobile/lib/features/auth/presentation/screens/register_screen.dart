@@ -6,7 +6,6 @@ import 'package:http/http.dart' as http;
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/gavac_colors.dart';
 import '../../../../core/utils/app_session.dart';
-import '../../../../core/widgets/gavac_brand.dart';
 
 String get _apiBaseUrl => ApiClient.baseUrl;
 
@@ -29,6 +28,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
 
+  static const String appName = 'GAVAC';
   static const String appSlogan =
       'Únete a la revolución\nde la gestión ganadera.';
 
@@ -83,6 +83,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         final token = data['access_token'] as String;
 
         AppSession.accessToken = token;
+        AppSession.role = data['role'] as String? ?? 'ADMIN';
         AppSession.userName = _nombreController.text.trim();
 
         final farmName = _fincaController.text.trim();
@@ -103,7 +104,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             if (farmResponse.statusCode == 201) {
               final farmData =
                   jsonDecode(farmResponse.body) as Map<String, dynamic>;
-              AppSession.farmName = farmData['nombre'] as String? ?? farmName;
+              AppSession.farmName = farmData['name'] as String? ?? farmName;
+              AppSession.farmId = farmData['id'] as int?;
               farmCreated = true;
             } else {
               debugPrint(
@@ -297,53 +299,64 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
 
-        // LADO DERECHO - Imagen de fondo con logo y slogan
+        // LADO DERECHO - Imagen de fondo con Ganado Gyr (imagenganado.png)
         Expanded(
           flex: 1,
           child: Container(
-            color: const Color(0xFF6B8E85),
+            color: const Color(0xFF1A3A32),
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: Opacity(
-                    opacity: 0.45,
-                    child: Image(
-                      image: const AssetImage(
-                        'assets/imagenes/fondo_login.png',
+                  child: Image.asset(
+                    'assets/imagenes/imagenganado.png',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const SizedBox(),
+                  ),
+                ),
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.25),
+                          Colors.black.withValues(alpha: 0.55),
+                        ],
                       ),
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const SizedBox.expand(),
                     ),
                   ),
                 ),
-                const Positioned.fill(
-                  child: ColoredBox(color: Color(0x22000000)),
-                ),
-                const Center(
+                Center(
                   child: Padding(
-                    padding: EdgeInsets.all(48.0),
+                    padding: const EdgeInsets.all(48.0),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        GavacBrand(foregroundColor: Colors.white),
-                        SizedBox(height: 24),
-                        Text(
+                        Image.asset(
+                          'assets/imagenes/imagenLogoNuevo.png',
+                          height: 110,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Text(
+                                appName,
+                                style: TextStyle(
+                                  fontSize: 64,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                ),
+                              ),
+                        ),
+                        const SizedBox(height: 24),
+                        const Text(
                           appSlogan,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 22,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                             color: Colors.white,
                             height: 1.4,
-                            shadows: [
-                              Shadow(
-                                color: Color(0x80000000),
-                                offset: Offset(0, 2),
-                                blurRadius: 4,
-                              ),
-                            ],
                           ),
                         ),
                       ],
@@ -367,13 +380,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               Center(
-                child: GavacBrand(
-                  foregroundColor: _isDarkMode
-                      ? const Color(0xFFB7D8CC)
-                      : GavacColors.primary,
-                  compact: true,
+                child: Image.asset(
+                  'assets/imagenes/imagenLogoNuevo.png',
+                  height: 80,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const SizedBox(),
                 ),
               ),
               const SizedBox(height: 24),
@@ -388,11 +401,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Completa tus datos para comenzar.',
-                style: TextStyle(fontSize: 14, color: Color(0xFF757575)),
+                style: TextStyle(fontSize: 14, color: _mutedText),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 32),
               _buildTextField(
                 'Nombre completo',
                 'Ingresa tu nombre completo',
