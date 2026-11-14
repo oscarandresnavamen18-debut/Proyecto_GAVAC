@@ -6,7 +6,7 @@ from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.deps import current_user
+from app.deps import current_user, require_module
 from app.models import InventoryItem, InventoryMovement, User
 from app.routers.farms import get_authorized_farm
 from app.schemas import InventoryCreate, InventoryRead
@@ -27,14 +27,8 @@ def _inventory_read(item: InventoryItem, quantity: Decimal | float) -> Inventory
     )
 
 
-@router.get("", response_model=list[InventoryRead])
-def list_inventory(
-    db: Session = Depends(get_db),
-    user: User = Depends(current_user),
-):
-    if user.farm_id is None:
-        return []
-
+def farm_inventory(db: Session, farm_id: int) -> list[tuple[InventoryItem, Decimal]]:
+    """Insumos activos de la finca con su existencia (entradas - salidas)."""
     quantity = func.coalesce(
         func.sum(
             case(
@@ -49,20 +43,33 @@ def list_inventory(
         select(InventoryItem, quantity)
         .outerjoin(InventoryMovement, InventoryMovement.item_id == InventoryItem.id)
         .where(
-            InventoryItem.farm_id == user.farm_id,
+            InventoryItem.farm_id == farm_id,
             InventoryItem.is_active.is_(True),
         )
         .group_by(InventoryItem.id)
         .order_by(InventoryItem.name)
     ).all()
-    return [_inventory_read(item, current_quantity) for item, current_quantity in rows]
+    return [(item, current_quantity) for item, current_quantity in rows]
+
+
+@router.get("", response_model=list[InventoryRead])
+def list_inventory(
+    db: Session = Depends(get_db),
+    user: User = Depends(require_module("insumos")),
+):
+    if user.farm_id is None:
+        return []
+    return [
+        _inventory_read(item, current_quantity)
+        for item, current_quantity in farm_inventory(db, user.farm_id)
+    ]
 
 
 @router.post("", response_model=InventoryRead, status_code=status.HTTP_201_CREATED)
 def create_inventory_item(
     data: InventoryCreate,
     db: Session = Depends(get_db),
-    user: User = Depends(current_user),
+    user: User = Depends(require_module("insumos")),
 ):
     if user.farm_id is None:
         raise HTTPException(
@@ -98,7 +105,7 @@ def create_inventory_item(
 def deactivate_inventory_item(
     item_id: int,
     db: Session = Depends(get_db),
-    user: User = Depends(current_user),
+    user: User = Depends(require_module("insumos")),
 ):
     item = db.get(InventoryItem, item_id)
     if item is None or not item.is_active:

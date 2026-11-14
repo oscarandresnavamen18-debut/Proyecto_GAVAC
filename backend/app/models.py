@@ -2,7 +2,7 @@
 from datetime import date, datetime, timezone
 from enum import Enum
 from typing import Optional
-from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Numeric, String, Text, UniqueConstraint, func, text
+from sqlalchemy import JSON, Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Numeric, String, Text, UniqueConstraint, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db import Base
 
@@ -59,6 +59,9 @@ class User(Base):
         String(150), unique=True, nullable=True)
     alternate_email_verified_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, nullable=True)
+    # Módulos habilitados por el administrador. NULL = permisos por defecto del rol.
+    module_permissions: Mapped[Optional[list[str]]] = mapped_column(
+        JSON, nullable=True)
     __table_args__ = (
         Index("ix_users_alternate_email", "alternate_email", unique=True),
         UniqueConstraint("auth_provider", "provider_subject", name="uq_user_provider_subject"),

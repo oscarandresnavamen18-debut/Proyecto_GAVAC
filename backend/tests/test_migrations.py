@@ -23,7 +23,8 @@ def test_alembic_migrations_upgrade_and_downgrade_on_isolated_sqlite(tmp_path):
         JWT_SECRET_KEY="test-only-secret-key-with-at-least-32-characters",
     )
 
-    assert scripts.get_heads() == ["a3f1c9d27b44"]
+    assert scripts.get_heads() == ["b7d4e2f1a9c3"]
+    assert scripts.get_revision("b7d4e2f1a9c3").down_revision == "a3f1c9d27b44"
     social_revision = scripts.get_revision("a3f1c9d27b44")
     assert social_revision.down_revision == "8f2c1a6d4e90"
     assert "idx_animal_finca_active" in {index.name for index in Animal.__table__.indexes}
@@ -56,6 +57,9 @@ def test_alembic_migrations_upgrade_and_downgrade_on_isolated_sqlite(tmp_path):
             "inventory_movements",
             "audit_logs",
         } <= set(inspector.get_table_names())
+        assert "module_permissions" in {
+            column["name"] for column in inspector.get_columns("users")
+        }
         assert "ix_animals_finca_status" in {
             index["name"] for index in inspector.get_indexes("animals")
         }
@@ -66,7 +70,7 @@ def test_alembic_migrations_upgrade_and_downgrade_on_isolated_sqlite(tmp_path):
             current_revision = connection.execute(
                 text("SELECT version_num FROM alembic_version")
             ).scalar_one()
-            assert current_revision == "a3f1c9d27b44"
+            assert current_revision == "b7d4e2f1a9c3"
             user_columns = {column["name"] for column in inspector.get_columns("users")}
             assert {"auth_provider", "provider_subject"} <= user_columns
     finally:

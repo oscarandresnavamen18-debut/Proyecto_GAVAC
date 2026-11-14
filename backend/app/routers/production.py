@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.deps import current_user
+from app.deps import current_user, require_module
 from app.models import Animal, ProductionRecord, User
 from app.routers.farms import get_authorized_farm
 from app.schemas import ProductionCreate, ProductionRead
@@ -30,7 +30,7 @@ def _production_read(record: ProductionRecord, animal: Animal) -> ProductionRead
 @router.get("", response_model=list[ProductionRead])
 def list_production(
     db: Session = Depends(get_db),
-    user: User = Depends(current_user),
+    user: User = Depends(require_module("produccion")),
 ):
     if user.farm_id is None:
         return []
@@ -48,7 +48,7 @@ def list_production(
 def create_production(
     data: ProductionCreate,
     db: Session = Depends(get_db),
-    user: User = Depends(current_user),
+    user: User = Depends(require_module("produccion")),
 ):
     if data.milk_liters is None and data.weight_kg is None:
         raise HTTPException(
@@ -105,7 +105,7 @@ def create_production(
 def delete_production(
     record_id: int,
     db: Session = Depends(get_db),
-    user: User = Depends(current_user),
+    user: User = Depends(require_module("produccion")),
 ):
     row = db.execute(
         select(ProductionRecord, Animal)

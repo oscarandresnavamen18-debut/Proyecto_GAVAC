@@ -1,9 +1,9 @@
 from datetime import date, datetime, timezone
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from app.models import CattleGender, CattleStatus, EventType
+from app.models import CattleGender, CattleStatus, EventType, UserRole
 
 
 # AUTENTICACION
@@ -18,11 +18,19 @@ class LoginIn(BaseModel):
     email: EmailStr
     password: str
     captcha_token: Optional[str] = None
+    # Tipo de usuario elegido en la pantalla de login. Opcional para mantener
+    # compatibilidad con clientes anteriores; si se envía, debe coincidir.
+    role: Optional[UserRole] = None
 
 
 class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    role: Optional[UserRole] = None
+
+
+ModuleName = Literal["registro", "sanidad", "reproduccion", "produccion", "insumos", "reportes"]
+StaffRole = Literal["VETERINARIO", "MAYORDOMO"]
 
 
 class UserRead(BaseModel):
@@ -32,14 +40,42 @@ class UserRead(BaseModel):
     role: str
     is_active: bool
     created_at: datetime
+    farm_id: Optional[int] = None
+    permissions: list[str] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# ADMINISTRACION DE USUARIOS
+
+class ManagedUserCreate(BaseModel):
+    nombre: str = Field(..., min_length=1, max_length=100)
+    email: EmailStr
+    password: str = Field(..., min_length=8)
+    role: StaffRole
+    farm_id: int
+    # None = permisos por defecto del rol.
+    permisos: Optional[list[ModuleName]] = None
+
+
+class ManagedUserUpdate(BaseModel):
+    nombre: Optional[str] = Field(None, min_length=1, max_length=100)
+    role: Optional[StaffRole] = None
+    farm_id: Optional[int] = None
+    permisos: Optional[list[ModuleName]] = None
+    is_active: Optional[bool] = None
+    password: Optional[str] = Field(None, min_length=8)
 
 
 # FINCAS
 
 class FarmCreate(BaseModel):
     nombre: str = Field(..., min_length=1, max_length=100)
+    ubicacion: Optional[str] = Field(None, max_length=150)
+
+
+class FarmUpdate(BaseModel):
+    nombre: Optional[str] = Field(None, min_length=1, max_length=100)
     ubicacion: Optional[str] = Field(None, max_length=150)
 
 

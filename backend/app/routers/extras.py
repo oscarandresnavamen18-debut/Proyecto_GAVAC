@@ -4,7 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.deps import current_user
+from app.deps import current_user, require_module
 from app.models import Animal, AnimalEvent, User
 from app.routers.farms import get_authorized_farm
 from app.schemas import FarmRead
@@ -58,7 +58,7 @@ def farm_summary(farm_id: int, db: Session = Depends(get_db), user: User = Depen
 
 
 @router.delete("/animals/{animal_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_animal(animal_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
+def delete_animal(animal_id: int, db: Session = Depends(get_db), user: User = Depends(require_module("registro"))):
     animal = _animal_autorizado(db, user, animal_id)
     db.delete(animal)
     db.commit()
@@ -66,7 +66,7 @@ def delete_animal(animal_id: int, db: Session = Depends(get_db), user: User = De
 
 
 @router.delete("/animals/{animal_id}/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_event(animal_id: int, event_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
+def delete_event(animal_id: int, event_id: int, db: Session = Depends(get_db), user: User = Depends(require_module("sanidad"))):
     _animal_autorizado(db, user, animal_id)
     event = db.get(AnimalEvent, event_id)
     if event is None or event.animal_id != animal_id:

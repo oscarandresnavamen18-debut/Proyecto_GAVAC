@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.deps import current_user
+from app.deps import current_user, require_module
 from app.models import Animal, AnimalEvent, User
 from app.routers.farms import get_authorized_farm
 from app.schemas import EventCreate, EventRead
@@ -19,7 +19,7 @@ def list_events(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
-    user: User = Depends(current_user),
+    user: User = Depends(require_module("sanidad")),
 ):
     animal = db.get(Animal, animal_id)
     if animal is None:
@@ -37,7 +37,7 @@ def list_events(
 
 
 @router.post("", response_model=EventRead, status_code=status.HTTP_201_CREATED)
-def create_event(animal_id: int, data: EventCreate, db: Session = Depends(get_db), user: User = Depends(current_user)):
+def create_event(animal_id: int, data: EventCreate, db: Session = Depends(get_db), user: User = Depends(require_module("sanidad"))):
     animal = db.get(Animal, animal_id)
     if animal is None:
         raise HTTPException(

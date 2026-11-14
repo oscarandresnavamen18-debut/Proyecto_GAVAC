@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.deps import current_user
+from app.deps import current_user, require_module
 from app.models import Animal, User
 from app.routers.farms import get_authorized_farm
 from app.schemas import AnimalCreate, AnimalPatch, AnimalRead
@@ -26,7 +26,7 @@ def list_animals(
 
 
 @router.post("", response_model=AnimalRead, status_code=status.HTTP_201_CREATED)
-def create_animal(data: AnimalCreate, db: Session = Depends(get_db), user: User = Depends(current_user)):
+def create_animal(data: AnimalCreate, db: Session = Depends(get_db), user: User = Depends(require_module("registro"))):
     get_authorized_farm(db, user, data.farm_id)
     payload = data.model_dump()
     finca_id = payload.pop("farm_id")
@@ -55,7 +55,7 @@ def get_animal(animal_id: int, db: Session = Depends(get_db), user: User = Depen
 
 
 @router.patch("/{animal_id}", response_model=AnimalRead)
-def update_animal(animal_id: int, data: AnimalPatch, db: Session = Depends(get_db), user: User = Depends(current_user)):
+def update_animal(animal_id: int, data: AnimalPatch, db: Session = Depends(get_db), user: User = Depends(require_module("registro"))):
     animal = db.get(Animal, animal_id)
     if animal is None:
         raise HTTPException(
