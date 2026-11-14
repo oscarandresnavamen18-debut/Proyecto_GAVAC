@@ -87,16 +87,16 @@ def test_update_animal_rejects_duplicate_tag(client):
 
 def test_deleted_animal_keeps_history_but_leaves_listing(client):
     headers, animal = _admin_animal(client)
-    assert client.post(
-        "/api/v1/production",
-        json={"animal_id": animal["id"], "milk_liters": 12},
+    client.post(
+        "/api/v1/health-records",
+        json={"animal_id": animal["id"], "record_type": "VACUNA", "diagnosis": "Aftosa"},
         headers=headers,
-    ).status_code == 201
+    )
     assert client.delete(f"/api/v1/animals/{animal['id']}", headers=headers).status_code == 204
 
     tags = [a["tag_id"] for a in client.get("/api/v1/animals", headers=headers).json()]
     assert tags == ["ED-2"]
-    assert len(client.get("/api/v1/production", headers=headers).json()) == 1
+    assert len(client.get("/api/v1/health-records", headers=headers).json()) == 1
     assert client.patch(
         f"/api/v1/animals/{animal['id']}", json={"current_weight": 1}, headers=headers
     ).status_code == 404

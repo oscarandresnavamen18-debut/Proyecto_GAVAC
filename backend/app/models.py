@@ -169,6 +169,7 @@ class HealthRecord(Base):
         DateTime(timezone=True), nullable=False)
     diagnosis: Mapped[Optional[str]] = mapped_column(String(500))
     treatment: Mapped[Optional[str]] = mapped_column(Text)
+    dose: Mapped[Optional[str]] = mapped_column(String(60))
     veterinarian: Mapped[Optional[str]] = mapped_column(String(120))
     next_check_at: Mapped[Optional[datetime]
                           ] = mapped_column(DateTime(timezone=True))

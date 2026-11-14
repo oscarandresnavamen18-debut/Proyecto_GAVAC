@@ -174,6 +174,69 @@ class ProductionRead(BaseModel):
     notes: Optional[str] = None
 
 
+# SANIDAD
+
+HealthRecordType = Literal["VACUNA", "TRATAMIENTO"]
+
+
+class HealthRecordCreate(BaseModel):
+    animal_id: int = Field(..., gt=0)
+    record_type: HealthRecordType
+    # Nombre de la vacuna o diagnóstico del tratamiento.
+    diagnosis: str = Field(..., min_length=1, max_length=500)
+    # Medicamento aplicado (tratamientos).
+    treatment: Optional[str] = Field(None, max_length=2000)
+    dose: Optional[str] = Field(None, max_length=60)
+    veterinarian: Optional[str] = Field(None, max_length=120)
+    recorded_at: date = Field(default_factory=date.today)
+    # Próxima dosis (vacunas) o fin del seguimiento (tratamientos).
+    next_check_at: Optional[date] = None
+    notes: Optional[str] = Field(None, max_length=2000)
+
+
+class HealthRecordRead(BaseModel):
+    id: int
+    animal_id: int
+    animal_tag: str
+    animal_name: Optional[str] = None
+    record_type: str
+    diagnosis: Optional[str] = None
+    treatment: Optional[str] = None
+    dose: Optional[str] = None
+    veterinarian: Optional[str] = None
+    recorded_at: date
+    next_check_at: Optional[date] = None
+    notes: Optional[str] = None
+    # VIGENTE, PROXIMO_A_VENCER, VENCIDO, EN_TRATAMIENTO o FINALIZADO.
+    status: str
+
+
+# REPRODUCCION
+
+BreedingRecordType = Literal["CELO", "INSEMINACION", "PRENEZ", "PARTO"]
+
+
+class BreedingRecordCreate(BaseModel):
+    animal_id: int = Field(..., gt=0)
+    record_type: BreedingRecordType
+    recorded_at: date = Field(default_factory=date.today)
+    # Fecha esperada (por ejemplo, parto). En preñez se calcula si se omite.
+    expected_at: Optional[date] = None
+    notes: Optional[str] = Field(None, max_length=2000)
+
+
+class BreedingRecordRead(BaseModel):
+    id: int
+    animal_id: int
+    animal_tag: str
+    animal_name: Optional[str] = None
+    record_type: str
+    recorded_at: date
+    expected_at: Optional[date] = None
+    notes: Optional[str] = None
+    status: str
+
+
 # INVENTARIO
 
 class InventoryCreate(BaseModel):
