@@ -188,7 +188,9 @@
 ### 4. Animales (`/api/v1/animals`) — módulo `registro`
 
 #### `GET /api/v1/animals`
-* **Descripción**: Lista los animales activos de la finca (paginación con `skip` y `limit`). Disponible para cualquier usuario de la finca, porque los demás módulos lo necesitan.
+* **Descripción**: Lista los animales de la finca (paginación con `skip` y `limit`). Disponible para cualquier usuario de la finca, porque los demás módulos lo necesitan.
+* **`estado`**: `activos` (por defecto) = solo los que siguen en la finca; `todos` = incluye vendidos y muertos.
+* Cada animal trae `status` (`ACTIVO`, `VENDIDO`, `MUERTO`) y `lote_id` (su potrero; `null` = sin potrero).
 
 #### `POST /api/v1/animals`
 * **Descripción**: Registra un nuevo animal en la finca.
@@ -203,19 +205,44 @@
     "breed": "Holstein",
     "color": "Blanco y Negro",
     "current_weight": 450.0,
-    "status": "ACTIVO"
+    "lote_id": 3
   }
   ```
 * **Valores Permitidos**:
   - `gender`: `"MACHO"` | `"HEMBRA"`
-  - `status`: `"ACTIVO"` | `"VENDIDO"` | `"MUERTO"` | `"TRASLADADO"`
+  - `lote_id` es opcional: el potrero inicial. Queda registrado como primer movimiento.
+  - El animal siempre se crea `ACTIVO`.
 * **Respuesta Exitosa (201 Created)**: Objeto `AnimalRead`.
 
 #### `PATCH /api/v1/animals/{animal_id}`
-* **Descripción**: Actualiza `tag_id`, `breed`, `gender`, `birth_date`, `name`, `color`, `current_weight` o `status`. Responde 409 si la chapeta ya existe.
+* **Descripción**: Actualiza `tag_id`, `breed`, `gender`, `birth_date`, `name`, `color` o `current_weight`. Responde 409 si la chapeta ya existe. El estado no se edita aquí: cambia al registrar una salida (sección 6). El potrero cambia con un movimiento.
 
 #### `DELETE /api/v1/animals/{animal_id}`
 * **Descripción**: Borrado lógico (204 No Content): el animal deja de listarse, pero se conserva su historial sanitario, reproductivo y de producción.
+
+---
+
+### Potreros (`/api/v1/lots`) y salidas (`/api/v1/exits`) — módulo `registro`
+
+#### `GET /api/v1/lots` · `POST /api/v1/lots` · `PATCH /api/v1/lots/{lot_id}`
+* Potreros de la finca activa con `animal_count` (animales activos que están hoy en él). `?incluir_inactivos=true` incluye los desactivados.
+* Crear: `{"nombre": "Potrero Norte", "descripcion": "Pasto estrella", "area_hectareas": 4.5}` (409 si el nombre ya existe).
+* Editar: `nombre`, `descripcion`, `area_hectareas`, `is_active`. Un potrero con animales no se puede desactivar (409).
+
+#### `POST /api/v1/lots/move`
+* Mueve uno o varios animales activos: `{"animal_ids": [1, 2], "lote_destino_id": 3, "fecha": "2026-11-14", "notas": "Rotación de pastos"}`. `lote_destino_id: null` = dejarlos sin potrero.
+* La fecha no puede ser futura ni anterior al último movimiento del animal (422). Los que ya están en el destino no generan movimiento.
+* Respuesta (201): los movimientos creados.
+
+#### `GET /api/v1/lots/movements`
+* Historial del más reciente al más antiguo, con `from_lot_name`, `to_lot_name`, `moved_at`, `notes` y `created_by_name`. Filtros opcionales `animal_id` y `lot_id`.
+
+#### `POST /api/v1/exits`
+* Registra la venta o la muerte: `{"animal_id": 1, "tipo": "VENTA", "fecha": "2026-11-14", "precio": 3500000, "comprador": "Subasta del Meta", "notas": "..."}`, o `{"animal_id": 1, "tipo": "MUERTE", "causa": "Picadura de serpiente"}` (la causa es obligatoria).
+* El animal pasa a `VENDIDO` o `MUERTO`, sale de su potrero y del inventario activo, y conserva su historial. Ya no recibe registros de sanidad, reproducción, producción ni movimientos (422). Un animal con salida no acepta otra (409).
+
+#### `GET /api/v1/exits` · `DELETE /api/v1/exits/{exit_id}`
+* Lista las salidas (filtro `tipo`). Anular una salida registrada por error devuelve el animal a `ACTIVO` y a su potrero, si sigue activo.
 
 ---
 
@@ -352,6 +379,6 @@
 #### `GET /api/v1/reports/{reporte}?formato=pdf|xlsx`
 * **Descripción**: Descarga un archivo (no JSON) con los datos de la finca activa.
 * **`reporte`**:
-  - `animales`, `sanidad`, `reproduccion`, `produccion`, `insumos`: todas las columnas del módulo e indicadores de resumen. Además del permiso `reportes`, requiere el permiso del módulo.
+  - `animales`, `potreros`, `salidas`, `sanidad`, `reproduccion`, `produccion`, `insumos`: todas las columnas del módulo e indicadores de resumen. Además del permiso `reportes`, requiere el permiso del módulo.
   - `general`: resumen de la finca. El PDF trae una portada con los indicadores y una sección por módulo; el Excel, una hoja `Resumen` y una hoja por módulo. Solo incluye los módulos que el usuario tiene habilitados.
 * **Respuesta (200 OK)**: `application/pdf` o `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, con `Content-Disposition: attachment; filename="gavac_<reporte>_<fecha>.<formato>"`.
