@@ -1,11 +1,33 @@
 from datetime import date, timedelta
+from io import BytesIO
 
+import pytest
+from openpyxl import load_workbook
 
 PASSWORD = "Password123Secure!"
 
 
 def _auth(token):
     return {"Authorization": f"Bearer {token}"}
+
+
+def _table(sheet):
+    """Encabezados y filas de datos de una hoja (la tabla va después del resumen)."""
+    rows = [[c.value for c in row] for row in sheet.iter_rows()]
+    header = next(i for i, r in enumerate(rows) if r[0] in (
+        "Chapeta", "Aplicación", "Fecha", "Insumo"))
+    return rows[header], [r for r in rows[header + 1:] if r[0] is not None]
+
+
+def _summary(sheet):
+    rows = [[c.value for c in row] for row in sheet.iter_rows(max_col=2)]
+    start = next(i for i, r in enumerate(rows) if r[0] == "Resumen")
+    result = {}
+    for label, value in rows[start + 1:]:
+        if label is None:
+            break
+        result[label] = value
+    return result
 
 
 def _admin_farm(client, email="admin@ganadera.com"):
@@ -205,3 +227,142 @@ def test_breeding_requires_module_permission(client):
     # El trabajador de campo no tiene sanidad ni reproducción por defecto.
     assert client.get("/api/v1/breeding-records", headers=_auth(worker)).status_code == 403
     assert client.get("/api/v1/health-records", headers=_auth(worker)).status_code == 403
+
+
+# ---------- Reportes ----------
+
+@pytest.mark.parametrize("report", ["animales", "sanidad", "reproduccion", "produccion", "insumos"])
+def test_reports_export_pdf_and_excel(client, report):
+    token, farm_id = _admin_farm(client)
+    animal_id = _animal(client, token, farm_id)
+    client.post(
+        "/api/v1/health-records",
+        json={"animal_id": animal_id, "record_type": "VACUNA", "diagnosis": "Aftosa"},
+        headers=_auth(token),
+    )
+    client.post(
+        "/api/v1/breeding-records",
+        json={"animal_id": animal_id, "record_type": "CELO"},
+        headers=_auth(token),
+    )
+    client.post(
+        "/api/v1/production",
+        json={"animal_id": animal_id, "milk_liters": 18.5},
+        headers=_auth(token),
+    )
+    client.post(
+        "/api/v1/inventory",
+        json={"name": "Sal mineralizada", "quantity": 40, "minimum_quantity": 50, "unit": "kg"},
+        headers=_auth(token),
+    )
+
+    pdf = client.get(f"/api/v1/reports/{report}?formato=pdf", headers=_auth(token))
+    assert pdf.status_code == 200, pdf.text
+    assert pdf.headers["content-type"] == "application/pdf"
+    assert pdf.content.startswith(b"%PDF")
+    assert f"gavac_{report}_" in pdf.headers["content-disposition"]
+
+    xlsx = client.get(f"/api/v1/reports/{report}?formato=xlsx", headers=_auth(token))
+    assert xlsx.status_code == 200
+    sheet = load_workbook(BytesIO(xlsx.content)).active
+    assert sheet["A1"].value.startswith("GAVAC - Reporte de")
+    assert "Finca Ñandú" in sheet["A2"].value
+    assert "Generado el" in sheet["A2"].value and " de 20" in sheet["A2"].value
+    headers, rows = _table(sheet)
+    assert len(rows) == 1
+    # Ninguna celda del registro queda vacía.
+    assert all(value not in (None, "") for value in rows[0][: len(headers)])
+    assert _summary(sheet)
+
+
+def test_inventory_report_flags_low_stock(client):
+    token, _ = _admin_farm(client)
+    client.post(
+        "/api/v1/inventory",
+        json={"name": "Sal mineralizada", "quantity": 40, "minimum_quantity": 50, "unit": "kg"},
+        headers=_auth(token),
+    )
+    xlsx = client.get("/api/v1/reports/insumos?formato=xlsx", headers=_auth(token))
+    sheet = load_workbook(BytesIO(xlsx.content)).active
+    headers, rows = _table(sheet)
+    assert headers[:7] == ["Insumo", "Categoría", "Código", "Existencia", "Unidad",
+                           "Mínimo", "Estado"]
+    assert rows[0][:7] == ["Sal mineralizada", "GENERAL", "—", 40, "kg", 50, "Bajo el mínimo"]
+    assert _summary(sheet)["Bajo el mínimo"] == "1"
+    assert _summary(sheet)["Por reponer"] == "Sal mineralizada"
+
+
+def test_animals_report_includes_all_fields_and_summary(client):
+    token, farm_id = _admin_farm(client)
+    _animal(client, token, farm_id, tag="GAV-001")
+    _animal(client, token, farm_id, tag="GAV-002", gender="MACHO")
+    sheet = load_workbook(BytesIO(client.get(
+        "/api/v1/reports/animales?formato=xlsx", headers=_auth(token)).content)).active
+
+    headers, rows = _table(sheet)
+    assert headers == ["Chapeta", "Nombre", "Sexo", "Raza", "Color", "Nacimiento",
+                       "Edad", "Peso (kg)", "Estado", "Registrado"]
+    assert rows[0][:5] == ["GAV-001", "Lucero", "Hembra", "Holstein", "—"]
+    assert "años" in rows[0][6]
+    summary = _summary(sheet)
+    assert (summary["Total de animales"], summary["Hembras"], summary["Machos"]) == ("2", "1", "1")
+    assert summary["Peso promedio"] == "450 kg"
+
+
+def test_general_report_combines_permitted_modules(client):
+    token, farm_id = _admin_farm(client)
+    animal_id = _animal(client, token, farm_id)
+    client.post(
+        "/api/v1/production",
+        json={"animal_id": animal_id, "milk_liters": 18.5},
+        headers=_auth(token),
+    )
+
+    xlsx = client.get("/api/v1/reports/general?formato=xlsx", headers=_auth(token))
+    assert xlsx.status_code == 200
+    assert 'gavac_general_' in xlsx.headers["content-disposition"]
+    workbook = load_workbook(BytesIO(xlsx.content))
+    assert workbook.sheetnames == [
+        "Resumen", "Registro animal", "Sanidad", "Reproducción", "Producción", "Insumos"]
+    overview = [c.value for c in workbook["Resumen"]["A"]]
+    assert "Producción" in overview and "Leche total" in overview
+
+    pdf = client.get("/api/v1/reports/general?formato=pdf", headers=_auth(token))
+    assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF")
+
+    # Un veterinario solo recibe los módulos que tiene habilitados.
+    client.post(
+        "/api/v1/users",
+        json={"nombre": "Vet", "email": "vet2@ganadera.com", "password": PASSWORD,
+              "role": "VETERINARIO", "farm_id": farm_id},
+        headers=_auth(token),
+    )
+    vet = client.post(
+        "/api/v1/auth/login", json={"email": "vet2@ganadera.com", "password": PASSWORD}
+    ).json()["access_token"]
+    vet_book = load_workbook(BytesIO(client.get(
+        "/api/v1/reports/general?formato=xlsx", headers=_auth(vet)).content))
+    assert vet_book.sheetnames == ["Resumen", "Registro animal", "Sanidad", "Reproducción"]
+
+
+def test_reports_require_permission_for_report_and_module(client):
+    token, farm_id = _admin_farm(client)
+    vet_id = client.post(
+        "/api/v1/users",
+        json={
+            "nombre": "Vet", "email": "vet@ganadera.com", "password": PASSWORD,
+            "role": "VETERINARIO", "farm_id": farm_id,
+        },
+        headers=_auth(token),
+    ).json()["id"]
+    vet = client.post(
+        "/api/v1/auth/login", json={"email": "vet@ganadera.com", "password": PASSWORD}
+    ).json()["access_token"]
+
+    # Veterinario por defecto: reportes + sanidad, pero no insumos.
+    assert client.get("/api/v1/reports/sanidad", headers=_auth(vet)).status_code == 200
+    assert client.get("/api/v1/reports/insumos", headers=_auth(vet)).status_code == 403
+
+    client.patch(f"/api/v1/users/{vet_id}", json={"permisos": ["sanidad"]}, headers=_auth(token))
+    assert client.get("/api/v1/reports/sanidad", headers=_auth(vet)).status_code == 403
+    assert client.get("/api/v1/reports/otro", headers=_auth(token)).status_code == 422

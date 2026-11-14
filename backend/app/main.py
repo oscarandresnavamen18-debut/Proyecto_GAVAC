@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.routers import (
-    animals, auth, breeding, events, extras, farms, health_records, inventory, production, social_auth, users,
+    animals, auth, breeding, events, extras, farms, health_records, inventory, production,
+    reports, social_auth, users,
 )
 
 app = FastAPI(title="Gesti\u00f3n Ganadera API")
@@ -31,6 +32,7 @@ for router in (
     production.router,
     health_records.router,
     breeding.router,
+    reports.router,
     social_auth.router,
     users.router,
 ):
