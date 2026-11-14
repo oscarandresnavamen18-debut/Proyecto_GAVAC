@@ -92,3 +92,21 @@ def test_cors_defaults_to_no_origins():
 def test_cors_rejects_wildcards_and_non_origin_urls(origins):
     with pytest.raises(ValidationError):
         make_settings(cors_origins=origins)
+
+
+@pytest.mark.parametrize("secret", [
+    "change-this-to-a-secure-secret-key-in-production",
+    "cambiar_esta_clave_por_una_segura_en_produccion",
+])
+def test_placeholder_jwt_secret_is_rejected_in_production(secret):
+    with pytest.raises(ValidationError, match="texto de ejemplo"):
+        make_settings(environment="production", jwt_secret_key=secret)
+
+    # En desarrollo y pruebas se permite para no bloquear el trabajo local.
+    assert make_settings(environment="development", jwt_secret_key=secret)
+
+
+def test_random_jwt_secret_is_accepted_in_production():
+    assert make_settings(
+        environment="production", jwt_secret_key="Qm9iL2xhX3ZhY2FfZXN0YV9lbl9lbF9jb3JyYWw"
+    )

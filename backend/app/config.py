@@ -5,6 +5,12 @@ from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+PLACEHOLDER_SECRET_MARKERS = (
+    "change-this", "change_this", "changeme", "change-me", "cambiar", "example",
+    "ejemplo", "placeholder", "your-secret", "test-only", "secret-key",
+)
+
+
 class Settings(BaseSettings):
     database_url: str = Field(default="", min_length=1)
     jwt_secret_key: SecretStr = Field(min_length=32)
@@ -24,6 +30,18 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_file=(".env", "../.env"), extra="ignore")
+
+    @model_validator(mode="after")
+    def reject_placeholder_jwt_secret(self) -> "Settings":
+        # Una clave de ejemplo permite a cualquiera falsificar sesiones.
+        if self.environment.strip().lower() == "production":
+            secret = self.jwt_secret_key.get_secret_value().lower()
+            if any(marker in secret for marker in PLACEHOLDER_SECRET_MARKERS):
+                raise ValueError(
+                    "JWT_SECRET_KEY parece un texto de ejemplo; genera una clave aleatoria "
+                    "para producción (python -c \"import secrets; print(secrets.token_urlsafe(48))\")"
+                )
+        return self
 
     @model_validator(mode="before")
     @classmethod
