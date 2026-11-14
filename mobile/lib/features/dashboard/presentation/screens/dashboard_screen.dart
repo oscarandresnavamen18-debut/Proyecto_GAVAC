@@ -26,9 +26,11 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = DashboardModules.inicio;
+  // Aumenta al volver al inicio para que recargue los indicadores.
+  int _inicioRefresh = 0;
 
   late final List<Widget Function()> _pageBuilders = [
-    () => InicioView(onOpenModule: _selectPage),
+    () => InicioView(onOpenModule: _selectPage, refreshToken: _inicioRefresh),
     () => const AnimalesScreen(),
     () => const SanidadScreen(),
     () => const ReproduccionScreen(),
@@ -44,6 +46,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _selectPage(int index) {
     setState(() {
+      if (index == DashboardModules.inicio && _selectedIndex != index) {
+        _inicioRefresh++;
+        _pages[index] = _pageBuilders[index]();
+      }
       _pages[index] ??= _pageBuilders[index]();
       _selectedIndex = index;
     });
