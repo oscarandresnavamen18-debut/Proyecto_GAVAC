@@ -156,6 +156,35 @@
 
 ---
 
+### Resumen del inicio (`GET /api/v1/dashboard`)
+* **Descripción**: Indicadores de la finca activa para la página de inicio. Solo devuelve totales, por eso lo puede consultar cualquier usuario de la finca sin importar sus permisos por módulo. Si el usuario no tiene finca, todos los valores van en cero.
+* **Respuesta (200 OK)**:
+  ```json
+  {
+    "farm_id": 1,
+    "farm_name": "La Esperanza",
+    "total_animales": 3,
+    "hembras": 2,
+    "machos": 1,
+    "peso_promedio_kg": 500.0,
+    "animales_en_tratamiento": 1,
+    "vacunas_por_vencer": 1,
+    "vacunas_vencidas": 0,
+    "vacas_gestantes": 1,
+    "partos_proximos": 1,
+    "leche_litros_30_dias": 40.0,
+    "leche_promedio_ordeno": 20.0,
+    "insumos_bajo_minimo": 1,
+    "alertas": 2
+  }
+  ```
+  - Las vacunas cuentan solo por su última aplicación (una vacuna renovada no genera alerta).
+  - `vacas_gestantes`: hembras cuyo último evento reproductivo es una preñez; `partos_proximos`: de ellas, las que tienen parto estimado en los próximos 30 días.
+  - Promedios de leche sobre los últimos 30 días. `alertas` = vacunas vencidas + por vencer + insumos bajo el mínimo.
+  - Los animales eliminados no cuentan.
+
+---
+
 ### 4. Animales (`/api/v1/animals`) — módulo `registro`
 
 #### `GET /api/v1/animals`

@@ -89,6 +89,27 @@ class FarmRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class DashboardSummary(BaseModel):
+    """Indicadores del inicio para la finca activa (solo totales)."""
+    farm_id: Optional[int] = None
+    farm_name: Optional[str] = None
+    total_animales: int = 0
+    hembras: int = 0
+    machos: int = 0
+    peso_promedio_kg: Optional[float] = None
+    animales_en_tratamiento: int = 0
+    vacunas_por_vencer: int = 0
+    vacunas_vencidas: int = 0
+    vacas_gestantes: int = 0
+    # Partos esperados en los próximos 30 días.
+    partos_proximos: int = 0
+    leche_litros_30_dias: float = 0
+    leche_promedio_ordeno: Optional[float] = None
+    insumos_bajo_minimo: int = 0
+    # Vacunas vencidas o por vencer + insumos bajo el mínimo.
+    alertas: int = 0
+
+
 class FarmSummary(BaseModel):
     farm_id: int
     total_animales: int
