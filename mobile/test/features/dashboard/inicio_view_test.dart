@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gestion_ganadera/core/network/api_client.dart';
+import 'package:gestion_ganadera/features/dashboard/data/services/alerts_api_service.dart';
 import 'package:gestion_ganadera/features/dashboard/data/services/dashboard_api_service.dart';
 import 'package:gestion_ganadera/features/dashboard/presentation/dashboard_modules.dart';
 import 'package:gestion_ganadera/features/dashboard/presentation/widgets/inicio_view.dart';
@@ -41,6 +42,8 @@ Future<void> _pump(
   DashboardRepository repository, {
   ValueChanged<int>? onOpen,
   int refreshToken = 0,
+  List<Alerta>? alertas,
+  VoidCallback? onOpenAlerts,
 }) async {
   tester.view.physicalSize = const Size(1400, 1100);
   tester.view.devicePixelRatio = 1;
@@ -53,6 +56,8 @@ Future<void> _pump(
           onOpenModule: onOpen ?? (_) {},
           repository: repository,
           refreshToken: refreshToken,
+          alertas: alertas,
+          onOpenAlerts: onOpenAlerts,
         ),
       ),
     ),
@@ -68,10 +73,40 @@ void main() {
     expect(find.text('3'), findsOneWidget);
     expect(find.text('2 hembras · 1 macho'), findsOneWidget);
     expect(find.text('1 parto en 30 días'), findsOneWidget);
-    expect(find.text('1 vacuna · 1 insumo bajo mínimo'), findsOneWidget);
     expect(find.text('486,8 kg'), findsOneWidget);
     expect(find.text('17,3 L'), findsOneWidget);
     expect(find.text('51,8 L'), findsOneWidget);
+  });
+
+  testWidgets('alerts card shows the same alarms as the bell', (tester) async {
+    var opened = 0;
+    await _pump(
+      tester,
+      _FakeDashboardRepository(_summary),
+      alertas: const [
+        Alerta(
+          key: 'a',
+          tipo: 'VACUNA_VENCIDA',
+          severidad: 'ALTA',
+          titulo: 'Vacuna vencida',
+          detalle: '',
+          modulo: 'sanidad',
+        ),
+        Alerta(
+          key: 'b',
+          tipo: 'PARTO_PROXIMO',
+          severidad: 'MEDIA',
+          titulo: 'Parto próximo',
+          detalle: '',
+          modulo: 'reproduccion',
+        ),
+      ],
+      onOpenAlerts: () => opened++,
+    );
+
+    expect(find.text('1 urgente · toca para ver'), findsOneWidget);
+    await tester.tap(find.text('ALERTAS'));
+    expect(opened, 1);
   });
 
   testWidgets('cards open their module', (tester) async {

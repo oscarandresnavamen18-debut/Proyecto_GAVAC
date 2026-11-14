@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/session/app_session.dart';
 import '../../../../core/theme/gavac_colors.dart';
+import '../../data/services/alerts_api_service.dart';
 import '../../data/services/dashboard_api_service.dart';
 import '../dashboard_modules.dart';
 
@@ -11,12 +12,18 @@ class InicioView extends StatefulWidget {
   const InicioView({
     super.key,
     required this.onOpenModule,
+    this.alertas,
+    this.onOpenAlerts,
     this.refreshToken = 0,
     this.repository = const DashboardApiService(),
   });
 
   /// Abre el módulo con el índice de [DashboardModules].
   final ValueChanged<int> onOpenModule;
+
+  /// Alarmas de la campana (null = aún cargando).
+  final List<Alerta>? alertas;
+  final VoidCallback? onOpenAlerts;
 
   /// Cambia cada vez que se vuelve al inicio, para recargar los datos.
   final int refreshToken;
@@ -87,6 +94,8 @@ class _InicioViewState extends State<InicioView> {
                     summary: _summary,
                     loading: _loading,
                     onOpenModule: widget.onOpenModule,
+                    alertas: widget.alertas,
+                    onOpenAlerts: widget.onOpenAlerts,
                   ),
                   const SizedBox(height: 24),
                   _Averages(summary: _summary, loading: _loading),
@@ -274,8 +283,12 @@ class _StatCards extends StatelessWidget {
     required this.summary,
     required this.loading,
     required this.onOpenModule,
+    this.alertas,
+    this.onOpenAlerts,
   });
 
+  final List<Alerta>? alertas;
+  final VoidCallback? onOpenAlerts;
   final DashboardSummary? summary;
   final bool loading;
   final ValueChanged<int> onOpenModule;
@@ -319,13 +332,16 @@ class _StatCards extends StatelessWidget {
       ),
       _StatCard(
         title: 'ALERTAS',
-        value: value(s.alertas),
-        detail:
-            '${_plural(s.vacunasVencidas + s.vacunasPorVencer, 'vacuna', 'vacunas')} · '
-            '${_plural(s.insumosBajoMinimo, 'insumo', 'insumos')} bajo mínimo',
+        value: alertas == null ? '…' : '${alertas!.length}',
+        detail: alertas == null
+            ? 'Cargando alarmas'
+            : alertas!.isEmpty
+            ? 'Todo en orden'
+            : '${_plural(alertas!.where((a) => a.esAlta).length, 'urgente', 'urgentes')} · toca para ver',
         icon: Icons.warning_amber_rounded,
         iconColor: const Color(0xFFF59E0B),
         iconBg: const Color(0xFFFEF3C7),
+        onTap: onOpenAlerts,
       ),
     ];
 

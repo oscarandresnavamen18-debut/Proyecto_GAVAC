@@ -185,6 +185,26 @@
 
 ---
 
+### Alarmas (`GET /api/v1/alerts`)
+* **Descripción**: Alarmas de la finca activa para la campana de la barra superior, ordenadas por gravedad y urgencia. Cada usuario recibe solo las de los módulos que tiene permitidos; desaparecen solas al resolverse.
+* **Tipos**: `VACUNA_VENCIDA` (alta) y `VACUNA_POR_VENCER` (media, 15 días o menos) del módulo `sanidad`, según la última aplicación de cada vacuna; `PARTO_VENCIDO` (alta) y `PARTO_PROXIMO` (media, 30 días o menos) de `reproduccion`; `INSUMO_AGOTADO` (alta) e `INSUMO_BAJO_MINIMO` (media) de `insumos`. No incluyen animales vendidos ni muertos.
+* **Respuesta (200 OK)**:
+  ```json
+  [
+    {
+      "key": "vacuna_vencida:12",
+      "tipo": "VACUNA_VENCIDA",
+      "severidad": "ALTA",
+      "titulo": "Vacuna vencida: Aftosa · V-1",
+      "detalle": "Venció el 04/11/2026 (hace 10 días).",
+      "fecha": "2026-11-04",
+      "modulo": "sanidad"
+    }
+  ]
+  ```
+
+---
+
 ### 4. Animales (`/api/v1/animals`) — módulo `registro`
 
 #### `GET /api/v1/animals`

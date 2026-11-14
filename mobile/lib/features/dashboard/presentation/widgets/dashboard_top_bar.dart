@@ -3,11 +3,21 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../core/session/app_session.dart';
 import '../../../../core/theme/gavac_colors.dart';
 
-/// Barra superior: menú (en pantallas angostas), título y usuario en sesión.
+/// Barra superior: menú (en pantallas angostas), título, alarmas y usuario.
 class DashboardTopBar extends StatelessWidget {
-  const DashboardTopBar({super.key, required this.isCompact});
+  const DashboardTopBar({
+    super.key,
+    required this.isCompact,
+    this.alertCount = 0,
+    this.hasHighAlert = false,
+    this.onAlerts,
+  });
 
   final bool isCompact;
+  final int alertCount;
+  // Hay al menos una alarma de gravedad alta (contador en rojo).
+  final bool hasHighAlert;
+  final VoidCallback? onAlerts;
 
   static String initials(String name) {
     final parts = name
@@ -57,21 +67,30 @@ class DashboardTopBar extends StatelessWidget {
               ),
             ),
           ),
-          if (!isCompact) ...[
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF1F5F9),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.notifications_none_outlined,
-                color: Color(0xFF64748B),
-                size: 20,
+          IconButton(
+            tooltip: alertCount == 0
+                ? 'Alarmas: todo en orden'
+                : 'Alarmas: $alertCount pendientes',
+            onPressed: onAlerts,
+            style: IconButton.styleFrom(
+              backgroundColor: const Color(0xFFF1F5F9),
+            ),
+            icon: Badge(
+              isLabelVisible: alertCount > 0,
+              label: Text(alertCount > 99 ? '99+' : '$alertCount'),
+              backgroundColor: hasHighAlert
+                  ? const Color(0xFFDC2626)
+                  : const Color(0xFFD97706),
+              child: Icon(
+                alertCount > 0
+                    ? Icons.notifications_active_outlined
+                    : Icons.notifications_none_outlined,
+                color: const Color(0xFF64748B),
+                size: 22,
               ),
             ),
-            const SizedBox(width: 16),
-          ],
+          ),
+          SizedBox(width: isCompact ? 4 : 16),
           CircleAvatar(
             radius: 18,
             backgroundColor: GavacColors.primary,
