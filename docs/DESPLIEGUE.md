@@ -45,5 +45,5 @@ Nunca publiques secretos en Git: `.env` está en `.gitignore` y `.env.example` s
 - Cuentas creadas antes de la migración `b7d4e2f1a9c3` quedaron con rol `MAYORDOMO`; los administradores reales deben pasarse a `ADMIN`:
 
   ```sql
-  UPDATE users SET role = 'ADMIN' WHERE email = 'correo-del-admin@...';
+  UPDATE usuarios SET role = 'ADMIN' WHERE email = 'correo-del-admin@...';
   ```

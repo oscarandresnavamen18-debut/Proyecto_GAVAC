@@ -37,7 +37,7 @@ class EventType(str, Enum):
 
 
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = "usuarios"
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     email: Mapped[str] = mapped_column(
         String(150), unique=True, index=True, nullable=False)
@@ -54,7 +54,7 @@ class User(Base):
     token_version: Mapped[int] = mapped_column(
         default=0, server_default=text("0"), nullable=False)
     farm_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("farms.id", ondelete="SET NULL"), nullable=True)
+        ForeignKey("fincas.id", ondelete="SET NULL"), nullable=True)
     alternate_email: Mapped[Optional[str]] = mapped_column(
         String(150), unique=True, nullable=True)
     alternate_email_verified_at: Mapped[Optional[datetime]] = mapped_column(
@@ -69,21 +69,19 @@ class User(Base):
 
 
 class Farm(Base):
-    __tablename__ = "farms"
+    __tablename__ = "fincas"
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     location: Mapped[Optional[str]] = mapped_column(String(150))
-    owner_id: Mapped[int] = mapped_column(ForeignKey(
-        "users.id", ondelete="RESTRICT"), nullable=False)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=utc_now, server_default=func.now())
 
 
 class Animal(Base):
-    __tablename__ = "animals"
+    __tablename__ = "animales"
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    finca_id: Mapped[int] = mapped_column(ForeignKey(
-        "farms.id", ondelete="RESTRICT"), nullable=False, index=True)
+    finca_id: Mapped[int] = mapped_column(ForeignKey("fincas.id", ondelete="RESTRICT"), nullable=False, index=True)
     tag_id: Mapped[str] = mapped_column(
         String(50), unique=True, index=True, nullable=False)
     name: Mapped[Optional[str]] = mapped_column(String(100))
@@ -111,10 +109,9 @@ class Animal(Base):
 
 
 class CattleEvent(Base):
-    __tablename__ = "cattle_events"
+    __tablename__ = "eventos_animales"
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    animal_id: Mapped[int] = mapped_column(ForeignKey(
-        "animals.id", ondelete="RESTRICT"), nullable=False, index=True)
+    animal_id: Mapped[int] = mapped_column(ForeignKey("animales.id", ondelete="RESTRICT"), nullable=False, index=True)
     event_type: Mapped[EventType] = mapped_column(nullable=False)
     event_date: Mapped[date] = mapped_column(Date, nullable=False)
     weight: Mapped[Optional[float]] = mapped_column(Numeric(6, 2))
@@ -122,7 +119,7 @@ class CattleEvent(Base):
     withdrawal_days: Mapped[int] = mapped_column(
         default=0, server_default=text("0"))
     performed_by_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+        ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=utc_now, server_default=func.now(), nullable=False)
     __table_args__ = (
@@ -132,10 +129,9 @@ class CattleEvent(Base):
 
 
 class PasswordResetCode(Base):
-    __tablename__ = "password_reset_codes"
+    __tablename__ = "codigos_recuperacion_contrasena"
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey(
-        "users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     code_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=utc_now, server_default=func.now(), nullable=False)
@@ -145,9 +141,8 @@ class PasswordResetCode(Base):
 
 
 class AlternateEmailVerificationCode(Base):
-    __tablename__ = "alternate_email_verification_codes"
-    user_id: Mapped[int] = mapped_column(ForeignKey(
-        "users.id", ondelete="CASCADE"), primary_key=True)
+    __tablename__ = "codigos_verificacion_correo"
+    user_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), primary_key=True)
     email: Mapped[str] = mapped_column(String(150), nullable=False)
     code_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -158,12 +153,11 @@ class AlternateEmailVerificationCode(Base):
 
 
 class HealthRecord(Base):
-    __tablename__ = "health_records"
+    __tablename__ = "registros_sanitarios"
     id: Mapped[int] = mapped_column(primary_key=True)
-    animal_id: Mapped[int] = mapped_column(ForeignKey(
-        "animals.id", ondelete="CASCADE"), nullable=False)
+    animal_id: Mapped[int] = mapped_column(ForeignKey("animales.id", ondelete="CASCADE"), nullable=False)
     created_by: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL"))
+        ForeignKey("usuarios.id", ondelete="SET NULL"))
     record_type: Mapped[str] = mapped_column(String(30), nullable=False)
     recorded_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False)
@@ -181,14 +175,13 @@ class HealthRecord(Base):
 
 
 class BreedingRecord(Base):
-    __tablename__ = "breeding_records"
+    __tablename__ = "registros_reproductivos"
     id: Mapped[int] = mapped_column(primary_key=True)
-    animal_id: Mapped[int] = mapped_column(ForeignKey(
-        "animals.id", ondelete="CASCADE"), nullable=False)
+    animal_id: Mapped[int] = mapped_column(ForeignKey("animales.id", ondelete="CASCADE"), nullable=False)
     related_animal_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("animals.id", ondelete="SET NULL"))
+        ForeignKey("animales.id", ondelete="SET NULL"))
     created_by: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL"))
+        ForeignKey("usuarios.id", ondelete="SET NULL"))
     record_type: Mapped[str] = mapped_column(String(30), nullable=False)
     recorded_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False)
@@ -202,12 +195,11 @@ class BreedingRecord(Base):
 
 
 class ProductionRecord(Base):
-    __tablename__ = "production_records"
+    __tablename__ = "registros_produccion"
     id: Mapped[int] = mapped_column(primary_key=True)
-    animal_id: Mapped[int] = mapped_column(ForeignKey(
-        "animals.id", ondelete="CASCADE"), nullable=False)
+    animal_id: Mapped[int] = mapped_column(ForeignKey("animales.id", ondelete="CASCADE"), nullable=False)
     created_by: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL"))
+        ForeignKey("usuarios.id", ondelete="SET NULL"))
     record_type: Mapped[str] = mapped_column(String(20), nullable=False)
     quantity: Mapped[float] = mapped_column(Numeric(12, 3), nullable=False)
     unit: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -224,10 +216,9 @@ class ProductionRecord(Base):
 
 
 class InventoryItem(Base):
-    __tablename__ = "inventory_items"
+    __tablename__ = "insumos"
     id: Mapped[int] = mapped_column(primary_key=True)
-    farm_id: Mapped[int] = mapped_column(ForeignKey(
-        "farms.id", ondelete="CASCADE"), nullable=False)
+    farm_id: Mapped[int] = mapped_column(ForeignKey("fincas.id", ondelete="CASCADE"), nullable=False)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     category: Mapped[str] = mapped_column(String(40), nullable=False)
     sku: Mapped[Optional[str]] = mapped_column(String(60))
@@ -243,14 +234,13 @@ class InventoryItem(Base):
 
 
 class InventoryMovement(Base):
-    __tablename__ = "inventory_movements"
+    __tablename__ = "movimientos_insumos"
     id: Mapped[int] = mapped_column(primary_key=True)
-    item_id: Mapped[int] = mapped_column(ForeignKey(
-        "inventory_items.id", ondelete="CASCADE"), nullable=False)
+    item_id: Mapped[int] = mapped_column(ForeignKey("insumos.id", ondelete="CASCADE"), nullable=False)
     animal_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("animals.id", ondelete="SET NULL"))
+        ForeignKey("animales.id", ondelete="SET NULL"))
     created_by: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL"))
+        ForeignKey("usuarios.id", ondelete="SET NULL"))
     movement_type: Mapped[str] = mapped_column(String(10), nullable=False)
     quantity: Mapped[float] = mapped_column(Numeric(12, 3), nullable=False)
     recorded_at: Mapped[datetime] = mapped_column(
@@ -266,12 +256,12 @@ class InventoryMovement(Base):
 
 
 class AuditLog(Base):
-    __tablename__ = "audit_logs"
+    __tablename__ = "auditoria"
     id: Mapped[int] = mapped_column(primary_key=True)
     farm_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("farms.id", ondelete="SET NULL"))
+        ForeignKey("fincas.id", ondelete="SET NULL"))
     actor_user_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL"))
+        ForeignKey("usuarios.id", ondelete="SET NULL"))
     action: Mapped[str] = mapped_column(String(60), nullable=False)
     entity_type: Mapped[str] = mapped_column(String(60), nullable=False)
     entity_id: Mapped[Optional[int]] = mapped_column()
