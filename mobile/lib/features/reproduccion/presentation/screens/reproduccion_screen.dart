@@ -40,7 +40,8 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
     _searchController.addListener(() {
       if (!mounted) return;
       setState(
-          () => _searchQuery = _searchController.text.trim().toLowerCase());
+        () => _searchQuery = _searchController.text.trim().toLowerCase(),
+      );
     });
     _loadData();
   }
@@ -95,9 +96,11 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
   List<BreedingRecord> get _filteredRecords {
     if (_searchQuery.isEmpty) return _records;
     return _records
-        .where((item) =>
-            item.animalTag.toLowerCase().contains(_searchQuery) ||
-            (item.animalName ?? '').toLowerCase().contains(_searchQuery))
+        .where(
+          (item) =>
+              item.animalTag.toLowerCase().contains(_searchQuery) ||
+              (item.animalName ?? '').toLowerCase().contains(_searchQuery),
+        )
         .toList();
   }
 
@@ -147,21 +150,42 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
   }
 
   Widget _buildKpiMetricsRow() {
-    int count(String type) => _records.where((r) => r.recordType == type).length;
+    int count(String type) =>
+        _records.where((r) => r.recordType == type).length;
 
     final cards = [
-      _buildKpiCard('Celos', '${count('CELO')}', 'Celos registrados',
-          Icons.notifications_active_outlined,
-          const Color(0xFFEFF6FF), const Color(0xFF2563EB)),
-      _buildKpiCard('Inseminaciones', '${count('INSEMINACION')}',
-          'Inseminaciones', Icons.science_outlined,
-          const Color(0xFFECFDF5), const Color(0xFF059669)),
-      _buildKpiCard('Gestantes', '$_pregnantCount', 'Vacas gestantes hoy',
-          Icons.favorite_rounded,
-          const Color(0xFFFEE2E2), const Color(0xFFEF4444)),
-      _buildKpiCard('Partos', '${count('PARTO')}', 'Partos registrados',
-          Icons.cake_outlined,
-          const Color(0xFFFEF3C7), const Color(0xFFD97706)),
+      _buildKpiCard(
+        'Celos',
+        '${count('CELO')}',
+        'Celos registrados',
+        Icons.notifications_active_outlined,
+        const Color(0xFFEFF6FF),
+        const Color(0xFF2563EB),
+      ),
+      _buildKpiCard(
+        'Inseminaciones',
+        '${count('INSEMINACION')}',
+        'Inseminaciones',
+        Icons.science_outlined,
+        const Color(0xFFECFDF5),
+        const Color(0xFF059669),
+      ),
+      _buildKpiCard(
+        'Gestantes',
+        '$_pregnantCount',
+        'Vacas gestantes hoy',
+        Icons.favorite_rounded,
+        const Color(0xFFFEE2E2),
+        const Color(0xFFEF4444),
+      ),
+      _buildKpiCard(
+        'Partos',
+        '${count('PARTO')}',
+        'Partos registrados',
+        Icons.cake_outlined,
+        const Color(0xFFFEF3C7),
+        const Color(0xFFD97706),
+      ),
     ];
 
     return LayoutBuilder(
@@ -174,8 +198,14 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
     );
   }
 
-  Widget _buildKpiCard(String title, String value, String subtitle,
-      IconData icon, Color iconBgColor, Color iconColor) {
+  Widget _buildKpiCard(
+    String title,
+    String value,
+    String subtitle,
+    IconData icon,
+    Color iconBgColor,
+    Color iconColor,
+  ) {
     return FeatureKpiCard(
       title: title,
       value: value,
@@ -221,9 +251,10 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
               Text(
                 'Historial Reproductivo',
                 style: GoogleFonts.plusJakartaSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: primaryColor),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: primaryColor,
+                ),
               ),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 260),
@@ -238,17 +269,22 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   elevation: 0,
                 ),
                 icon: const Icon(Icons.add, size: 18),
                 label: Text(
                   'Registrar Evento',
                   style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14, fontWeight: FontWeight.w700),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -269,9 +305,11 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
               ),
             )
           else if (_filteredRecords.isEmpty)
-            _buildMessage(_females.isEmpty && _records.isEmpty
-                ? 'Registra primero una hembra en el módulo de Registro.'
-                : 'No hay eventos reproductivos registrados')
+            _buildMessage(
+              _females.isEmpty && _records.isEmpty
+                  ? 'Registra primero una hembra en el módulo de Registro.'
+                  : 'No hay eventos reproductivos registrados',
+            )
           else
             _buildTable(_filteredRecords),
         ],
@@ -301,43 +339,73 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
         rows: records.map((item) {
           return DataRow(
             cells: [
-              DataCell(Text(
-                item.animalTag,
-                style: GoogleFonts.plusJakartaSans(
+              DataCell(
+                Text(
+                  item.animalTag,
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: primaryColor),
-              )),
+                    color: primaryColor,
+                  ),
+                ),
+              ),
               DataCell(_buildEventoBadge(item)),
-              DataCell(Text(formatDate(item.recordedAt),
-                  style: GoogleFonts.plusJakartaSans(fontSize: 14))),
-              DataCell(Text(formatDate(item.expectedAt),
-                  style: GoogleFonts.plusJakartaSans(fontSize: 14))),
-              DataCell(Text(item.notes ?? 'Sin observaciones',
+              DataCell(
+                Text(
+                  formatDate(item.recordedAt),
+                  style: GoogleFonts.plusJakartaSans(fontSize: 14),
+                ),
+              ),
+              DataCell(
+                Text(
+                  formatDate(item.expectedAt),
+                  style: GoogleFonts.plusJakartaSans(fontSize: 14),
+                ),
+              ),
+              DataCell(
+                Text(
+                  item.notes ?? 'Sin observaciones',
                   style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14, color: textMuted))),
-              DataCell(Text(item.status,
+                    fontSize: 14,
+                    color: textMuted,
+                  ),
+                ),
+              ),
+              DataCell(
+                Text(
+                  item.status,
                   style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: primaryColor))),
-              DataCell(Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.visibility_outlined,
-                        color: primaryColor, size: 20),
-                    tooltip: 'Ver Detalle',
-                    onPressed: () => _showDetail(item),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: primaryColor,
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline,
-                        color: Color(0xFFDC2626), size: 20),
-                    tooltip: 'Eliminar',
-                    onPressed: () => _confirmDelete(item),
-                  ),
-                ],
-              )),
+                ),
+              ),
+              DataCell(
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.visibility_outlined,
+                        color: primaryColor,
+                        size: 20,
+                      ),
+                      tooltip: 'Ver Detalle',
+                      onPressed: () => _showDetail(item),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Color(0xFFDC2626),
+                        size: 20,
+                      ),
+                      tooltip: 'Eliminar',
+                      onPressed: () => _confirmDelete(item),
+                    ),
+                  ],
+                ),
+              ),
             ],
           );
         }).toList(),
@@ -346,9 +414,14 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
   }
 
   Widget _buildTableHeader(String title) {
-    return Text(title,
-        style: GoogleFonts.plusJakartaSans(
-            fontSize: 12, fontWeight: FontWeight.w800, color: textMuted));
+    return Text(
+      title,
+      style: GoogleFonts.plusJakartaSans(
+        fontSize: 12,
+        fontWeight: FontWeight.w800,
+        color: textMuted,
+      ),
+    );
   }
 
   Widget _buildMessage(String text, {Widget? action}) {
@@ -361,7 +434,10 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
               text,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14, fontWeight: FontWeight.w600, color: textMuted),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: textMuted,
+              ),
             ),
             if (action != null) ...[const SizedBox(height: 16), action],
           ],
@@ -379,12 +455,17 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration:
-          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Text(
         item.label,
         style: GoogleFonts.plusJakartaSans(
-            fontSize: 12, fontWeight: FontWeight.w700, color: fg),
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: fg,
+        ),
       ),
     );
   }
@@ -395,7 +476,8 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Eliminar evento'),
         content: Text(
-            '¿Eliminar el evento "${item.label}" de ${item.animalTag}?'),
+          '¿Eliminar el evento "${item.label}" de ${item.animalTag}?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -447,8 +529,11 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
                 notes: detalleController.text.trim(),
               );
               if (!mounted) return;
-              setState(() => _records = [created, ..._records]
-                ..sort((a, b) => b.recordedAt.compareTo(a.recordedAt)));
+              setState(
+                () =>
+                    _records = [created, ..._records]
+                      ..sort((a, b) => b.recordedAt.compareTo(a.recordedAt)),
+              );
               if (dialogContext.mounted) Navigator.pop(dialogContext);
               _showMessage('Evento reproductivo registrado.');
             } on ApiException catch (error) {
@@ -460,8 +545,9 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
           return AlertDialog(
             backgroundColor: Colors.white,
             surfaceTintColor: Colors.white,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: Row(
               children: [
                 Container(
@@ -470,23 +556,26 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
                     color: const Color(0xFFEFF6FF),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.favorite_border,
-                      color: primaryColor, size: 20),
+                  child: const Icon(
+                    Icons.favorite_border,
+                    color: primaryColor,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'Registrar Evento Reproductivo',
                     style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w800,
-                        color: primaryColor,
-                        fontSize: 18),
+                      fontWeight: FontWeight.w800,
+                      color: primaryColor,
+                      fontSize: 18,
+                    ),
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close, size: 20),
-                  onPressed:
-                      saving ? null : () => Navigator.pop(dialogContext),
+                  onPressed: saving ? null : () => Navigator.pop(dialogContext),
                 ),
               ],
             ),
@@ -552,9 +641,10 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
                         child: InputDecorator(
                           decoration: _formDecoration('Fecha *').copyWith(
                             suffixIcon: const Icon(
-                                Icons.calendar_today_outlined,
-                                size: 18,
-                                color: accentColor),
+                              Icons.calendar_today_outlined,
+                              size: 18,
+                              color: accentColor,
+                            ),
                           ),
                           child: Text(formatDate(eventDate)),
                         ),
@@ -565,7 +655,9 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
                           child: Text(
                             'Parto estimado: ${formatDate(eventDate.add(const Duration(days: 283)))} (283 días de gestación).',
                             style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12, color: textMuted),
+                              fontSize: 12,
+                              color: textMuted,
+                            ),
                           ),
                         ),
                       const SizedBox(height: 16),
@@ -601,7 +693,9 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Icon(Icons.save_outlined, size: 16),
                 label: const Text('Guardar Evento'),
@@ -623,25 +717,35 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(14)),
-              child:
-                  const Icon(Icons.pets_rounded, color: primaryColor, size: 24),
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.pets_rounded,
+                color: primaryColor,
+                size: 24,
+              ),
             ),
             const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Detalle del Evento',
-                    style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 18,
-                        color: primaryColor)),
-                Text('Chapeta: ${item.animalTag}',
-                    style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        color: textMuted)),
+                Text(
+                  'Detalle del Evento',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                    color: primaryColor,
+                  ),
+                ),
+                Text(
+                  'Chapeta: ${item.animalTag}',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: textMuted,
+                  ),
+                ),
               ],
             ),
           ],
@@ -654,35 +758,54 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
               const Divider(color: borderColor),
               const SizedBox(height: 12),
               _buildDetailRow(
-                  'Tipo de Evento', item.label, Icons.event_note_rounded),
-              _buildDetailRow('Fecha', formatDate(item.recordedAt),
-                  Icons.calendar_today_outlined),
-              if (item.expectedAt != null)
-                _buildDetailRow('Fecha esperada', formatDate(item.expectedAt),
-                    Icons.event_available_outlined),
+                'Tipo de Evento',
+                item.label,
+                Icons.event_note_rounded,
+              ),
               _buildDetailRow(
-                  'Estado Actual', item.status, Icons.info_outline_rounded),
+                'Fecha',
+                formatDate(item.recordedAt),
+                Icons.calendar_today_outlined,
+              ),
+              if (item.expectedAt != null)
+                _buildDetailRow(
+                  'Fecha esperada',
+                  formatDate(item.expectedAt),
+                  Icons.event_available_outlined,
+                ),
+              _buildDetailRow(
+                'Estado Actual',
+                item.status,
+                Icons.info_outline_rounded,
+              ),
               const SizedBox(height: 16),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(16)),
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Detalle / Observaciones:',
-                        style: GoogleFonts.plusJakartaSans(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                            color: textMuted)),
+                    Text(
+                      'Detalle / Observaciones:',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                        color: textMuted,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(item.notes ?? 'Sin observaciones',
-                        style: GoogleFonts.plusJakartaSans(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            color: primaryColor)),
+                    Text(
+                      item.notes ?? 'Sin observaciones',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: primaryColor,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -692,15 +815,20 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
         actions: [
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+              backgroundColor: primaryColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
             onPressed: () => Navigator.pop(context),
-            child: Text('Cerrar',
-                style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white, fontWeight: FontWeight.w700)),
+            child: Text(
+              'Cerrar',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
@@ -718,7 +846,10 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
             child: Text(
               '$label:',
               style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w600, color: textMuted, fontSize: 14),
+                fontWeight: FontWeight.w600,
+                color: textMuted,
+                fontSize: 14,
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -727,9 +858,10 @@ class _ReproduccionScreenState extends State<ReproduccionScreen> {
               value,
               textAlign: TextAlign.right,
               style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w800,
-                  color: primaryColor,
-                  fontSize: 14),
+                fontWeight: FontWeight.w800,
+                color: primaryColor,
+                fontSize: 14,
+              ),
             ),
           ),
         ],

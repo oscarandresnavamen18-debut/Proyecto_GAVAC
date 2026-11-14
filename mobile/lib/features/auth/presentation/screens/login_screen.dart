@@ -7,7 +7,7 @@ import 'dart:convert';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/gavac_colors.dart';
 import '../../../../core/theme/gavac_theme.dart';
-import '../../../../core/utils/app_session.dart';
+import '../../../../core/session/app_session.dart';
 import '../widgets/captcha_widget.dart';
 
 String get _apiBaseUrl => ApiClient.baseUrl;

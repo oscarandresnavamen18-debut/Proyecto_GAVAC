@@ -1,11 +1,9 @@
 import '../../../../core/network/api_client.dart';
-import '../../../../core/utils/app_session.dart';
+import '../../../../core/session/app_session.dart';
 import '../../../../core/utils/date_format.dart';
-import '../../../livestock/data/services/production_api_service.dart'
-    show AnimalOption;
+import '../../../animales/data/models/animal_option.dart';
 
-export '../../../livestock/data/services/production_api_service.dart'
-    show AnimalOption;
+export '../../../animales/data/models/animal_option.dart';
 
 class HealthRecord {
   const HealthRecord({
@@ -25,20 +23,20 @@ class HealthRecord {
   });
 
   factory HealthRecord.fromJson(Map<String, dynamic> json) => HealthRecord(
-        id: json['id'] as int,
-        animalId: json['animal_id'] as int,
-        animalTag: json['animal_tag'] as String,
-        animalName: json['animal_name'] as String?,
-        recordType: json['record_type'] as String,
-        diagnosis: json['diagnosis'] as String? ?? '',
-        treatment: json['treatment'] as String?,
-        dose: json['dose'] as String?,
-        veterinarian: json['veterinarian'] as String?,
-        recordedAt: parseApiDate(json['recorded_at'])!,
-        nextCheckAt: parseApiDate(json['next_check_at']),
-        notes: json['notes'] as String?,
-        status: json['status'] as String,
-      );
+    id: json['id'] as int,
+    animalId: json['animal_id'] as int,
+    animalTag: json['animal_tag'] as String,
+    animalName: json['animal_name'] as String?,
+    recordType: json['record_type'] as String,
+    diagnosis: json['diagnosis'] as String? ?? '',
+    treatment: json['treatment'] as String?,
+    dose: json['dose'] as String?,
+    veterinarian: json['veterinarian'] as String?,
+    recordedAt: parseApiDate(json['recorded_at'])!,
+    nextCheckAt: parseApiDate(json['next_check_at']),
+    notes: json['notes'] as String?,
+    status: json['status'] as String,
+  );
 
   final int id;
   final int animalId;
@@ -100,11 +98,14 @@ class HealthApiService implements HealthRepository {
 
   @override
   Future<List<HealthRecord>> listRecords() async {
-    final response =
-        await ApiClient.get('/api/v1/health-records', token: _token);
+    final response = await ApiClient.get(
+      '/api/v1/health-records',
+      token: _token,
+    );
     if (response is! List) {
       throw const FormatException(
-          'La respuesta de los registros sanitarios no es válida.');
+        'La respuesta de los registros sanitarios no es válida.',
+      );
     }
     return response
         .map((item) => HealthRecord.fromJson(item as Map<String, dynamic>))
@@ -123,22 +124,18 @@ class HealthApiService implements HealthRepository {
     DateTime? nextCheckAt,
     String? notes,
   }) async {
-    final response = await ApiClient.post(
-      '/api/v1/health-records',
-      {
-        'animal_id': animalId,
-        'record_type': recordType,
-        'diagnosis': diagnosis,
-        'recorded_at': isoDate(recordedAt),
-        if (treatment != null && treatment.isNotEmpty) 'treatment': treatment,
-        if (dose != null && dose.isNotEmpty) 'dose': dose,
-        if (veterinarian != null && veterinarian.isNotEmpty)
-          'veterinarian': veterinarian,
-        if (nextCheckAt != null) 'next_check_at': isoDate(nextCheckAt),
-        if (notes != null && notes.isNotEmpty) 'notes': notes,
-      },
-      token: _token,
-    );
+    final response = await ApiClient.post('/api/v1/health-records', {
+      'animal_id': animalId,
+      'record_type': recordType,
+      'diagnosis': diagnosis,
+      'recorded_at': isoDate(recordedAt),
+      if (treatment != null && treatment.isNotEmpty) 'treatment': treatment,
+      if (dose != null && dose.isNotEmpty) 'dose': dose,
+      if (veterinarian != null && veterinarian.isNotEmpty)
+        'veterinarian': veterinarian,
+      if (nextCheckAt != null) 'next_check_at': isoDate(nextCheckAt),
+      if (notes != null && notes.isNotEmpty) 'notes': notes,
+    }, token: _token);
     return HealthRecord.fromJson(response);
   }
 

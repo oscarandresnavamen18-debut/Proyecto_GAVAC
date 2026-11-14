@@ -54,8 +54,10 @@ class FeatureKpiCard extends StatelessWidget {
     required this.borderColor,
     required this.textColor,
     required this.valueColor,
-    this.contentPadding =
-        const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+    this.contentPadding = const EdgeInsets.symmetric(
+      horizontal: 18,
+      vertical: 20,
+    ),
     super.key,
   });
 
@@ -192,11 +194,7 @@ class FeaturePageBanner extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(
-                icon,
-                color: Colors.white,
-                size: isCompact ? 28 : 36,
-              ),
+              child: Icon(icon, color: Colors.white, size: isCompact ? 28 : 36),
             ),
             SizedBox(width: isCompact ? 12 : 20),
             Expanded(

@@ -15,10 +15,7 @@ const Map<String, String> _statusLabels = {
 };
 
 class SanidadScreen extends StatefulWidget {
-  const SanidadScreen({
-    super.key,
-    this.repository = const HealthApiService(),
-  });
+  const SanidadScreen({super.key, this.repository = const HealthApiService()});
 
   final HealthRepository repository;
 
@@ -113,8 +110,7 @@ class _SanidadScreenState extends State<SanidadScreen> {
               children: [
                 FeaturePageBanner(
                   title: 'Control y Sanidad Ganadera',
-                  subtitle:
-                      'Gestión de vacunas, tratamientos y prevención sanitaria.',
+                  subtitle: 'Gestión de vacunas, tratamientos y prevención sanitaria.',
                   icon: Icons.shield_outlined,
                   isCompact: isCompact,
                 ),
@@ -142,8 +138,9 @@ class _SanidadScreenState extends State<SanidadScreen> {
     final coverage = _animals.isEmpty
         ? '0%'
         : '${(protectedAnimals * 100 / _animals.length).toStringAsFixed(0)}%';
-    final activeTreatments =
-        _records.where((r) => r.status == 'EN_TRATAMIENTO').length;
+    final activeTreatments = _records
+        .where((r) => r.status == 'EN_TRATAMIENTO')
+        .length;
     final alerts = vaccines
         .where((r) => r.status == 'VENCIDO' || r.status == 'PROXIMO_A_VENCER')
         .length;
@@ -220,15 +217,18 @@ class _SanidadScreenState extends State<SanidadScreen> {
             backgroundColor: primaryColor,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             elevation: 0,
           ),
           icon: const Icon(Icons.vaccines_rounded, size: 18),
           label: Text(
             'Registrar Vacuna',
             style: GoogleFonts.plusJakartaSans(
-                fontSize: 14, fontWeight: FontWeight.w700),
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
         OutlinedButton.icon(
@@ -237,14 +237,17 @@ class _SanidadScreenState extends State<SanidadScreen> {
             foregroundColor: primaryColor,
             side: const BorderSide(color: primaryColor, width: 1.5),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
           icon: const Icon(Icons.medical_services_outlined, size: 18),
           label: Text(
             'Registrar Tratamiento',
             style: GoogleFonts.plusJakartaSans(
-                fontSize: 14, fontWeight: FontWeight.w700),
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ],
@@ -349,19 +352,25 @@ class _SanidadScreenState extends State<SanidadScreen> {
                       Text(
                         record.animalName!,
                         style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12, color: textMuted),
+                          fontSize: 12,
+                          color: textMuted,
+                        ),
                       ),
                   ],
                 ),
               ),
               DataCell(_buildTypeBadge(record.isVaccine)),
-              DataCell(Text(
-                record.isVaccine
-                    ? record.diagnosis
-                    : '${record.diagnosis}${record.treatment == null ? '' : ' · ${record.treatment}'}',
-                style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13, fontWeight: FontWeight.w600),
-              )),
+              DataCell(
+                Text(
+                  record.isVaccine
+                      ? record.diagnosis
+                      : '${record.diagnosis}${record.treatment == null ? '' : ' · ${record.treatment}'}',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
               DataCell(_cellText(formatDate(record.recordedAt))),
               DataCell(_cellText(formatDate(record.nextCheckAt))),
               DataCell(_cellText(record.dose ?? '—')),
@@ -370,8 +379,11 @@ class _SanidadScreenState extends State<SanidadScreen> {
               DataCell(
                 IconButton(
                   tooltip: 'Eliminar registro',
-                  icon: const Icon(Icons.delete_outline,
-                      color: Color(0xFFDC2626), size: 20),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: Color(0xFFDC2626),
+                    size: 20,
+                  ),
                   onPressed: () => _confirmDelete(record),
                 ),
               ),
@@ -389,7 +401,10 @@ class _SanidadScreenState extends State<SanidadScreen> {
     return Text(
       title,
       style: GoogleFonts.plusJakartaSans(
-          fontSize: 11, fontWeight: FontWeight.w800, color: textMuted),
+        fontSize: 11,
+        fontWeight: FontWeight.w800,
+        color: textMuted,
+      ),
     );
   }
 
@@ -409,7 +424,10 @@ class _SanidadScreenState extends State<SanidadScreen> {
               text,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14, fontWeight: FontWeight.w600, color: textMuted),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: textMuted,
+              ),
             ),
             if (action != null) ...[const SizedBox(height: 16), action],
           ],
@@ -448,11 +466,16 @@ class _SanidadScreenState extends State<SanidadScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-          color: bgColor, borderRadius: BorderRadius.circular(10)),
+        color: bgColor,
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: Text(
         _statusLabels[status] ?? status,
         style: GoogleFonts.plusJakartaSans(
-            fontSize: 12, fontWeight: FontWeight.w700, color: textColor),
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: textColor,
+        ),
       ),
     );
   }
@@ -546,9 +569,11 @@ class _SanidadScreenState extends State<SanidadScreen> {
               if (!mounted) return;
               setState(() => _records = [created, ..._records]);
               if (dialogContext.mounted) Navigator.pop(dialogContext);
-              _showMessage(vaccine
-                  ? 'Vacuna registrada correctamente.'
-                  : 'Tratamiento registrado correctamente.');
+              _showMessage(
+                vaccine
+                    ? 'Vacuna registrada correctamente.'
+                    : 'Tratamiento registrado correctamente.',
+              );
             } on ApiException catch (error) {
               setDialogState(() => saving = false);
               _showMessage(error.message);
@@ -558,8 +583,9 @@ class _SanidadScreenState extends State<SanidadScreen> {
           return AlertDialog(
             backgroundColor: Colors.white,
             surfaceTintColor: Colors.white,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: Row(
               children: [
                 Container(
@@ -583,13 +609,14 @@ class _SanidadScreenState extends State<SanidadScreen> {
                   child: Text(
                     vaccine ? 'Registrar Vacuna' : 'Registrar Tratamiento',
                     style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w800, color: primaryColor),
+                      fontWeight: FontWeight.w800,
+                      color: primaryColor,
+                    ),
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close, size: 20),
-                  onPressed:
-                      saving ? null : () => Navigator.pop(dialogContext),
+                  onPressed: saving ? null : () => Navigator.pop(dialogContext),
                 ),
               ],
             ),
@@ -622,13 +649,14 @@ class _SanidadScreenState extends State<SanidadScreen> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: diagnosisController,
-                        decoration: _formDecoration(
-                          vaccine ? 'Nombre de Vacuna *' : 'Diagnóstico *',
-                        ).copyWith(
-                          hintText: vaccine
-                              ? 'Ej. Aftosa / Brucelosis'
-                              : 'Ej. Mastitis / Parasitosis',
-                        ),
+                        decoration:
+                            _formDecoration(
+                              vaccine ? 'Nombre de Vacuna *' : 'Diagnóstico *',
+                            ).copyWith(
+                              hintText: vaccine
+                                  ? 'Ej. Aftosa / Brucelosis'
+                                  : 'Ej. Mastitis / Parasitosis',
+                            ),
                         validator: (v) => v == null || v.trim().isEmpty
                             ? 'Campo obligatorio'
                             : null,
@@ -650,12 +678,14 @@ class _SanidadScreenState extends State<SanidadScreen> {
                           Expanded(
                             child: TextFormField(
                               controller: doseController,
-                              decoration: _formDecoration(
-                                vaccine ? 'Dosis (ml) *' : 'Dosis *',
-                              ).copyWith(
-                                hintText:
-                                    vaccine ? 'Ej. 2 ml' : 'Ej. 5 ml cada 24h',
-                              ),
+                              decoration:
+                                  _formDecoration(
+                                    vaccine ? 'Dosis (ml) *' : 'Dosis *',
+                                  ).copyWith(
+                                    hintText: vaccine
+                                        ? 'Ej. 2 ml'
+                                        : 'Ej. 5 ml cada 24h',
+                                  ),
                               validator: (v) => v == null || v.trim().isEmpty
                                   ? 'Campo obligatorio'
                                   : null,
@@ -721,7 +751,9 @@ class _SanidadScreenState extends State<SanidadScreen> {
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Icon(Icons.save_outlined, size: 16),
                 label: Text(vaccine ? 'Guardar Vacuna' : 'Guardar Tratamiento'),

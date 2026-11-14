@@ -1,6 +1,8 @@
 import 'package:material_ui/material_ui.dart';
+
 import 'captcha_widget_stub.dart'
-    if (dart.library.html) 'captcha_widget_web.dart' as platform;
+    if (dart.library.html) 'captcha_widget_web.dart'
+    as platform;
 
 class CaptchaWidget extends StatelessWidget {
   const CaptchaWidget({

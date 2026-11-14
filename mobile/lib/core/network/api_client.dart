@@ -44,7 +44,8 @@ class ApiClient {
     final data = _decodeResponse(response);
     if (data is Map<String, dynamic>) return data;
     throw const FormatException(
-        'El servidor devolvió una respuesta no válida.');
+      'El servidor devolvió una respuesta no válida.',
+    );
   }
 
   static Future<Map<String, dynamic>> patch(
@@ -62,16 +63,14 @@ class ApiClient {
     final data = _decodeResponse(response);
     if (data is Map<String, dynamic>) return data;
     throw const FormatException(
-        'El servidor devolvió una respuesta no válida.');
+      'El servidor devolvió una respuesta no válida.',
+    );
   }
 
   /// Descarga un archivo binario (por ejemplo, un reporte PDF o Excel).
   static Future<Uint8List> getBytes(String endpoint, {String? token}) async {
     final response = await _send(
-      () => http.get(
-        Uri.parse('$baseUrl$endpoint'),
-        headers: _headers(token),
-      ),
+      () => http.get(Uri.parse('$baseUrl$endpoint'), headers: _headers(token)),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       // Los errores del API llegan en JSON; se reutiliza el mismo manejo.
@@ -86,28 +85,23 @@ class ApiClient {
 
   static Future<dynamic> get(String endpoint, {String? token}) async {
     final response = await _send(
-      () => http.get(
-        Uri.parse('$baseUrl$endpoint'),
-        headers: _headers(token),
-      ),
+      () => http.get(Uri.parse('$baseUrl$endpoint'), headers: _headers(token)),
     );
     return _decodeResponse(response);
   }
 
   static Future<void> delete(String endpoint, {String? token}) async {
     final response = await _send(
-      () => http.delete(
-        Uri.parse('$baseUrl$endpoint'),
-        headers: _headers(token),
-      ),
+      () =>
+          http.delete(Uri.parse('$baseUrl$endpoint'), headers: _headers(token)),
     );
     _decodeResponse(response, allowEmptyBody: true);
   }
 
   static Map<String, String> _headers(String? token, {bool json = false}) => {
-        if (json) 'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      };
+    if (json) 'Content-Type': 'application/json',
+    if (token != null) 'Authorization': 'Bearer $token',
+  };
 
   static Future<http.Response> _send(
     Future<http.Response> Function() request,

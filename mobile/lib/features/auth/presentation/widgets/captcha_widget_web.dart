@@ -30,17 +30,11 @@ Widget buildCaptchaWidget({
     );
   }
 
-  return _CaptchaView(
-    onToken: onToken,
-    onResetReady: onResetReady,
-  );
+  return _CaptchaView(onToken: onToken, onResetReady: onResetReady);
 }
 
 class _CaptchaView extends StatefulWidget {
-  const _CaptchaView({
-    required this.onToken,
-    required this.onResetReady,
-  });
+  const _CaptchaView({required this.onToken, required this.onResetReady});
 
   final ValueChanged<String?> onToken;
   final ValueChanged<VoidCallback> onResetReady;
@@ -91,18 +85,14 @@ class _CaptchaViewState extends State<_CaptchaView> {
 
     _expiredListener = (html.Event event) {
       final data = _readDetail(event);
-      if (data != null &&
-          data['viewId'].toString() == '$_id' &&
-          !_disposed) {
+      if (data != null && data['viewId'].toString() == '$_id' && !_disposed) {
         widget.onToken(null);
       }
     };
 
     _errorListener = (html.Event event) {
       final data = _readDetail(event);
-      if (data != null &&
-          data['viewId'].toString() == '$_id' &&
-          !_disposed) {
+      if (data != null && data['viewId'].toString() == '$_id' && !_disposed) {
         widget.onToken(null);
       }
     };
@@ -160,10 +150,7 @@ class _CaptchaViewState extends State<_CaptchaView> {
     return SizedBox(
       width: 304,
       height: 85,
-      child: HtmlElementView(
-        viewType: _type,
-        onPlatformViewCreated: _render,
-      ),
+      child: HtmlElementView(viewType: _type, onPlatformViewCreated: _render),
     );
   }
 }

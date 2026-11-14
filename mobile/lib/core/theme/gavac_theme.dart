@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+
 import 'gavac_colors.dart';
 
 class GavacTheme {
@@ -51,17 +52,11 @@ class GavacTheme {
           backgroundColor: GavacColors.primary,
           foregroundColor: Colors.white,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 16,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -73,31 +68,21 @@ class GavacTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: GavacColors.border,
-            width: 1.5,
-          ),
+          borderSide: const BorderSide(color: GavacColors.border, width: 1.5),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: GavacColors.border,
-            width: 1.5,
-          ),
+          borderSide: const BorderSide(color: GavacColors.border, width: 1.5),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: GavacColors.primary,
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: GavacColors.primary, width: 2),
         ),
       ),
     );
   }
 
   static ThemeData get darkTheme {
-
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
@@ -118,17 +103,11 @@ class GavacTheme {
           backgroundColor: GavacColors.accent,
           foregroundColor: Colors.white,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 16,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -140,24 +119,15 @@ class GavacTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFF334155),
-            width: 1.5,
-          ),
+          borderSide: const BorderSide(color: Color(0xFF334155), width: 1.5),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFF334155),
-            width: 1.5,
-          ),
+          borderSide: const BorderSide(color: Color(0xFF334155), width: 1.5),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: GavacColors.accent,
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: GavacColors.accent, width: 2),
         ),
       ),
     );

@@ -5,15 +5,15 @@ import 'package:http/http.dart' as http;
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/gavac_colors.dart';
-import '../../../../core/utils/app_session.dart';
-import '../../../animals/presentation/screens/animales_screen.dart';
-import '../../../animals/presentation/screens/inventario_screen.dart';
+import '../../../../core/session/app_session.dart';
+import '../../../animales/presentation/screens/animales_screen.dart';
+import '../../../insumos/presentation/screens/inventario_screen.dart';
 import '../../../reproduccion/presentation/screens/reproduccion_screen.dart';
 import '../../../sanidad/presentation/screens/sanidad_screen.dart';
-import '../../../livestock/presentation/screens/produccion_screen.dart';
-import '../../../reports/presentation/screens/reportes_screen.dart';
-import '../../../admin/presentation/screens/gestion_fincas_screen.dart';
-import '../../../admin/presentation/screens/gestion_usuarios_screen.dart';
+import '../../../produccion/presentation/screens/produccion_screen.dart';
+import '../../../reportes/presentation/screens/reportes_screen.dart';
+import '../../../administracion/presentation/screens/gestion_fincas_screen.dart';
+import '../../../administracion/presentation/screens/gestion_usuarios_screen.dart';
 
 String get _apiBaseUrl => ApiClient.baseUrl;
 

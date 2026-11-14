@@ -1,11 +1,9 @@
 import '../../../../core/network/api_client.dart';
-import '../../../../core/utils/app_session.dart';
+import '../../../../core/session/app_session.dart';
 import '../../../../core/utils/date_format.dart';
-import '../../../livestock/data/services/production_api_service.dart'
-    show AnimalOption;
+import '../../../animales/data/models/animal_option.dart';
 
-export '../../../livestock/data/services/production_api_service.dart'
-    show AnimalOption;
+export '../../../animales/data/models/animal_option.dart';
 
 /// Tipos de evento: clave del API → nombre visible.
 const Map<String, String> breedingEventLabels = {
@@ -29,16 +27,16 @@ class BreedingRecord {
   });
 
   factory BreedingRecord.fromJson(Map<String, dynamic> json) => BreedingRecord(
-        id: json['id'] as int,
-        animalId: json['animal_id'] as int,
-        animalTag: json['animal_tag'] as String,
-        animalName: json['animal_name'] as String?,
-        recordType: json['record_type'] as String,
-        recordedAt: parseApiDate(json['recorded_at'])!,
-        expectedAt: parseApiDate(json['expected_at']),
-        notes: json['notes'] as String?,
-        status: json['status'] as String,
-      );
+    id: json['id'] as int,
+    animalId: json['animal_id'] as int,
+    animalTag: json['animal_tag'] as String,
+    animalName: json['animal_name'] as String?,
+    recordType: json['record_type'] as String,
+    recordedAt: parseApiDate(json['recorded_at'])!,
+    expectedAt: parseApiDate(json['expected_at']),
+    notes: json['notes'] as String?,
+    status: json['status'] as String,
+  );
 
   final int id;
   final int animalId;
@@ -72,7 +70,9 @@ class BreedingApiService implements BreedingRepository {
     final token = AppSession.accessToken;
     if (token == null || token.isEmpty) {
       throw const ApiException(
-          401, 'Inicia sesión para consultar la reproducción.');
+        401,
+        'Inicia sesión para consultar la reproducción.',
+      );
     }
     return token;
   }
@@ -90,11 +90,14 @@ class BreedingApiService implements BreedingRepository {
 
   @override
   Future<List<BreedingRecord>> listRecords() async {
-    final response =
-        await ApiClient.get('/api/v1/breeding-records', token: _token);
+    final response = await ApiClient.get(
+      '/api/v1/breeding-records',
+      token: _token,
+    );
     if (response is! List) {
       throw const FormatException(
-          'La respuesta de los eventos reproductivos no es válida.');
+        'La respuesta de los eventos reproductivos no es válida.',
+      );
     }
     return response
         .map((item) => BreedingRecord.fromJson(item as Map<String, dynamic>))
@@ -108,16 +111,12 @@ class BreedingApiService implements BreedingRepository {
     required DateTime recordedAt,
     String? notes,
   }) async {
-    final response = await ApiClient.post(
-      '/api/v1/breeding-records',
-      {
-        'animal_id': animalId,
-        'record_type': recordType,
-        'recorded_at': isoDate(recordedAt),
-        if (notes != null && notes.isNotEmpty) 'notes': notes,
-      },
-      token: _token,
-    );
+    final response = await ApiClient.post('/api/v1/breeding-records', {
+      'animal_id': animalId,
+      'record_type': recordType,
+      'recorded_at': isoDate(recordedAt),
+      if (notes != null && notes.isNotEmpty) 'notes': notes,
+    }, token: _token);
     return BreedingRecord.fromJson(response);
   }
 

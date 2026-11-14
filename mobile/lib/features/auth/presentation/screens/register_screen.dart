@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/gavac_colors.dart';
-import '../../../../core/utils/app_session.dart';
+import '../../../../core/session/app_session.dart';
 
 String get _apiBaseUrl => ApiClient.baseUrl;
 
