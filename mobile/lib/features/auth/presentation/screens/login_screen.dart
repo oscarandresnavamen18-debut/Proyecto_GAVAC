@@ -1,16 +1,13 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
-import 'package:http/http.dart' as http;
-
-import 'dart:convert';
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/gavac_colors.dart';
 import '../../../../core/theme/gavac_theme.dart';
+import '../../../../core/routing/app_routes.dart';
 import '../../../../core/session/app_session.dart';
+import '../../data/services/auth_api_service.dart';
 import '../widgets/captcha_widget.dart';
-
-String get _apiBaseUrl => ApiClient.baseUrl;
 
 /// Tipos de usuario que pueden iniciar sesión. El valor coincide con el enum
 /// `UserRole` del backend; "Trabajador de campo" corresponde a `MAYORDOMO`.
@@ -31,7 +28,9 @@ enum LoginUserType {
 }
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.repository = const AuthApiService()});
+
+  final AuthRepository repository;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -87,44 +86,32 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final response = await http.post(
-        Uri.parse('$_apiBaseUrl/api/v1/auth/login'),
-        headers: const {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': _emailController.text.trim().replaceAll(' ', ''),
-          'password': _passwordController.text,
-          'role': _userType!.apiValue,
-          if (kIsWeb) 'captcha_token': _captchaToken,
-        }),
+      final result = await widget.repository.login(
+        email: _emailController.text.trim().replaceAll(' ', ''),
+        password: _passwordController.text,
+        role: _userType!.apiValue,
+        captchaToken: kIsWeb ? _captchaToken : null,
       );
+      AppSession.accessToken = result.accessToken;
+      AppSession.role = result.role ?? _userType!.apiValue;
+      try {
+        await AppSession.loadProfile();
+      } catch (error) {
+        // El dashboard funciona sin el perfil; el backend sigue validando permisos.
+        debugPrint('No se pudo cargar el perfil: $error');
+      }
       if (!mounted) return;
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        AppSession.accessToken = body['access_token'] as String;
-        AppSession.role = body['role'] as String? ?? _userType!.apiValue;
-        try {
-          await AppSession.loadProfile();
-        } catch (error) {
-          // El dashboard funciona sin el perfil; el backend sigue validando permisos.
-          debugPrint('No se pudo cargar el perfil: $error');
-        }
-        if (!mounted) return;
-        Navigator.pushReplacementNamed(context, '/dashboard');
-      } else {
-        _resetCaptcha?.call();
-        _showMessage(switch (response.statusCode) {
-          401 => 'Correo o contraseña incorrectos.',
-          403 =>
-            'Esta cuenta no está registrada como ${_userType!.label.toLowerCase()}.',
-          _ => 'No se pudo iniciar sesión. Inténtalo de nuevo.',
-        });
-      }
-    } on http.ClientException {
-      if (mounted) {
-        _showMessage(
-          'No se pudo conectar con el servicio. Inténtalo de nuevo.',
-        );
-      }
+      Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      _resetCaptcha?.call();
+      _showMessage(switch (error.statusCode) {
+        0 => 'No se pudo conectar con el servicio. Inténtalo de nuevo.',
+        401 => 'Correo o contraseña incorrectos.',
+        403 =>
+          'Esta cuenta no está registrada como ${_userType!.label.toLowerCase()}.',
+        _ => 'No se pudo iniciar sesión. Inténtalo de nuevo.',
+      });
     } on FormatException {
       if (mounted) {
         _showMessage('El servicio respondió con un formato no válido.');
@@ -213,29 +200,22 @@ class _LoginScreenState extends State<LoginScreen> {
                         return;
                       }
                       setDialogState(() => busy = true);
+                      final email = emailController.text.trim();
                       try {
-                        final response = await http.post(
-                          Uri.parse(
-                            '$_apiBaseUrl/api/v1/auth/password-reset/${codeSent ? 'confirm' : 'request'}',
-                          ),
-                          headers: const {'Content-Type': 'application/json'},
-                          body: jsonEncode(
-                            codeSent
-                                ? {
-                                    'email': emailController.text.trim(),
-                                    'code': codeController.text.trim(),
-                                    'new_password': passwordController.text,
-                                  }
-                                : {'email': emailController.text.trim()},
-                          ),
-                        );
-                        if (!context.mounted) return;
-                        if (response.statusCode == 204) {
+                        if (codeSent) {
+                          await widget.repository.confirmPasswordReset(
+                            email: email,
+                            code: codeController.text.trim(),
+                            newPassword: passwordController.text,
+                          );
+                          if (!context.mounted) return;
                           Navigator.pop(dialogContext);
                           _showMessage(
                             'Contraseña restablecida. Ya puedes iniciar sesión.',
                           );
-                        } else if (response.statusCode == 202) {
+                        } else {
+                          await widget.repository.requestPasswordReset(email);
+                          if (!context.mounted) return;
                           setDialogState(() => codeSent = true);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -244,21 +224,15 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                           );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'No se pudo completar la solicitud. Revisa el código e inténtalo de nuevo.',
-                              ),
-                            ),
-                          );
                         }
-                      } on http.ClientException {
+                      } on ApiException catch (error) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
+                            SnackBar(
                               content: Text(
-                                'No se pudo conectar con el servicio.',
+                                error.statusCode == 0
+                                    ? 'No se pudo conectar con el servicio.'
+                                    : 'No se pudo completar la solicitud. Revisa el código e inténtalo de nuevo.',
                               ),
                             ),
                           );
@@ -465,7 +439,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Center(
                         child: TextButton(
                           onPressed: () {
-                            Navigator.pushNamed(context, '/register');
+                            Navigator.pushNamed(context, AppRoutes.register);
                           },
                           child: Text(
                             registerText,
@@ -603,7 +577,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Center(
                 child: TextButton(
                   onPressed: () {
-                    Navigator.pushNamed(context, '/register');
+                    Navigator.pushNamed(context, AppRoutes.register);
                   },
                   child: Text(
                     registerText,

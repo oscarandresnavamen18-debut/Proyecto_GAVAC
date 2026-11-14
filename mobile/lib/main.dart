@@ -1,9 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
+import 'core/routing/app_routes.dart';
 import 'core/theme/gavac_theme.dart';
-import 'features/auth/presentation/screens/login_screen.dart';
-import 'features/dashboard/presentation/screens/dashboard_screen.dart';
-import 'features/auth/presentation/screens/register_screen.dart';
 
 void main() {
   runApp(const GAVACApp());
@@ -24,12 +22,8 @@ class GAVACApp extends StatelessWidget {
       locale: locale,
       supportedLocales: const [locale, Locale('es')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      initialRoute: '/login',
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegisterScreen(),
-        '/dashboard': (context) => const DashboardScreen(),
-      },
+      initialRoute: AppRoutes.initial,
+      routes: AppRoutes.routes,
     );
   }
 }

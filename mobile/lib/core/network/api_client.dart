@@ -48,6 +48,23 @@ class ApiClient {
     );
   }
 
+  /// POST para acciones que pueden responder sin cuerpo (202 o 204).
+  /// Devuelve el JSON de la respuesta o `null` si no trae contenido.
+  static Future<dynamic> postAction(
+    String endpoint,
+    Map<String, dynamic> body, {
+    String? token,
+  }) async {
+    final response = await _send(
+      () => http.post(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: _headers(token, json: true),
+        body: jsonEncode(body),
+      ),
+    );
+    return _decodeResponse(response, allowEmptyBody: true);
+  }
+
   static Future<Map<String, dynamic>> patch(
     String endpoint,
     Map<String, dynamic> body, {

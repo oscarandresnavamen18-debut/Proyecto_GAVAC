@@ -1,16 +1,16 @@
-import 'dart:convert';
-
 import 'package:material_ui/material_ui.dart';
-import 'package:http/http.dart' as http;
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/gavac_colors.dart';
+import '../../../../core/routing/app_routes.dart';
 import '../../../../core/session/app_session.dart';
-
-String get _apiBaseUrl => ApiClient.baseUrl;
+import '../../../administracion/data/services/admin_api_service.dart';
+import '../../data/services/auth_api_service.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  const RegisterScreen({super.key, this.repository = const AuthApiService()});
+
+  final AuthRepository repository;
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -65,81 +65,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Registro de Usuario en PostgreSQL
-      final response = await http.post(
-        Uri.parse('$_apiBaseUrl/api/v1/auth/register'),
-        headers: const {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'nombre': _nombreController.text.trim(),
-          'email': _emailController.text.trim(),
-          'password': _passwordController.text,
-        }),
+      final result = await widget.repository.register(
+        nombre: _nombreController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
       );
+      AppSession.accessToken = result.accessToken;
+      AppSession.role = result.role ?? 'ADMIN';
+      AppSession.userName = _nombreController.text.trim();
 
-      if (!mounted) return;
-
-      if (response.statusCode == 201) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final token = data['access_token'] as String;
-
-        AppSession.accessToken = token;
-        AppSession.role = data['role'] as String? ?? 'ADMIN';
-        AppSession.userName = _nombreController.text.trim();
-
-        final farmName = _fincaController.text.trim();
-        var farmCreated = farmName.isEmpty;
-        if (farmName.isNotEmpty) {
-          try {
-            final farmResponse = await http.post(
-              Uri.parse('$_apiBaseUrl/api/v1/farms'),
-              headers: {
-                'Authorization': 'Bearer $token',
-                'Content-Type': 'application/json',
-              },
-              body: jsonEncode({
-                'nombre': _fincaController.text.trim(),
-                'ubicacion': '',
-              }),
-            );
-            if (farmResponse.statusCode == 201) {
-              final farmData =
-                  jsonDecode(farmResponse.body) as Map<String, dynamic>;
-              AppSession.farmName = farmData['name'] as String? ?? farmName;
-              AppSession.farmId = farmData['id'] as int?;
-              farmCreated = true;
-            } else {
-              debugPrint(
-                'No se pudo registrar la finca. HTTP ${farmResponse.statusCode}.',
-              );
-            }
-          } on http.ClientException catch (error) {
-            debugPrint('Error de conexión al registrar la finca: $error');
-          } on FormatException catch (error) {
-            debugPrint('Respuesta inválida al registrar la finca: $error');
-          }
+      // La primera finca del administrador queda como su finca activa.
+      final farmName = _fincaController.text.trim();
+      var farmCreated = farmName.isEmpty;
+      if (farmName.isNotEmpty) {
+        try {
+          final farm = await AdminApiService.crearFinca(farmName, '');
+          AppSession.farmName = farm.nombre;
+          AppSession.farmId = farm.id;
+          farmCreated = true;
+        } on ApiException catch (error) {
+          debugPrint('No se pudo registrar la finca: ${error.message}');
         }
-
-        _showMessage(
-          farmCreated ? 'Cuenta creada correctamente.' : 'Cuenta creada, pero no se pudo registrar la finca. Puedes intentarlo desde Administración.',
-        );
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/dashboard');
-        }
-      } else if (response.statusCode == 409) {
-        _showMessage('El correo electrónico ya se encuentra registrado.');
-      } else {
-        _showMessage('No se pudo registrar la cuenta. Inténtalo de nuevo.');
       }
-    } on http.ClientException {
+
+      _showMessage(
+        farmCreated ? 'Cuenta creada correctamente.' : 'Cuenta creada, pero no se pudo registrar la finca. Puedes intentarlo desde Administración.',
+      );
       if (mounted) {
-        _showMessage(
-          'No se pudo conectar con el servidor. Revisa tu conexión.',
-        );
+        Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
       }
+    } on ApiException catch (error) {
+      _showMessage(switch (error.statusCode) {
+        0 => 'No se pudo conectar con el servidor. Revisa tu conexión.',
+        409 => 'El correo electrónico ya se encuentra registrado.',
+        _ => 'No se pudo registrar la cuenta. Inténtalo de nuevo.',
+      });
     } on FormatException {
-      if (mounted) {
-        _showMessage('Respuesta no válida del servidor.');
-      }
+      _showMessage('Respuesta no válida del servidor.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -277,8 +239,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const SizedBox(height: 24),
                       Center(
                         child: TextButton(
-                          onPressed: () =>
-                              Navigator.pushReplacementNamed(context, '/login'),
+                          onPressed: () => Navigator.pushReplacementNamed(
+                            context,
+                            AppRoutes.login,
+                          ),
                           child: Text(
                             '¿Ya tienes cuenta? Inicia sesión',
                             style: TextStyle(
@@ -481,7 +445,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               Center(
                 child: TextButton(
                   onPressed: () =>
-                      Navigator.pushReplacementNamed(context, '/login'),
+                      Navigator.pushReplacementNamed(context, AppRoutes.login),
                   child: Text(
                     '¿Ya tienes cuenta? Inicia sesión',
                     style: TextStyle(
