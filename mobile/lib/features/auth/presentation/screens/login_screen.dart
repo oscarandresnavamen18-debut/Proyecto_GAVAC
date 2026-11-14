@@ -294,7 +294,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildDesktopLayout() {
     return Row(
       children: [
-        // LADO IZQUIERDO - Imagen de fondo con Buey Nelore blanco (imagenLoginNuevo.png)
+        // LADO IZQUIERDO - Imagen de fondo con Buey Nelore blanco (imagenLoginNuevo.jpg)
         Expanded(
           flex: 1,
           child: Container(
@@ -303,7 +303,7 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 Positioned.fill(
                   child: Image.asset(
-                    'assets/imagenes/imagenLoginNuevo.png',
+                    'assets/imagenes/imagenLoginNuevo.jpg',
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) =>
                         const SizedBox(),
