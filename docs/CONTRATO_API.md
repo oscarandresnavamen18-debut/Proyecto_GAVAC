@@ -10,20 +10,38 @@
 - **Formato de datos**: JSON (`Content-Type: application/json`)
 - **Autenticación**: Bearer Token JWT en cabecera `Authorization: Bearer <token>`
 - **Formato de fechas**: `YYYY-MM-DD` (ISO 8601)
-- **Aislamiento Multi-inquilino**: La información de cada finca está aislada por el `farm_id` / `finca_id` asociado al usuario autenticado.
+- **Aislamiento Multi-inquilino**: La información de cada finca está aislada por el `farm_id` / `finca_id` asociado al usuario autenticado (su **finca activa**).
 - **Manejo de Red**:
   - Web: `http://localhost:8001`
   - Emulador Android: `http://10.0.2.2:8001`
-  - Producción (Railway): `https://proyectogestionganadera-production.up.railway.app`
+  - Producción (Railway): `https://proyectogavac-production.up.railway.app`
+
+---
+
+## Roles y permisos
+
+| Rol (`role`) | Nombre en la app | Cómo se crea |
+|---|---|---|
+| `ADMIN` | Administrador | Registro público (`POST /auth/register`) |
+| `VETERINARIO` | Veterinario | El administrador, con `POST /users` |
+| `MAYORDOMO` | Trabajador de campo | El administrador, con `POST /users` |
+
+- **Módulos con permiso**: `registro`, `sanidad`, `reproduccion`, `produccion`, `insumos`, `reportes`.
+- El administrador tiene todos los módulos y es el único que accede a la administración (fincas y usuarios).
+- Si el administrador no configura permisos (`module_permissions = null`), se aplican los del rol:
+  - Veterinario: `registro`, `sanidad`, `reproduccion`, `reportes`.
+  - Trabajador de campo: `registro`, `produccion`, `insumos`.
+- Un endpoint de un módulo no permitido responde **403** (`"No tienes permiso para el módulo de ..."`).
+- Las cuentas desactivadas responden **403** al iniciar sesión y con un token vigente.
 
 ---
 
 ## Endpoint / Resumen de Rutas
 
-### 1. Autenticación y Usuarios (`/api/v1/auth`)
+### 1. Autenticación (`/api/v1/auth`)
 
 #### `POST /api/v1/auth/register`
-* **Descripción**: Registra un nuevo usuario en la plataforma.
+* **Descripción**: Registra al **administrador** de la finca.
 * **Cuerpo de Solicitud**:
   ```json
   {
@@ -36,7 +54,8 @@
   ```json
   {
     "access_token": "eyJhbGciOi...",
-    "token_type": "bearer"
+    "token_type": "bearer",
+    "role": "ADMIN"
   }
   ```
 
@@ -47,34 +66,64 @@
   {
     "email": "juan@finca.com",
     "password": "Password123!",
+    "role": "ADMIN",
     "captcha_token": "opcional"
   }
   ```
-* **Respuesta Exitosa (200 OK)**: Token JWT de acceso.
+  `role` es el tipo de usuario elegido en el login (`ADMIN`, `VETERINARIO` o `MAYORDOMO`). Es opcional por compatibilidad; si se envía y no coincide con la cuenta, responde **403**. La contraseña se valida primero (**401** si es incorrecta).
+* **Respuesta Exitosa (200 OK)**: `access_token`, `token_type` y `role`.
 
 #### `GET /api/v1/auth/me`
-* **Descripción**: Obtiene la información del usuario en sesión.
+* **Descripción**: Obtiene la información del usuario en sesión, con su finca activa y sus módulos permitidos.
 * **Respuesta Exitosa (200 OK)**:
   ```json
   {
     "id": 1,
     "email": "juan@finca.com",
     "full_name": "Juan Pérez",
-    "role": "MAYORDOMO",
+    "role": "ADMIN",
     "is_active": true,
-    "created_at": "2026-03-31T00:00:00"
+    "created_at": "2026-03-31T00:00:00",
+    "farm_id": 1,
+    "permissions": ["registro", "sanidad", "reproduccion", "produccion", "insumos", "reportes"]
   }
   ```
 
 ---
 
-### 2. Fincas (`/api/v1/farms`)
+### 2. Usuarios (`/api/v1/users`) — solo administrador
+
+#### `GET /api/v1/users`
+* **Descripción**: Lista los veterinarios y trabajadores asignados a las fincas del administrador (formato de `GET /auth/me`).
+
+#### `POST /api/v1/users`
+* **Descripción**: Crea un veterinario o trabajador de campo en una finca del administrador.
+* **Cuerpo de Solicitud**:
+  ```json
+  {
+    "nombre": "Dra. Gómez",
+    "email": "gomez@finca.com",
+    "password": "Clave12345",
+    "role": "VETERINARIO",
+    "farm_id": 1,
+    "permisos": ["registro", "sanidad"]
+  }
+  ```
+  `role` solo admite `VETERINARIO` o `MAYORDOMO`. `permisos` es opcional (si se omite, aplican los del rol).
+* **Errores**: 404 si la finca no es del administrador; 409 si el correo ya existe.
+
+#### `PATCH /api/v1/users/{user_id}`
+* **Descripción**: Actualiza `nombre`, `role`, `farm_id`, `permisos`, `is_active` o `password`. Cambiar la contraseña cierra las sesiones abiertas del usuario.
+
+---
+
+### 3. Fincas (`/api/v1/farms`)
 
 #### `GET /api/v1/farms`
-* **Descripción**: Lista las fincas asociadas al usuario autenticado.
+* **Descripción**: El administrador recibe todas sus fincas; los demás usuarios, la finca asignada.
 
-#### `POST /api/v1/farms`
-* **Descripción**: Crea una nueva finca.
+#### `POST /api/v1/farms` — solo administrador
+* **Descripción**: Crea una finca. La primera queda como finca activa.
 * **Cuerpo de Solicitud**:
   ```json
   {
@@ -82,10 +131,16 @@
     "ubicacion": "Antioquia, Colombia"
   }
   ```
-* **Respuesta Exitosa (201 Created)**: Objeto `FarmRead` creado (`id`, `name`, `location`, `owner_id`, `created_at`).
+* **Respuesta Exitosa (201 Created)**: Objeto `FarmRead` (`id`, `name`, `location`, `owner_id`, `created_at`).
+
+#### `PATCH /api/v1/farms/{farm_id}` — solo administrador
+* **Descripción**: Actualiza `nombre` y `ubicacion` de una finca propia.
+
+#### `POST /api/v1/farms/{farm_id}/activate` — solo administrador
+* **Descripción**: Cambia la finca activa del administrador (la que usan el dashboard y los módulos).
 
 #### `GET /api/v1/farms/{farm_id}/summary`
-* **Descripción**: Devuelve un resumen estadístico de inventario ganadero y eventos sanitarios.
+* **Descripción**: Resumen de animales activos por estado y total de eventos.
 * **Respuesta Exitosa (200 OK)**:
   ```json
   {
@@ -101,10 +156,10 @@
 
 ---
 
-### 3. Animales (`/api/v1/animals`)
+### 4. Animales (`/api/v1/animals`) — módulo `registro`
 
 #### `GET /api/v1/animals`
-* **Descripción**: Lista los animales pertenecientes a la finca del usuario autorizada (Soporta paginación con `skip` y `limit`).
+* **Descripción**: Lista los animales activos de la finca (paginación con `skip` y `limit`). Disponible para cualquier usuario de la finca, porque los demás módulos lo necesitan.
 
 #### `POST /api/v1/animals`
 * **Descripción**: Registra un nuevo animal en la finca.
@@ -128,14 +183,14 @@
 * **Respuesta Exitosa (201 Created)**: Objeto `AnimalRead`.
 
 #### `PATCH /api/v1/animals/{animal_id}`
-* **Descripción**: Actualiza campos específicos de un animal (nombre, color, peso actual o estado).
+* **Descripción**: Actualiza `tag_id`, `breed`, `gender`, `birth_date`, `name`, `color`, `current_weight` o `status`. Responde 409 si la chapeta ya existe.
 
 #### `DELETE /api/v1/animals/{animal_id}`
-* **Descripción**: Elimina un animal de la finca (204 No Content).
+* **Descripción**: Borrado lógico (204 No Content): el animal deja de listarse, pero se conserva su historial sanitario, reproductivo y de producción.
 
 ---
 
-### 4. Eventos Sanitarios y Pesajes (`/api/v1/animals/{animal_id}/events`)
+### 5. Eventos Sanitarios y Pesajes (`/api/v1/animals/{animal_id}/events`) — módulo `sanidad`
 
 #### `GET /api/v1/animals/{animal_id}/events`
 * **Descripción**: Consulta el historial de eventos sanitarios y pesajes de un animal.
@@ -158,7 +213,63 @@
 
 ---
 
-### 5. Producción (`/api/v1/production`)
+### 6. Sanidad (`/api/v1/health-records`) — módulo `sanidad`
+
+#### `GET /api/v1/health-records`
+* **Descripción**: Vacunas y tratamientos de la finca, del más reciente al más antiguo.
+
+#### `POST /api/v1/health-records`
+* **Cuerpo de Solicitud**:
+  ```json
+  {
+    "animal_id": 1,
+    "record_type": "VACUNA",
+    "diagnosis": "Aftosa",
+    "treatment": null,
+    "dose": "2 ml",
+    "veterinarian": "Dra. Gómez",
+    "recorded_at": "2026-11-14",
+    "next_check_at": "2027-05-14",
+    "notes": "Ciclo semestral"
+  }
+  ```
+  - `record_type`: `"VACUNA"` | `"TRATAMIENTO"`. `diagnosis` es el nombre de la vacuna o el diagnóstico; `treatment`, el medicamento.
+  - `next_check_at` es la próxima dosis (vacunas) o el fin del seguimiento (tratamientos); no puede ser anterior a `recorded_at`.
+  - Si se omite `veterinarian`, se guarda el nombre de quien registra.
+* **Respuesta (201 Created)**: el registro con `animal_tag`, `animal_name` y `status`: `VIGENTE`, `PROXIMO_A_VENCER` (15 días o menos), `VENCIDO`, `EN_TRATAMIENTO` o `FINALIZADO`.
+
+#### `DELETE /api/v1/health-records/{record_id}`
+* **Descripción**: Elimina un registro sanitario (204 No Content).
+
+---
+
+### 7. Reproducción (`/api/v1/breeding-records`) — módulo `reproduccion`
+
+#### `GET /api/v1/breeding-records`
+* **Descripción**: Eventos reproductivos de la finca, del más reciente al más antiguo.
+
+#### `POST /api/v1/breeding-records`
+* **Cuerpo de Solicitud**:
+  ```json
+  {
+    "animal_id": 1,
+    "record_type": "PRENEZ",
+    "recorded_at": "2026-09-01",
+    "expected_at": null,
+    "notes": "Toro 102"
+  }
+  ```
+  - `record_type`: `"CELO"` | `"INSEMINACION"` | `"PRENEZ"` | `"PARTO"`.
+  - Solo para hembras (422 en machos) y sin fechas futuras.
+  - En `PRENEZ`, si se omite `expected_at` se calcula el parto a 283 días.
+* **Respuesta (201 Created)**: el registro con `animal_tag`, `expected_at` y `status` descriptivo (por ejemplo, `"Gestante, parto en 209 días"`).
+
+#### `DELETE /api/v1/breeding-records/{record_id}`
+* **Descripción**: Elimina un evento reproductivo (204 No Content).
+
+---
+
+### 8. Producción (`/api/v1/production`) — módulo `produccion`
 
 #### `GET /api/v1/production`
 * **Descripción**: Lista las mediciones de producción de los animales de la finca del usuario autenticado, de la más reciente a la más antigua.
@@ -182,7 +293,7 @@
 
 ---
 
-### 6. Inventario (`/api/v1/inventory`)
+### 9. Inventario (`/api/v1/inventory`) — módulo `insumos`
 
 #### `GET /api/v1/inventory`
 * **Descripción**: Lista los insumos activos de la finca autenticada e incluye el saldo actual calculado a partir de sus movimientos.
@@ -204,3 +315,14 @@
 
 #### `DELETE /api/v1/inventory/{item_id}`
 * **Descripción**: Retira el insumo del inventario activo sin borrar su historial de movimientos (204 No Content).
+
+---
+
+### 10. Reportes (`/api/v1/reports`) — módulo `reportes`
+
+#### `GET /api/v1/reports/{reporte}?formato=pdf|xlsx`
+* **Descripción**: Descarga un archivo (no JSON) con los datos de la finca activa.
+* **`reporte`**:
+  - `animales`, `sanidad`, `reproduccion`, `produccion`, `insumos`: todas las columnas del módulo e indicadores de resumen. Además del permiso `reportes`, requiere el permiso del módulo.
+  - `general`: resumen de la finca. El PDF trae una portada con los indicadores y una sección por módulo; el Excel, una hoja `Resumen` y una hoja por módulo. Solo incluye los módulos que el usuario tiene habilitados.
+* **Respuesta (200 OK)**: `application/pdf` o `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, con `Content-Disposition: attachment; filename="gavac_<reporte>_<fecha>.<formato>"`.

@@ -21,7 +21,9 @@ Docker Compose inicia PostgreSQL y la API para desarrollo local. La API ejecuta 
 El backend está en `backend/`:
 
 - `app/main.py` crea la aplicación FastAPI, configura CORS e incluye los routers.
-- `app/routers/` agrupa los endpoints por dominio: autenticación, fincas, animales, eventos y funcionalidades adicionales.
+- `app/routers/` agrupa los endpoints por dominio: autenticación, usuarios, fincas, animales, eventos, sanidad (`health_records.py`), reproducción (`breeding.py`), producción, inventario, reportes y funcionalidades adicionales.
+- `app/permissions.py` define los módulos y los permisos por rol; `app/deps.py` expone `require_admin` y `require_module(...)`, que cada endpoint usa para validar el acceso.
+- `app/reports.py` genera los reportes en PDF (fpdf2) y Excel (openpyxl).
 - `app/models.py` define los modelos SQLAlchemy.
 - `app/schemas.py` define los esquemas Pydantic de entrada y salida.
 - `app/config.py`, `app/db.py`, `app/deps.py` y `app/security.py` reúnen configuración, acceso a datos, dependencias y seguridad.
@@ -35,8 +37,9 @@ La aplicación es un backend FastAPI único, organizado por módulos de dominio.
 El cliente Flutter está en `mobile/`:
 
 - `lib/core/` contiene componentes compartidos, como tema, utilidades y cliente HTTP.
-- `lib/features/` agrupa funcionalidades de administración, autenticación, dashboard, animales, inventario, fincas, sanidad, reproducción, producción y reportes.
-- Cada funcionalidad mantiene sus pantallas, servicios y modelos dentro de su propio módulo.
+- `lib/features/` agrupa funcionalidades de administración, autenticación, dashboard, animales, inventario, sanidad, reproducción, producción y reportes.
+- Cada funcionalidad mantiene sus pantallas (`presentation/`) y sus servicios y modelos (`data/`). Los servicios implementan una interfaz `...Repository`, que las pruebas reemplazan por versiones falsas.
+- `lib/core/utils/app_session.dart` guarda el token, el rol, la finca activa y los permisos; el menú lateral muestra solo los módulos permitidos. El backend vuelve a validar cada permiso.
 - `test/` contiene pruebas de widgets.
 
 La aplicación usa Material 3. No se debe asumir una arquitectura BLoC: el estado debe documentarse según la implementación real de cada funcionalidad.
