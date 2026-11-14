@@ -293,12 +293,11 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                   _buildDataColumn('Sexo', 100),
                   _buildDataColumn('Finca', 150),
                   _buildDataColumn('Fecha Nac.', 110),
+                  _buildDataColumn('Peso', 80),
                   _buildDataColumn('Estado', 100),
                   _buildDataColumn('Acciones', 110),
                 ],
-                rows: animalesMostrados.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final animal = entry.value;
+                rows: animalesMostrados.map((animal) {
                   final isMacho = animal.sexo == 'Macho';
                   return DataRow(
                     cells: [
@@ -338,6 +337,7 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                       DataCell(_cellText(animal.finca, 150)),
                       DataCell(
                           _cellText(_formatDate(animal.fechaNacimiento), 110)),
+                      DataCell(_cellText(animal.peso, 80)),
                       DataCell(
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -366,8 +366,8 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                                 size: 18,
                               ),
                               tooltip: 'Editar animal',
-                              onPressed: () => _mostrarModalEditarAnimal(
-                                  context, animal, index),
+                              onPressed: () =>
+                                  _mostrarModalEditarAnimal(context, animal),
                             ),
                             IconButton(
                               icon: const Icon(
@@ -377,7 +377,7 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                               ),
                               tooltip: 'Eliminar animal',
                               onPressed: () =>
-                                  _confirmarEliminarAnimal(context, index),
+                                  _confirmarEliminarAnimal(context, animal),
                             ),
                           ],
                         ),
@@ -542,27 +542,23 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
     );
   }
 
-  void _confirmarEliminarAnimal(BuildContext context, int index) {
-    showDialog<void>(
+  Future<void> _confirmarEliminarAnimal(
+      BuildContext context, AnimalRecord animal) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Eliminar Animal'),
-        content: const Text(
-          '¿Estás seguro que deseas eliminar este registro de animal?',
+        content: Text(
+          '¿Estás seguro que deseas eliminar el animal ${animal.chapeta}? '
+          'Su historial sanitario, reproductivo y de producción se conserva.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              setState(() {
-                _animales.removeAt(index);
-              });
-              _showMessage('Animal eliminado del registro.');
-            },
+            onPressed: () => Navigator.pop(dialogContext, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
@@ -572,6 +568,15 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
         ],
       ),
     );
+    if (confirmed != true) return;
+    try {
+      await _repository.deleteAnimal(animal.id);
+      if (!mounted) return;
+      setState(() => _animales.removeWhere((a) => a.id == animal.id));
+      _showMessage('Animal eliminado del registro.');
+    } on ApiException catch (error) {
+      _showMessage(error.message);
+    }
   }
 
   Future<void> _mostrarModalRegistrarAnimal(BuildContext context) async {
@@ -756,15 +761,9 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
-                        validator: (value) {
-                          final peso = double.tryParse(
-                            (value ?? '').trim().replaceAll(',', '.'),
-                          );
-                          if (peso == null || peso <= 0) {
-                            return 'Ingresa un peso válido';
-                          }
-                          return null;
-                        },
+                        validator: (value) => parsePesoKg(value) == null
+                            ? 'Ingresa un peso válido, ej: 230'
+                            : null,
                       ),
                     ],
                   ),
@@ -788,9 +787,7 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                       'raza': razaSeleccionada!,
                       'sexo': sexoSeleccionado!,
                       'fechaNacimiento': fechaNacimiento!,
-                      'pesoKg': double.parse(
-                        pesoController.text.trim().replaceAll(',', '.'),
-                      ),
+                      'pesoKg': parsePesoKg(pesoController.text)!,
                     });
                   },
                   style: ElevatedButton.styleFrom(
@@ -836,14 +833,17 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
     }
   }
 
-  void _mostrarModalEditarAnimal(
-      BuildContext context, AnimalRecord animal, int index) {
+  void _mostrarModalEditarAnimal(BuildContext context, AnimalRecord animal) {
     final formKey = GlobalKey<FormState>();
     final chapetaController = TextEditingController(text: animal.chapeta);
     final fechaController =
         TextEditingController(text: _formatDate(animal.fechaNacimiento));
-    final pesoController =
-        TextEditingController(text: animal.pesoKg.toStringAsFixed(0));
+    final pesoController = TextEditingController(
+      text: animal.pesoKg == animal.pesoKg.roundToDouble()
+          ? animal.pesoKg.toStringAsFixed(0)
+          : animal.pesoKg.toString(),
+    );
+    var saving = false;
 
     String razaSeleccionada = animal.raza;
     String sexoSeleccionado = animal.sexo;
@@ -1004,6 +1004,18 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    _buildFormField(
+                      controller: pesoController,
+                      label: 'Peso actual (kg) *',
+                      hint: 'Ej: 450',
+                      icon: Icons.monitor_weight_outlined,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      validator: (value) => parsePesoKg(value) == null
+                          ? 'Ingresa un peso válido, ej: 230'
+                          : null,
+                    ),
                   ],
                 ),
               ),
@@ -1015,22 +1027,36 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                 label: const Text('Cancelar'),
               ),
               ElevatedButton.icon(
-                onPressed: () {
-                  if (!formKey.currentState!.validate()) return;
-                  Navigator.pop(dialogContext);
-                  setState(() {
-                    _animales[index] = AnimalRecord(
-                      id: animal.id,
-                      chapeta: chapetaController.text.trim(),
-                      raza: razaSeleccionada,
-                      sexo: sexoSeleccionado,
-                      fechaNacimiento: fechaNacimiento,
-                      pesoKg:
-                          double.tryParse(pesoController.text) ?? animal.pesoKg,
-                    );
-                  });
-                  _showMessage('Datos del animal actualizados.');
-                },
+                onPressed: saving
+                    ? null
+                    : () async {
+                        if (!formKey.currentState!.validate()) return;
+                        setDialogState(() => saving = true);
+                        try {
+                          final updated = await _repository.updateAnimal(
+                            animal.id,
+                            chapeta: chapetaController.text.trim(),
+                            raza: razaSeleccionada,
+                            sexo: sexoSeleccionado,
+                            fechaNacimiento: fechaNacimiento,
+                            pesoKg: parsePesoKg(pesoController.text)!,
+                          );
+                          if (!mounted) return;
+                          setState(() {
+                            _animales = [
+                              for (final a in _animales)
+                                a.id == updated.id ? updated : a,
+                            ];
+                          });
+                          if (dialogContext.mounted) {
+                            Navigator.pop(dialogContext);
+                          }
+                          _showMessage('Datos del animal actualizados.');
+                        } on ApiException catch (error) {
+                          setDialogState(() => saving = false);
+                          _showMessage(error.message);
+                        }
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
                   foregroundColor: Colors.white,

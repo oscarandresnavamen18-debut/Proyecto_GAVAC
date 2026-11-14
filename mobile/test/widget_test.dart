@@ -78,4 +78,21 @@ void main() {
     expect(field.cursorColor, GavacColors.primary);
     expect(field.decoration?.fillColor, const Color(0xFF1E293B));
   });
+
+  testWidgets('date pickers are shown in Spanish', (WidgetTester tester) async {
+    await tester.pumpWidget(const GAVACApp());
+
+    final context = tester.element(find.byType(LoginScreen));
+    expect(Localizations.localeOf(context).languageCode, 'es');
+    showDatePicker(
+      context: context,
+      initialDate: DateTime(2026, 11, 14),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2030),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('noviembre'), findsWidgets);
+    expect(find.text('Cancelar'), findsOneWidget);
+  });
 }
