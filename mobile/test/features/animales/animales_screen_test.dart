@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gestion_ganadera/features/animales/data/services/animal_api_service.dart';
+import 'package:gestion_ganadera/features/animales/data/services/potreros_api_service.dart';
 import 'package:gestion_ganadera/features/animales/presentation/screens/animales_screen.dart';
 
 void main() {
@@ -15,6 +16,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: AnimalesScreen(
+          potreros: _FakePotrerosRepository(),
           repository: _FakeAnimalRepository([
             AnimalRecord(
               id: 8,
@@ -51,7 +53,10 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: AnimalesScreen(repository: _FakeAnimalRepository([])),
+          home: AnimalesScreen(
+            potreros: _FakePotrerosRepository(),
+            repository: _FakeAnimalRepository([]),
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -70,7 +75,12 @@ void main() {
     final repository = _RecoveringAnimalRepository();
 
     await tester.pumpWidget(
-      MaterialApp(home: AnimalesScreen(repository: repository)),
+      MaterialApp(
+        home: AnimalesScreen(
+          potreros: _FakePotrerosRepository(),
+          repository: repository,
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -99,7 +109,10 @@ void main() {
           theme: ThemeData.light(),
           darkTheme: ThemeData.dark(),
           themeMode: ThemeMode.dark,
-          home: AnimalesScreen(repository: _FakeAnimalRepository([])),
+          home: AnimalesScreen(
+            potreros: _FakePotrerosRepository(),
+            repository: _FakeAnimalRepository([]),
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -134,7 +147,12 @@ void main() {
     final repository = _FakeAnimalRepository([]);
 
     await tester.pumpWidget(
-      MaterialApp(home: AnimalesScreen(repository: repository)),
+      MaterialApp(
+        home: AnimalesScreen(
+          potreros: _FakePotrerosRepository(),
+          repository: repository,
+        ),
+      ),
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Registrar Animal'));
@@ -184,7 +202,12 @@ void main() {
       ),
     ]);
     await tester.pumpWidget(
-      MaterialApp(home: AnimalesScreen(repository: repository)),
+      MaterialApp(
+        home: AnimalesScreen(
+          potreros: _FakePotrerosRepository(),
+          repository: repository,
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -221,7 +244,12 @@ void main() {
       ),
     ]);
     await tester.pumpWidget(
-      MaterialApp(home: AnimalesScreen(repository: repository)),
+      MaterialApp(
+        home: AnimalesScreen(
+          potreros: _FakePotrerosRepository(),
+          repository: repository,
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -233,6 +261,158 @@ void main() {
     expect(repository.deleted, [8]);
     expect(find.text('GAV-008'), findsNothing);
   });
+
+  testWidgets('shows real status, paddock and filters exits', (tester) async {
+    tester.view.physicalSize = const Size(1600, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final potreros = _FakePotrerosRepository();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AnimalesScreen(
+          potreros: potreros,
+          repository: _FakeAnimalRepository([
+            AnimalRecord(
+              id: 1,
+              chapeta: 'V-1',
+              raza: 'Gyr',
+              sexo: 'Hembra',
+              fechaNacimiento: DateTime(2022, 1, 1),
+              pesoKg: 400,
+              loteId: 7,
+            ),
+            AnimalRecord(
+              id: 2,
+              chapeta: 'V-2',
+              raza: 'Gyr',
+              sexo: 'Hembra',
+              fechaNacimiento: DateTime(2022, 1, 1),
+              pesoKg: 380,
+              estado: 'VENDIDO',
+            ),
+          ]),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Por defecto solo los que están en la finca.
+    expect(find.text('V-1'), findsOneWidget);
+    expect(find.text('V-2'), findsNothing);
+    expect(find.text('Potrero Norte'), findsOneWidget);
+    expect(find.text('1 vendidos · 0 muertos'), findsOneWidget);
+
+    await tester.tap(find.text('Vendidos y muertos'));
+    await tester.pumpAndSettle();
+    expect(find.text('V-2'), findsOneWidget);
+    expect(find.text('Vendido'), findsOneWidget);
+    expect(find.text('V-1'), findsNothing);
+  });
+
+  testWidgets('registers a sale from the row menu', (tester) async {
+    tester.view.physicalSize = const Size(1600, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final potreros = _FakePotrerosRepository();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AnimalesScreen(
+          potreros: potreros,
+          repository: _FakeAnimalRepository([
+            AnimalRecord(
+              id: 1,
+              chapeta: 'V-1',
+              raza: 'Gyr',
+              sexo: 'Hembra',
+              fechaNacimiento: DateTime(2022, 1, 1),
+              pesoKg: 400,
+            ),
+          ]),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Potrero y salida'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Registrar venta o muerte'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Precio de venta (\$)'),
+      '3.500.000',
+    );
+    await tester.tap(find.text('Registrar venta'));
+    await tester.pumpAndSettle();
+
+    expect(potreros.salidasRegistradas, ['1|VENTA|3500000.0']);
+    expect(find.textContaining('Venta de V-1 registrada'), findsOneWidget);
+  });
+}
+
+class _FakePotrerosRepository implements PotrerosRepository {
+  final salidasRegistradas = <String>[];
+
+  @override
+  Future<List<Potrero>> listPotreros({bool incluirInactivos = false}) async =>
+      const [Potrero(id: 7, nombre: 'Potrero Norte', animales: 1)];
+
+  @override
+  Future<List<SalidaAnimal>> listSalidas() async => [];
+
+  @override
+  Future<SalidaAnimal> registrarSalida({
+    required int animalId,
+    required String tipo,
+    required DateTime fecha,
+    double? precio,
+    String? comprador,
+    String? causa,
+    String? notas,
+  }) async {
+    salidasRegistradas.add('$animalId|$tipo|$precio');
+    return SalidaAnimal(
+      id: 1,
+      animalId: animalId,
+      chapeta: 'V-$animalId',
+      tipo: tipo,
+      fecha: fecha,
+      precio: precio,
+    );
+  }
+
+  @override
+  Future<Potrero> crearPotrero({
+    required String nombre,
+    String? descripcion,
+    double? areaHectareas,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<Potrero> actualizarPotrero(
+    int id, {
+    String? nombre,
+    String? descripcion,
+    double? areaHectareas,
+    bool? activo,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<List<MovimientoPotrero>> moverAnimales({
+    required List<int> animalIds,
+    required int? destinoId,
+    required DateTime fecha,
+    String? notas,
+  }) async => [];
+
+  @override
+  Future<List<MovimientoPotrero>> listMovimientos({int? animalId}) async => [];
+
+  @override
+  Future<void> anularSalida(int id) async {}
 }
 
 class _FakeAnimalRepository implements AnimalRepository {
@@ -275,6 +455,7 @@ class _FakeAnimalRepository implements AnimalRepository {
     required String sexo,
     required DateTime fechaNacimiento,
     required double pesoKg,
+    int? loteId,
   }) async => AnimalRecord(
     id: 9,
     chapeta: chapeta,
@@ -316,6 +497,7 @@ class _RecoveringAnimalRepository implements AnimalRepository {
     required String sexo,
     required DateTime fechaNacimiento,
     required double pesoKg,
+    int? loteId,
   }) async {
     throw UnimplementedError();
   }

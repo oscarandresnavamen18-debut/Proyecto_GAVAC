@@ -2,19 +2,25 @@ import 'package:material_ui/material_ui.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/network/api_client.dart';
-import '../../../../core/session/app_session.dart';
 import '../../../../core/widgets/feature_page_widgets.dart';
+import '../../../../core/utils/date_format.dart';
 import '../../data/services/animal_api_service.dart';
+import '../../data/services/potreros_api_service.dart';
+import '../widgets/movimientos_dialogs.dart';
+import 'potreros_screen.dart';
 
-extension AnimalRecordUiExtension on AnimalRecord {
-  String get finca =>
-      AppSession.farmName.isNotEmpty ? AppSession.farmName : 'Sin Finca';
-}
+/// Qué animales muestra la tabla.
+enum FiltroAnimales { enFinca, salidas, todos }
 
 class AnimalesScreen extends StatefulWidget {
   final AnimalRepository? repository;
+  final PotrerosRepository potreros;
 
-  const AnimalesScreen({super.key, this.repository});
+  const AnimalesScreen({
+    super.key,
+    this.repository,
+    this.potreros = const PotrerosApiService(),
+  });
 
   @override
   State<AnimalesScreen> createState() => _AnimalesScreenState();
@@ -31,6 +37,10 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
   final TextEditingController _searchController = TextEditingController();
   late final AnimalRepository _repository;
   List<AnimalRecord> _animales = [];
+  List<Potrero> _potreros = [];
+  // Salida registrada de cada animal (por id del animal).
+  Map<int, SalidaAnimal> _salidas = {};
+  FiltroAnimales _filtro = FiltroAnimales.enFinca;
   String _searchQuery = '';
   String? _error;
   bool _isLoading = true;
@@ -57,10 +67,19 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
       _error = null;
     });
     try {
-      final animals = await _repository.listAnimals();
+      final results = await Future.wait([
+        _repository.listAnimals(),
+        widget.potreros.listPotreros(),
+        widget.potreros.listSalidas(),
+      ]);
       if (!mounted) return;
       setState(() {
-        _animales = animals;
+        _animales = results[0] as List<AnimalRecord>;
+        _potreros = results[1] as List<Potrero>;
+        _salidas = {
+          for (final salida in results[2] as List<SalidaAnimal>)
+            salida.animalId: salida,
+        };
         _isLoading = false;
       });
     } on ApiException catch (error) {
@@ -88,11 +107,26 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
     super.dispose();
   }
 
+  List<AnimalRecord> get _enFinca => _animales.where((a) => a.enFinca).toList();
+
+  String _nombrePotrero(int? id) {
+    for (final potrero in _potreros) {
+      if (potrero.id == id) return potrero.nombre;
+    }
+    return 'Sin potrero';
+  }
+
   List<AnimalRecord> get _filteredAnimales {
-    if (_searchQuery.isEmpty) return _animales;
-    return _animales
-        .where((animal) => animal.chapeta.toLowerCase().contains(_searchQuery))
-        .toList();
+    return _animales.where((animal) {
+      final visible = switch (_filtro) {
+        FiltroAnimales.enFinca => animal.enFinca,
+        FiltroAnimales.salidas => !animal.enFinca,
+        FiltroAnimales.todos => true,
+      };
+      return visible &&
+          (_searchQuery.isEmpty ||
+              animal.chapeta.toLowerCase().contains(_searchQuery));
+    }).toList();
   }
 
   @override
@@ -147,28 +181,32 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
   }
 
   Widget _buildKpiMetricsRow(double maxWidth) {
+    final enFinca = _enFinca;
+    final sinPotrero = enFinca.where((a) => a.loteId == null).length;
+    final vendidos = _animales.where((a) => a.estado == 'VENDIDO').length;
+    final muertos = _animales.where((a) => a.estado == 'MUERTO').length;
     final cards = [
       _buildKpiCard(
-        title: 'Total Animales',
-        value: _isLoading ? '0' : '${_animales.length}',
-        subtitle: 'Total Animales',
+        title: 'En la finca',
+        value: _isLoading ? '0' : '${enFinca.length}',
+        subtitle: 'Animales activos',
         icon: Icons.pets_rounded,
         iconBgColor: const Color(0xFFEFF6FF),
         iconColor: const Color(0xFF2563EB),
       ),
       _buildKpiCard(
-        title: 'Sincronizados',
-        value: _isLoading ? '0' : '${_animales.length}',
-        subtitle: 'Sincronizados',
-        icon: Icons.cloud_done_rounded,
+        title: 'Sin potrero',
+        value: _isLoading ? '0' : '$sinPotrero',
+        subtitle: '${_potreros.length} potreros activos',
+        icon: Icons.grass_rounded,
         iconBgColor: const Color(0xFFECFDF5),
         iconColor: const Color(0xFF059669),
       ),
       _buildKpiCard(
-        title: 'Pendientes Local',
-        value: '0',
-        subtitle: 'Pendientes Local',
-        icon: Icons.cloud_off_rounded,
+        title: 'Salidas',
+        value: _isLoading ? '0' : '${vendidos + muertos}',
+        subtitle: '$vendidos vendidos · $muertos muertos',
+        icon: Icons.logout_rounded,
         iconBgColor: const Color(0xFFFFFBEB),
         iconColor: const Color(0xFFD97706),
       ),
@@ -252,35 +290,85 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                     color: primaryColor,
                   ),
                 ),
-              ElevatedButton.icon(
-                onPressed: _isSaving
-                    ? null
-                    : () => _mostrarModalRegistrarAnimal(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 14,
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _isSaving ? null : _abrirPotreros,
+                    icon: const Icon(Icons.grass_rounded, size: 18),
+                    label: const Text('Potreros'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: primaryColor,
+                      side: const BorderSide(color: primaryColor),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  OutlinedButton.icon(
+                    onPressed: _isSaving || _enFinca.isEmpty
+                        ? null
+                        : () => _moverAnimales(_enFinca),
+                    icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                    label: const Text('Mover animales'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: primaryColor,
+                      side: const BorderSide(color: primaryColor),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                    ),
                   ),
-                  elevation: 0,
-                ),
-                icon: const Icon(Icons.add, size: 18),
-                label: Text(
-                  'Registrar Animal',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                  ElevatedButton.icon(
+                    onPressed: _isSaving
+                        ? null
+                        : () => _mostrarModalRegistrarAnimal(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: Text(
+                      'Registrar Animal',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
           const SizedBox(height: 16),
           _buildSearchField(),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            children: [
+              for (final (filtro, texto) in const [
+                (FiltroAnimales.enFinca, 'En la finca'),
+                (FiltroAnimales.salidas, 'Vendidos y muertos'),
+                (FiltroAnimales.todos, 'Todos'),
+              ])
+                ChoiceChip(
+                  label: Text(texto),
+                  selected: _filtro == filtro,
+                  onSelected: (_) => setState(() => _filtro = filtro),
+                ),
+            ],
+          ),
           const SizedBox(height: 20),
           if (animalesMostrados.isEmpty)
             _buildEmptyState()
@@ -296,11 +384,11 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                   _buildDataColumn('Chapeta', 110),
                   _buildDataColumn('Raza', 120),
                   _buildDataColumn('Sexo', 100),
-                  _buildDataColumn('Finca', 150),
+                  _buildDataColumn('Potrero', 150),
                   _buildDataColumn('Fecha Nac.', 110),
                   _buildDataColumn('Peso', 80),
                   _buildDataColumn('Estado', 100),
-                  _buildDataColumn('Acciones', 110),
+                  _buildDataColumn('Acciones', 150),
                 ],
                 rows: animalesMostrados.map((animal) {
                   final isMacho = animal.sexo == 'Macho';
@@ -339,7 +427,12 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                           ],
                         ),
                       ),
-                      DataCell(_cellText(animal.finca, 150)),
+                      DataCell(
+                        _cellText(
+                          animal.enFinca ? _nombrePotrero(animal.loteId) : '—',
+                          150,
+                        ),
+                      ),
                       DataCell(
                         _cellText(_formatDate(animal.fechaNacimiento), 110),
                       ),
@@ -351,15 +444,15 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFECFDF5),
+                            color: _colorEstado(animal.estado).$1,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                            animal.estadoSincronizacion,
+                            animal.estadoTexto,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF059669),
+                              color: _colorEstado(animal.estado).$2,
                             ),
                           ),
                         ),
@@ -387,6 +480,7 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                               onPressed: () =>
                                   _confirmarEliminarAnimal(context, animal),
                             ),
+                            _menuMovimientos(animal),
                           ],
                         ),
                       ),
@@ -600,6 +694,7 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
     String? razaSeleccionada = 'Holstein';
     String? sexoSeleccionado = 'Macho';
     DateTime? fechaNacimiento;
+    int? potreroSeleccionado;
 
     try {
       final datos = await showDialog<Map<String, Object>>(
@@ -810,6 +905,34 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
                             ? 'Ingresa un peso válido, ej: 230'
                             : null,
                       ),
+                      if (_potreros.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<int?>(
+                          isExpanded: true,
+                          initialValue: potreroSeleccionado,
+                          dropdownColor: Colors.white,
+                          decoration: _formDecoration('Potrero').copyWith(
+                            prefixIcon: const Icon(
+                              Icons.grass_rounded,
+                              size: 18,
+                              color: accentColor,
+                            ),
+                          ),
+                          items: [
+                            const DropdownMenuItem<int?>(
+                              value: null,
+                              child: Text('Sin potrero'),
+                            ),
+                            for (final potrero in _potreros)
+                              DropdownMenuItem<int?>(
+                                value: potrero.id,
+                                child: Text(potrero.nombre),
+                              ),
+                          ],
+                          onChanged: (v) =>
+                              setDialogState(() => potreroSeleccionado = v),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -858,12 +981,14 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
         sexo: datos['sexo']! as String,
         fechaNacimiento: datos['fechaNacimiento']! as DateTime,
         pesoKg: datos['pesoKg']! as double,
+        loteId: potreroSeleccionado,
       );
       if (!mounted) return;
       setState(() {
         _animales.insert(0, animal);
         _isSaving = false;
       });
+      if (potreroSeleccionado != null) _loadAnimals();
       _showMessage('Animal registrado correctamente.');
     } on ApiException catch (error) {
       _finishSaveWithError(error.message);
@@ -1151,6 +1276,132 @@ class _AnimalesScreenState extends State<AnimalesScreen> {
         },
       ),
     );
+  }
+
+  (Color, Color) _colorEstado(String estado) => switch (estado) {
+    'VENDIDO' => (const Color(0xFFEFF6FF), const Color(0xFF2563EB)),
+    'MUERTO' => (const Color(0xFFF1F5F9), textMuted),
+    _ => (const Color(0xFFECFDF5), const Color(0xFF059669)),
+  };
+
+  Widget _menuMovimientos(AnimalRecord animal) {
+    final salida = _salidas[animal.id];
+    return PopupMenuButton<String>(
+      tooltip: 'Potrero y salida',
+      icon: const Icon(Icons.more_vert, color: textMuted, size: 18),
+      onSelected: (accion) => switch (accion) {
+        'mover' => _moverAnimales([animal], preseleccionado: animal.id),
+        'salida' => _registrarSalida(animal),
+        _ => _anularSalida(animal, salida!),
+      },
+      itemBuilder: (_) => [
+        if (animal.enFinca) ...[
+          const PopupMenuItem(value: 'mover', child: Text('Mover de potrero')),
+          const PopupMenuItem(
+            value: 'salida',
+            child: Text('Registrar venta o muerte'),
+          ),
+        ] else if (salida != null)
+          PopupMenuItem(
+            value: 'anular',
+            child: Text('Anular ${salida.tipoTexto.toLowerCase()}'),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _abrirPotreros() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => PotrerosScreen(repository: widget.potreros),
+      ),
+    );
+    if (mounted) _loadAnimals();
+  }
+
+  Future<void> _moverAnimales(
+    List<AnimalRecord> animales, {
+    int? preseleccionado,
+  }) async {
+    final datos = await showMoverAnimalesDialog(
+      context,
+      animales: animales,
+      potreros: _potreros,
+      nombrePotrero: _nombrePotrero,
+      preseleccionado: preseleccionado,
+    );
+    if (datos == null) return;
+    try {
+      final movimientos = await widget.potreros.moverAnimales(
+        animalIds: datos.animalIds,
+        destinoId: datos.destinoId,
+        fecha: datos.fecha,
+        notas: datos.notas,
+      );
+      _showMessage(
+        movimientos.isEmpty
+            ? 'Los animales ya estaban en ese potrero.'
+            : '${movimientos.length} ${movimientos.length == 1 ? 'animal movido' : 'animales movidos'} a ${_nombrePotrero(datos.destinoId)}.',
+      );
+      await _loadAnimals();
+    } on ApiException catch (error) {
+      _showMessage(error.message);
+    }
+  }
+
+  Future<void> _registrarSalida(AnimalRecord animal) async {
+    final datos = await showSalidaDialog(context, chapeta: animal.chapeta);
+    if (datos == null) return;
+    try {
+      final salida = await widget.potreros.registrarSalida(
+        animalId: animal.id,
+        tipo: datos.tipo,
+        fecha: datos.fecha,
+        precio: datos.precio,
+        comprador: datos.comprador,
+        causa: datos.causa,
+        notas: datos.notas,
+      );
+      _showMessage(
+        '${salida.tipoTexto} de ${animal.chapeta} registrada el ${formatDate(salida.fecha)}.',
+      );
+      await _loadAnimals();
+    } on ApiException catch (error) {
+      _showMessage(error.message);
+    }
+  }
+
+  Future<void> _anularSalida(AnimalRecord animal, SalidaAnimal salida) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Anular ${salida.tipoTexto.toLowerCase()}'),
+        content: Text(
+          '${animal.chapeta} volverá a estar en la finca'
+          '${salida.potrero == null ? '' : ', en el potrero ${salida.potrero}'}. '
+          'Usa esta opción solo para corregir un registro hecho por error.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Anular'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await widget.potreros.anularSalida(salida.id);
+      _showMessage('${animal.chapeta} vuelve a estar en la finca.');
+      await _loadAnimals();
+    } on ApiException catch (error) {
+      _showMessage(error.message);
+    }
   }
 
   void _finishSaveWithError(String message) {

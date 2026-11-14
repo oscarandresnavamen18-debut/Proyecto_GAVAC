@@ -9,6 +9,8 @@ class AnimalRecord {
     required this.sexo,
     required this.fechaNacimiento,
     required this.pesoKg,
+    this.estado = 'ACTIVO',
+    this.loteId,
   });
 
   factory AnimalRecord.fromJson(Map<String, dynamic> json) => AnimalRecord(
@@ -18,6 +20,8 @@ class AnimalRecord {
     sexo: (json['gender'] as String) == 'MACHO' ? 'Macho' : 'Hembra',
     fechaNacimiento: DateTime.parse(json['birth_date'] as String),
     pesoKg: (json['current_weight'] as num).toDouble(),
+    estado: json['status'] as String? ?? 'ACTIVO',
+    loteId: json['lote_id'] as int?,
   );
 
   final int id;
@@ -26,9 +30,18 @@ class AnimalRecord {
   final String sexo;
   final DateTime fechaNacimiento;
   final double pesoKg;
+  // ACTIVO (en la finca), VENDIDO o MUERTO.
+  final String estado;
+  // Potrero donde está el animal (null = sin potrero).
+  final int? loteId;
+
+  bool get enFinca => estado == 'ACTIVO';
+
+  /// Texto del estado para mostrar: Activo, Vendido o Muerto.
+  String get estadoTexto =>
+      estado.isEmpty ? '' : estado[0] + estado.substring(1).toLowerCase();
 
   String get especie => 'Bovino';
-  String get estadoSincronizacion => 'Sincronizado';
   String get peso => pesoKg == pesoKg.roundToDouble()
       ? '${pesoKg.toStringAsFixed(0)} kg'
       : '${pesoKg.toStringAsFixed(1)} kg';
@@ -63,6 +76,7 @@ double? parsePesoKg(String? value) {
 }
 
 abstract interface class AnimalRepository {
+  /// Todos los animales de la finca, incluidos los vendidos y muertos.
   Future<List<AnimalRecord>> listAnimals();
 
   Future<AnimalRecord> createAnimal({
@@ -71,6 +85,7 @@ abstract interface class AnimalRepository {
     required String sexo,
     required DateTime fechaNacimiento,
     required double pesoKg,
+    int? loteId,
   });
 
   Future<AnimalRecord> updateAnimal(
@@ -101,7 +116,10 @@ class AnimalApiService implements AnimalRepository {
 
   @override
   Future<List<AnimalRecord>> listAnimals() async {
-    final response = await ApiClient.get('/api/v1/animals', token: _token);
+    final response = await ApiClient.get(
+      '/api/v1/animals?estado=todos',
+      token: _token,
+    );
     if (response is! List) {
       throw const FormatException('La respuesta de animales no es válida.');
     }
@@ -117,6 +135,7 @@ class AnimalApiService implements AnimalRepository {
     required String sexo,
     required DateTime fechaNacimiento,
     required double pesoKg,
+    int? loteId,
   }) async {
     final farms = await ApiClient.get('/api/v1/farms', token: _token);
     if (farms is! List || farms.isEmpty) {
@@ -137,7 +156,7 @@ class AnimalApiService implements AnimalRepository {
       'birth_date': fechaNacimiento.toIso8601String().split('T').first,
       'breed': raza,
       'current_weight': pesoKg,
-      'status': 'ACTIVO',
+      'lote_id': ?loteId,
     }, token: _token);
     return AnimalRecord.fromJson(response);
   }
