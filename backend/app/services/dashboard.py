@@ -9,7 +9,7 @@ from datetime import date, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Animal, CattleGender, Farm, ProductionRecord
+from app.models import Animal, CattleGender, CattleStatus, Farm, ProductionRecord
 from app.routers.breeding import farm_breeding_records
 from app.routers.health_records import farm_health_records, health_status, to_date, to_datetime
 from app.routers.inventory import farm_inventory
@@ -27,8 +27,13 @@ def build_dashboard_summary(db: Session, farm: Farm, today: date | None = None) 
     today = today or date.today()
     since = today - timedelta(days=WINDOW_DAYS)
 
+    # Solo los animales que siguen en la finca (sin venta ni muerte registrada).
     animals = db.scalars(
-        select(Animal).where(Animal.finca_id == farm.id, Animal.is_active.is_(True))
+        select(Animal).where(
+            Animal.finca_id == farm.id,
+            Animal.is_active.is_(True),
+            Animal.status == CattleStatus.ACTIVO,
+        )
     ).all()
     active_ids = {a.id for a in animals}
     genders = Counter(a.gender for a in animals)

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.core.deps import require_module
-from app.models import Animal, HealthRecord, User
+from app.models import Animal, CattleStatus, HealthRecord, User
 from app.routers.farms import get_authorized_farm
 from app.schemas import HealthRecordCreate, HealthRecordRead
 
@@ -29,7 +29,15 @@ def get_farm_animal(db: Session, user: User, animal_id: int) -> Animal:
     if animal is None or not animal.is_active:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Animal no encontrado")
     get_authorized_farm(db, user, animal.finca_id)
+    ensure_in_farm(animal)
     return animal
+
+
+def ensure_in_farm(animal: Animal) -> None:
+    """Un animal vendido o muerto conserva su historial, pero no recibe registros nuevos."""
+    if animal.status != CattleStatus.ACTIVO:
+        raise HTTPException(
+            422, f"El animal {animal.tag_id} ya no está en la finca ({animal.status.value.lower()})")
 
 
 def health_status(record: HealthRecord, today: date | None = None) -> str:

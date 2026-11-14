@@ -3,7 +3,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from app.models import CattleGender, CattleStatus, EventType, UserRole
+from app.models import CattleGender, CattleStatus, EventType, ExitType, UserRole
 
 
 # AUTENTICACION
@@ -132,6 +132,8 @@ class AnimalBase(BaseModel):
 
 class AnimalCreate(AnimalBase):
     farm_id: int = Field(..., gt=0)
+    # Potrero inicial (opcional).
+    lote_id: Optional[int] = Field(None, gt=0)
 
 
 class AnimalPatch(BaseModel):
@@ -142,7 +144,6 @@ class AnimalPatch(BaseModel):
     name: Optional[str] = Field(None, max_length=100)
     color: Optional[str] = Field(None, max_length=50)
     current_weight: Optional[float] = Field(None, gt=0)
-    status: Optional[CattleStatus] = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -150,11 +151,85 @@ class AnimalPatch(BaseModel):
 class AnimalRead(AnimalBase):
     id: int
     finca_id: int
+    lote_id: Optional[int] = None
     is_active: bool
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# POTREROS Y SALIDAS
+
+class LotCreate(BaseModel):
+    nombre: str = Field(..., min_length=1, max_length=80)
+    descripcion: Optional[str] = Field(None, max_length=255)
+    area_hectareas: Optional[float] = Field(None, gt=0)
+
+
+class LotUpdate(BaseModel):
+    nombre: Optional[str] = Field(None, min_length=1, max_length=80)
+    descripcion: Optional[str] = Field(None, max_length=255)
+    area_hectareas: Optional[float] = Field(None, gt=0)
+    is_active: Optional[bool] = None
+
+
+class LotRead(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    area_hectares: Optional[float] = None
+    is_active: bool
+    # Animales activos que están hoy en el potrero.
+    animal_count: int = 0
+
+
+class MoveAnimalsIn(BaseModel):
+    animal_ids: list[int] = Field(..., min_length=1, max_length=500)
+    # Potrero de destino; null = sacar del potrero (sin asignar).
+    lote_destino_id: Optional[int] = Field(None, gt=0)
+    fecha: date = Field(default_factory=date.today)
+    notas: Optional[str] = Field(None, max_length=2000)
+
+
+class LotMovementRead(BaseModel):
+    id: int
+    animal_id: int
+    animal_tag: str
+    from_lot_id: Optional[int] = None
+    from_lot_name: Optional[str] = None
+    to_lot_id: Optional[int] = None
+    to_lot_name: Optional[str] = None
+    moved_at: date
+    notes: Optional[str] = None
+    created_by_name: Optional[str] = None
+
+
+class AnimalExitCreate(BaseModel):
+    animal_id: int = Field(..., gt=0)
+    tipo: ExitType
+    fecha: date = Field(default_factory=date.today)
+    # Venta.
+    precio: Optional[float] = Field(None, ge=0)
+    comprador: Optional[str] = Field(None, max_length=120)
+    # Muerte.
+    causa: Optional[str] = Field(None, max_length=255)
+    notas: Optional[str] = Field(None, max_length=2000)
+
+
+class AnimalExitRead(BaseModel):
+    id: int
+    animal_id: int
+    animal_tag: str
+    animal_name: Optional[str] = None
+    exit_type: str
+    exit_date: date
+    price: Optional[float] = None
+    buyer: Optional[str] = None
+    cause: Optional[str] = None
+    notes: Optional[str] = None
+    lot_name: Optional[str] = None
+    created_by_name: Optional[str] = None
 
 
 # EVENTOS

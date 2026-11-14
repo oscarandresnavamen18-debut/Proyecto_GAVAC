@@ -29,6 +29,11 @@ class CattleStatus(str, Enum):
     TRASLADADO = "TRASLADADO"
 
 
+class ExitType(str, Enum):
+    VENTA = "VENTA"
+    MUERTE = "MUERTE"
+
+
 class EventType(str, Enum):
     VACUNACION = "VACUNACION"
     DESPARASITACION = "DESPARASITACION"
@@ -93,6 +98,9 @@ class Animal(Base):
         Numeric(6, 2), nullable=False)
     status: Mapped[CattleStatus] = mapped_column(
         default=CattleStatus.ACTIVO, server_default="ACTIVO", nullable=False)
+    # Potrero o lote donde está el animal (null = sin asignar).
+    lote_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("lotes.id", ondelete="SET NULL"), nullable=True, index=True)
     is_active: Mapped[bool] = mapped_column(
         Boolean, default=True, server_default=text("true"), index=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -106,6 +114,55 @@ class Animal(Base):
         Index("idx_animal_status_active", "status", "is_active"),
         Index("ix_animals_finca_status", "finca_id", "status"),
     )
+
+
+class Lot(Base):
+    """Potrero o lote de una finca."""
+    __tablename__ = "lotes"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    farm_id: Mapped[int] = mapped_column(ForeignKey("fincas.id", ondelete="CASCADE"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(80), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(String(255))
+    area_hectares: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default=text("true"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False)
+    __table_args__ = (UniqueConstraint("farm_id", "name", name="uq_lotes_finca_nombre"),)
+
+
+class LotMovement(Base):
+    """Paso de un animal de un potrero a otro."""
+    __tablename__ = "movimientos_lote"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    animal_id: Mapped[int] = mapped_column(ForeignKey("animales.id", ondelete="CASCADE"), nullable=False)
+    from_lot_id: Mapped[Optional[int]] = mapped_column(ForeignKey("lotes.id", ondelete="SET NULL"))
+    to_lot_id: Mapped[Optional[int]] = mapped_column(ForeignKey("lotes.id", ondelete="SET NULL"))
+    moved_at: Mapped[date] = mapped_column(Date, nullable=False)
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+    created_by: Mapped[Optional[int]] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False)
+    __table_args__ = (Index("ix_movimientos_lote_animal_fecha", "animal_id", "moved_at"),)
+
+
+class AnimalExit(Base):
+    """Salida de un animal de la finca (venta o muerte)."""
+    __tablename__ = "salidas_animales"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    animal_id: Mapped[int] = mapped_column(
+        ForeignKey("animales.id", ondelete="CASCADE"), nullable=False, unique=True)
+    exit_type: Mapped[ExitType] = mapped_column(nullable=False)
+    exit_date: Mapped[date] = mapped_column(Date, nullable=False)
+    price: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
+    buyer: Mapped[Optional[str]] = mapped_column(String(120))
+    cause: Mapped[Optional[str]] = mapped_column(String(255))
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+    # Potrero donde estaba, para restaurarlo si la salida se anula.
+    lot_id: Mapped[Optional[int]] = mapped_column(ForeignKey("lotes.id", ondelete="SET NULL"))
+    created_by: Mapped[Optional[int]] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
 class CattleEvent(Base):

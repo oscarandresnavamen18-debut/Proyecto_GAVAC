@@ -44,9 +44,14 @@ def test_animal_crud(client):
     assert get_res.status_code == 200
     assert get_res.json()["tag_id"] == "CO-101"
 
+    # El estado no se edita a mano: cambia al registrar una salida.
     patch_res = client.patch(f"/api/v1/animals/{animal_id}", json={"status": "VENDIDO"}, headers=headers)
-    assert patch_res.status_code == 200
-    assert patch_res.json()["status"] == "VENDIDO"
+    assert patch_res.status_code == 422
+    exit_res = client.post(
+        "/api/v1/exits", json={"animal_id": animal_id, "tipo": "VENTA", "precio": 3500000},
+        headers=headers)
+    assert exit_res.status_code == 201
+    assert client.get(f"/api/v1/animals/{animal_id}", headers=headers).json()["status"] == "VENDIDO"
 
 
 def _admin_animal(client):

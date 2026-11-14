@@ -9,6 +9,7 @@ from app.core.db import get_db
 from app.core.deps import current_user, require_module
 from app.models import Animal, ProductionRecord, User
 from app.routers.farms import get_authorized_farm
+from app.routers.health_records import ensure_in_farm
 from app.schemas import ProductionCreate, ProductionRead
 
 router = APIRouter(prefix="/api/v1/production", tags=["Producción"])
@@ -63,6 +64,7 @@ def create_production(
             detail="Animal no encontrado",
         )
     get_authorized_farm(db, user, animal.finca_id)
+    ensure_in_farm(animal)
 
     recorded_at = data.recorded_at
     if recorded_at.tzinfo is None:

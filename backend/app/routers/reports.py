@@ -28,7 +28,8 @@ MEDIA_TYPES = {
 
 @router.get("/{report}")
 def download_report(
-    report: Literal["general", "animales", "sanidad", "reproduccion", "produccion", "insumos"],
+    report: Literal["general", "animales", "potreros", "salidas", "sanidad", "reproduccion",
+                    "produccion", "insumos"],
     formato: Literal["pdf", "xlsx"] = Query("pdf"),
     db: Session = Depends(get_db),
     user: User = Depends(require_module("reportes")),

@@ -14,10 +14,12 @@ from openpyxl.worksheet.worksheet import Worksheet
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Animal, ProductionRecord, User
+from app.models import Animal, CattleStatus, Lot, ProductionRecord, User
 from app.routers.breeding import breeding_status, farm_breeding_records
+from app.routers.exits import farm_exits
 from app.routers.health_records import farm_health_records, health_status
 from app.routers.inventory import farm_inventory
+from app.routers.lots import movement_reads
 
 PRIMARY_HEX = "1A3A32"
 PRIMARY_RGB = (26, 58, 50)
@@ -116,6 +118,10 @@ class _UserNames:
 # Reportes por módulo
 # ---------------------------------------------------------------------------
 
+def _lot_names(db: Session, farm_id: int) -> dict[int, str]:
+    return dict(db.execute(select(Lot.id, Lot.name).where(Lot.farm_id == farm_id)).all())
+
+
 def _animals_report(db: Session, farm_id: int) -> Report:
     today = date.today()
     animals = db.scalars(
@@ -123,13 +129,16 @@ def _animals_report(db: Session, farm_id: int) -> Report:
         .where(Animal.finca_id == farm_id, Animal.is_active.is_(True))
         .order_by(Animal.tag_id)
     ).all()
-    weights = [float(a.current_weight) for a in animals]
-    genders = Counter(a.gender.value for a in animals)
-    breeds = Counter(a.breed for a in animals)
+    lots = _lot_names(db, farm_id)
+    # Los indicadores son del inventario actual; vendidos y muertos se listan aparte.
+    active = [a for a in animals if a.status == CattleStatus.ACTIVO]
+    statuses = Counter(a.status for a in animals)
+    weights = [float(a.current_weight) for a in active]
+    genders = Counter(a.gender.value for a in active)
     return Report(
         title="Registro animal",
         headers=["Chapeta", "Nombre", "Sexo", "Raza", "Color", "Nacimiento",
-                 "Edad", "Peso (kg)", "Estado", "Registrado"],
+                 "Edad", "Peso (kg)", "Potrero", "Estado", "Registrado"],
         rows=[
             [
                 a.tag_id,
@@ -140,19 +149,99 @@ def _animals_report(db: Session, farm_id: int) -> Report:
                 _fmt_date(a.birth_date),
                 _age(a.birth_date, today),
                 float(a.current_weight),
+                _text(lots.get(a.lote_id)),
                 a.status.value.capitalize(),
                 _fmt_date(a.created_at),
             ]
-            for a in animals
+            for a in sorted(animals, key=lambda a: (a.status != CattleStatus.ACTIVO, a.tag_id))
         ],
-        widths=[3, 3, 2, 3, 2, 3, 3, 2, 2, 3],
+        widths=[3, 3, 2, 3, 2, 3, 3, 2, 3, 2, 3],
         summary=[
-            ("Total de animales", str(len(animals))),
+            ("Animales en la finca", str(len(active))),
             ("Hembras", str(genders.get("HEMBRA", 0))),
             ("Machos", str(genders.get("MACHO", 0))),
             ("Peso promedio",
              f"{_fmt_number(sum(weights) / len(weights))} kg" if weights else EMPTY),
-            ("Raza principal", breeds.most_common(1)[0][0] if breeds else EMPTY),
+            ("Vendidos", str(statuses.get(CattleStatus.VENDIDO, 0))),
+            ("Muertos", str(statuses.get(CattleStatus.MUERTO, 0))),
+        ],
+    )
+
+
+def _money(value: float | None) -> str:
+    return EMPTY if value is None else f"$ {_fmt_number(value)}"
+
+
+def _exits_report(db: Session, farm_id: int) -> Report:
+    exits = farm_exits(db, farm_id)
+    sales = [e for e in exits if e.exit_type == "VENTA"]
+    deaths = [e for e in exits if e.exit_type == "MUERTE"]
+    sold_total = sum(e.price or 0 for e in sales)
+    priced = [e.price for e in sales if e.price is not None]
+    return Report(
+        title="Salidas",
+        headers=["Fecha", "Chapeta", "Animal", "Tipo", "Precio", "Comprador", "Causa",
+                 "Potrero", "Observaciones", "Registrado por"],
+        rows=[
+            [
+                _fmt_date(e.exit_date),
+                e.animal_tag,
+                _text(e.animal_name),
+                "Venta" if e.exit_type == "VENTA" else "Muerte",
+                _money(e.price),
+                _text(e.buyer),
+                _text(e.cause),
+                _text(e.lot_name),
+                _text(e.notes),
+                _text(e.created_by_name),
+            ]
+            for e in exits
+        ],
+        widths=[2, 2, 2, 2, 2, 3, 3, 2, 3, 3],
+        summary=[
+            ("Ventas", str(len(sales))),
+            ("Total vendido", _money(sold_total) if sales else EMPTY),
+            ("Precio promedio", _money(sum(priced) / len(priced)) if priced else EMPTY),
+            ("Muertes", str(len(deaths))),
+        ],
+    )
+
+
+def _lots_report(db: Session, farm_id: int) -> Report:
+    lots = db.scalars(
+        select(Lot).where(Lot.farm_id == farm_id, Lot.is_active.is_(True)).order_by(Lot.name)
+    ).all()
+    occupancy = Counter(
+        db.scalars(
+            select(Animal.lote_id).where(
+                Animal.finca_id == farm_id,
+                Animal.is_active.is_(True),
+                Animal.status == CattleStatus.ACTIVO,
+            )
+        ).all()
+    )
+    movements = movement_reads(db, farm_id, limit=1000)
+    by_lot = ", ".join(f"{lot.name}: {occupancy.get(lot.id, 0)}" for lot in lots[:6])
+    return Report(
+        title="Potreros",
+        headers=["Fecha", "Chapeta", "Desde", "Hacia", "Observaciones", "Registrado por"],
+        rows=[
+            [
+                _fmt_date(m.moved_at),
+                m.animal_tag,
+                m.from_lot_name or "Sin potrero",
+                m.to_lot_name or "Sin potrero",
+                _text(m.notes),
+                _text(m.created_by_name),
+            ]
+            for m in movements
+        ],
+        widths=[2, 2, 3, 3, 5, 3],
+        summary=[
+            ("Potreros activos", str(len(lots))),
+            ("Animales sin potrero", str(occupancy.get(None, 0))),
+            ("Movimientos registrados", str(len(movements))),
+            ("Animales por potrero", by_lot or EMPTY),
         ],
     )
 
@@ -289,6 +378,8 @@ def _inventory_report(db: Session, farm_id: int) -> Report:
 # clave del reporte -> (módulo de permiso, generador)
 REPORTS: dict[str, tuple[str, Callable[[Session, int], Report]]] = {
     "animales": ("registro", _animals_report),
+    "potreros": ("registro", _lots_report),
+    "salidas": ("registro", _exits_report),
     "sanidad": ("sanidad", _health_report),
     "reproduccion": ("reproduccion", _breeding_report),
     "produccion": ("produccion", _production_report),

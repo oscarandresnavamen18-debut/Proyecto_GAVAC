@@ -301,11 +301,12 @@ def test_animals_report_includes_all_fields_and_summary(client):
 
     headers, rows = _table(sheet)
     assert headers == ["Chapeta", "Nombre", "Sexo", "Raza", "Color", "Nacimiento",
-                       "Edad", "Peso (kg)", "Estado", "Registrado"]
+                       "Edad", "Peso (kg)", "Potrero", "Estado", "Registrado"]
     assert rows[0][:5] == ["GAV-001", "Lucero", "Hembra", "Holstein", "—"]
     assert "años" in rows[0][6]
     summary = _summary(sheet)
-    assert (summary["Total de animales"], summary["Hembras"], summary["Machos"]) == ("2", "1", "1")
+    assert (summary["Animales en la finca"], summary["Hembras"], summary["Machos"]) == ("2", "1", "1")
+    assert (summary["Vendidos"], summary["Muertos"]) == ("0", "0")
     assert summary["Peso promedio"] == "450 kg"
 
 
@@ -323,7 +324,8 @@ def test_general_report_combines_permitted_modules(client):
     assert 'gavac_general_' in xlsx.headers["content-disposition"]
     workbook = load_workbook(BytesIO(xlsx.content))
     assert workbook.sheetnames == [
-        "Resumen", "Registro animal", "Sanidad", "Reproducción", "Producción", "Insumos"]
+        "Resumen", "Registro animal", "Potreros", "Salidas", "Sanidad", "Reproducción",
+        "Producción", "Insumos"]
     overview = [c.value for c in workbook["Resumen"]["A"]]
     assert "Producción" in overview and "Leche total" in overview
 
@@ -342,7 +344,8 @@ def test_general_report_combines_permitted_modules(client):
     ).json()["access_token"]
     vet_book = load_workbook(BytesIO(client.get(
         "/api/v1/reports/general?formato=xlsx", headers=_auth(vet)).content))
-    assert vet_book.sheetnames == ["Resumen", "Registro animal", "Sanidad", "Reproducción"]
+    assert vet_book.sheetnames == [
+        "Resumen", "Registro animal", "Potreros", "Salidas", "Sanidad", "Reproducción"]
 
 
 def test_reports_require_permission_for_report_and_module(client):
