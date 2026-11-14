@@ -89,6 +89,22 @@ class FarmRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class AlertRead(BaseModel):
+    """Alarma calculada a partir de los datos de la finca."""
+    # Identificador estable: tipo + registro, por ejemplo "vacuna_vencida:12".
+    key: str
+    # VACUNA_VENCIDA, VACUNA_POR_VENCER, PARTO_VENCIDO, PARTO_PROXIMO,
+    # INSUMO_AGOTADO o INSUMO_BAJO_MINIMO.
+    tipo: str
+    # ALTA o MEDIA.
+    severidad: str
+    titulo: str
+    detalle: str
+    fecha: Optional[date] = None
+    # Módulo donde se resuelve: sanidad, reproduccion o insumos.
+    modulo: str
+
+
 class DashboardSummary(BaseModel):
     """Indicadores del inicio para la finca activa (solo totales)."""
     farm_id: Optional[int] = None
