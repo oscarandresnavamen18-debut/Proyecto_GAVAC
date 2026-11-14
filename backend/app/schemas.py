@@ -107,6 +107,10 @@ class AnimalCreate(AnimalBase):
 
 
 class AnimalPatch(BaseModel):
+    tag_id: Optional[str] = Field(None, min_length=1, max_length=50)
+    breed: Optional[str] = Field(None, min_length=1, max_length=50)
+    gender: Optional[CattleGender] = None
+    birth_date: Optional[date] = None
     name: Optional[str] = Field(None, max_length=100)
     color: Optional[str] = Field(None, max_length=50)
     current_weight: Optional[float] = Field(None, gt=0)

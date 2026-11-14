@@ -20,8 +20,13 @@ def list_animals(
 ):
     if user.farm_id is None:
         return []
-    query = select(Animal).where(Animal.finca_id == user.farm_id).order_by(
-        Animal.id).offset(skip).limit(limit)
+    query = (
+        select(Animal)
+        .where(Animal.finca_id == user.farm_id, Animal.is_active.is_(True))
+        .order_by(Animal.id)
+        .offset(skip)
+        .limit(limit)
+    )
     return db.scalars(query).all()
 
 
@@ -47,7 +52,7 @@ def create_animal(data: AnimalCreate, db: Session = Depends(get_db), user: User 
 @router.get("/{animal_id}", response_model=AnimalRead)
 def get_animal(animal_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
     animal = db.get(Animal, animal_id)
-    if animal is None:
+    if animal is None or not animal.is_active:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Animal no encontrado")
     get_authorized_farm(db, user, animal.finca_id)
@@ -57,12 +62,21 @@ def get_animal(animal_id: int, db: Session = Depends(get_db), user: User = Depen
 @router.patch("/{animal_id}", response_model=AnimalRead)
 def update_animal(animal_id: int, data: AnimalPatch, db: Session = Depends(get_db), user: User = Depends(require_module("registro"))):
     animal = db.get(Animal, animal_id)
-    if animal is None:
+    if animal is None or not animal.is_active:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Animal no encontrado")
     get_authorized_farm(db, user, animal.finca_id)
     for key, value in data.model_dump(exclude_unset=True).items():
-        setattr(animal, key, value)
-    db.commit()
+        if value is None and key in ("tag_id", "breed", "gender", "birth_date"):
+            continue  # Campos obligatorios: no se pueden vaciar.
+        setattr(animal, key, value.strip() if isinstance(value, str) else value)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ya existe un animal con ese identificador",
+        )
     db.refresh(animal)
     return animal
