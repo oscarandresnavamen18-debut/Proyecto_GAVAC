@@ -14,19 +14,18 @@ class ApiException implements Exception {
 }
 
 class ApiClient {
-  static const _webBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:8001',
-  );
+  /// Dirección del API elegida al compilar con
+  /// `--dart-define=API_BASE_URL=...`; vale para web, Android e iOS.
+  static const _configuredBaseUrl = String.fromEnvironment('API_BASE_URL');
 
   static String get baseUrl {
-    if (kIsWeb) {
-      return _webBaseUrl;
-    } else if (defaultTargetPlatform == TargetPlatform.android) {
+    if (_configuredBaseUrl.isNotEmpty) return _configuredBaseUrl;
+    // Sin configurar: el emulador de Android ve al computador en 10.0.2.2;
+    // la web y el simulador de iOS, en localhost.
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2:8001';
-    } else {
-      return 'http://localhost:8001';
     }
+    return 'http://localhost:8001';
   }
 
   static Future<Map<String, dynamic>> post(
