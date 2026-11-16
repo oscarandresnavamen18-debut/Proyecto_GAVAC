@@ -1,11 +1,13 @@
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-
 from app.core.config import settings
 
-DATABASE_URL = settings.database_url
+DATABASE_URL = str(settings.database_url).strip()
 
-# Configuración del motor según la base de datos utilizada.
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL no está configurada.")
+
 if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(
         DATABASE_URL,
@@ -19,7 +21,12 @@ else:
         max_overflow=20,
     )
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+)
+
 Base = declarative_base()
 
 

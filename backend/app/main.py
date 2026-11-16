@@ -11,6 +11,7 @@ app = FastAPI(title="Gesti\u00f3n Ganadera API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_cors_origins,
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?",
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -53,7 +53,7 @@ def create_production(
 ):
     if data.milk_liters is None and data.weight_kg is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Registra al menos litros de leche o peso.",
         )
 

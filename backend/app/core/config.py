@@ -3,6 +3,7 @@ from urllib.parse import urlsplit
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import URL
 
 
 PLACEHOLDER_SECRET_MARKERS = (
@@ -12,7 +13,12 @@ PLACEHOLDER_SECRET_MARKERS = (
 
 
 class Settings(BaseSettings):
-    database_url: str = Field(default="", min_length=1)
+    database_url: str = ""
+    postgres_user: str = ""
+    postgres_password: SecretStr = SecretStr("")
+    postgres_db: str = ""
+    postgres_host: str = "postgres.railway.internal"
+    postgres_port: int = Field(default=5432, ge=1, le=65535)
     jwt_secret_key: SecretStr = Field(min_length=32)
     jwt_expire_minutes: int = Field(default=60, gt=0)
     environment: str = "production"
@@ -21,7 +27,6 @@ class Settings(BaseSettings):
     recaptcha_allowed_hostnames: str = (
         "proyectogestionganadera-production.up.railway.app,localhost,127.0.0.1,testserver"
     )
-
     smtp_host: str = ""
     smtp_port: int = Field(default=587, ge=1, le=65535)
     smtp_username: str = ""
@@ -29,11 +34,58 @@ class Settings(BaseSettings):
     smtp_from_email: str = ""
 
     model_config = SettingsConfigDict(
-        env_file=(".env", "../.env"), extra="ignore")
+        env_file=(".env", "../.env"),
+        extra="ignore",
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def configure_database_url(cls, values: object) -> object:
+        if not isinstance(values, dict):
+            return values
+
+        environment = str(values.get("environment") or "production").strip().lower()
+        database_url = values.get("database_url")
+        if isinstance(database_url, str):
+            database_url = database_url.strip().strip("'\"")
+        if database_url:
+            values["database_url"] = database_url
+            return values
+
+        if environment != "production":
+            values["database_url"] = "sqlite:///./app.db"
+            return values
+
+        username = values.get("postgres_user") or ""
+        password = values.get("postgres_password") or ""
+        database = values.get("postgres_db") or ""
+        host = values.get("postgres_host") or "postgres.railway.internal"
+        port = values.get("postgres_port") or 5432
+
+        if isinstance(password, SecretStr):
+            password = password.get_secret_value()
+
+        if not all(str(item).strip() for item in (username, password, database, host)):
+            raise ValueError(
+
+            "DATABASE_URL is required when ENVIRONMENT=production. "
+            "Está vacía y no se pudieron construir las credenciales con "
+            "POSTGRES_USER, POSTGRES_PASSWORD y POSTGRES_DB"
+
+            )
+
+        values["database_url"] = URL.create(
+            drivername="postgresql+psycopg",
+            username=str(username),
+            password=str(password),
+            host=str(host),
+            port=int(port),
+            database=str(database),
+        ).render_as_string(hide_password=False)
+        return values
 
     @model_validator(mode="after")
     def reject_placeholder_jwt_secret(self) -> "Settings":
-        # Una clave de ejemplo permite a cualquiera falsificar sesiones.
         if self.environment.strip().lower() == "production":
             secret = self.jwt_secret_key.get_secret_value().lower()
             if any(marker in secret for marker in PLACEHOLDER_SECRET_MARKERS):
@@ -43,20 +95,6 @@ class Settings(BaseSettings):
                 )
         return self
 
-    @model_validator(mode="before")
-    @classmethod
-    def ensure_database_url_for_environment(cls, values: object) -> object:
-        if not isinstance(values, dict):
-            return values
-
-        environment = str(values.get("environment") or "production").strip().lower()
-        database_url = values.get("database_url")
-        if database_url is None or (isinstance(database_url, str) and not database_url.strip()):
-            if environment == "production":
-                raise ValueError("DATABASE_URL is required when ENVIRONMENT=production")
-            values["database_url"] = "sqlite:///./app.db"
-        return values
-
     @field_validator("database_url", mode="before")
     @classmethod
     def validate_database_url(cls, value: object) -> str:
@@ -64,10 +102,10 @@ class Settings(BaseSettings):
             return ""
         if not isinstance(value, str):
             value = str(value)
-        value = value.strip("'\" \t\r\n")
+        value = value.strip().strip("'\"")
         if value.startswith("postgres://"):
             return value.replace("postgres://", "postgresql+psycopg://", 1)
-        if value.startswith("postgresql://") and not value.startswith("postgresql+psycopg://"):
+        if value.startswith("postgresql://"):
             return value.replace("postgresql://", "postgresql+psycopg://", 1)
         return value
 
@@ -98,36 +136,32 @@ class Settings(BaseSettings):
             origin = configured_origin.strip()
             if not origin:
                 continue
-
             parsed = urlsplit(origin)
             hostname = parsed.hostname
             if (
-                origin == "*"
-                or parsed.scheme not in {"http", "https"}
-                or not hostname
-                or parsed.username is not None
-                or parsed.password is not None
-                or parsed.path not in {"", "/"}
-                or parsed.query
-                or parsed.fragment
+                    origin == "*"
+                    or parsed.scheme not in {"http", "https"}
+                    or not hostname
+                    or parsed.username is not None
+                    or parsed.password is not None
+                    or parsed.path not in {"", "/"}
+                    or parsed.query
+                    or parsed.fragment
             ):
                 raise ValueError(
-                    "CORS_ORIGINS debe contener orígenes HTTP(S) exactos, sin rutas ni comodines")
-
+                    "CORS_ORIGINS debe contener orígenes HTTP(S) exactos, sin rutas ni comodines"
+                )
             try:
                 parsed.port
             except ValueError as error:
-                raise ValueError(
-                    "CORS_ORIGINS contiene un puerto inválido") from error
+                raise ValueError("CORS_ORIGINS contiene un puerto inválido") from error
             if parsed.netloc.endswith(":"):
                 raise ValueError("CORS_ORIGINS contiene un puerto vacío")
-
-            if parsed.scheme == "http" and hostname.lower() not in {"localhost", "127.0.0.1", "::1"}:
-                raise ValueError(
-                    "Los orígenes HTTP solo se permiten en loopback")
-
+            if parsed.scheme == "http" and hostname.lower() not in {
+                "localhost", "127.0.0.1", "::1"
+            }:
+                raise ValueError("Los orígenes HTTP solo se permiten en loopback")
             origins.append(origin.rstrip("/"))
-
         return ",".join(dict.fromkeys(origins))
 
     @property
