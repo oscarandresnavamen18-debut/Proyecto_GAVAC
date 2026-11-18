@@ -1,25 +1,16 @@
+from datetime import date, datetime, timezone
+
 from app.core.db import SessionLocal
-from app.models import Farm, User, Animal, Lot, InventoryItem
 from app.core.security import hash_password
-from datetime import date
+from app.models import Animal, Farm, InventoryItem, InventoryMovement, Lot, User
+
 
 def seed():
     db = SessionLocal()
     try:
         print("🌱 Iniciando inserción de datos de prueba...")
 
-        # 1. Crear Finca de prueba
-        farm = db.query(Farm).filter(Farm.name == "Hacienda El Paraíso").first()
-        if not farm:
-            farm = Farm(name="Hacienda El Paraíso", location="Vía Principal Km 5")
-            db.add(farm)
-            db.commit()
-            db.refresh(farm)
-            print(f"✅ Finca creada: {farm.name} (ID: {farm.id})")
-        else:
-            print(f"ℹ️ Finca ya existe: {farm.name} (ID: {farm.id})")
-
-        # 2. Crear Usuarios de prueba (Admin y Trabajador)
+        # 1. Crear / Obtener Usuario Admin primero (para usar su ID como owner_id de la finca)
         admin = db.query(User).filter(User.email == "admin@ganadera.com").first()
         if not admin:
             admin = User(
@@ -27,12 +18,35 @@ def seed():
                 full_name="Administrador GAVAC",
                 hashed_password=hash_password("Password123Secure!"),
                 role="ADMIN",
-                farm_id=farm.id,
-                is_active=True
+                farm_id=None,
+                is_active=True,
             )
             db.add(admin)
+            db.commit()
+            db.refresh(admin)
             print("✅ Usuario ADMIN creado: admin@ganadera.com / Password123Secure!")
 
+        # 2. Crear Finca de prueba vinculada al admin como dueño
+        farm = db.query(Farm).filter(Farm.name == "Hacienda El Paraíso").first()
+        if not farm:
+            farm = Farm(
+                name="Hacienda El Paraíso",
+                location="Vía Principal Km 5",
+                owner_id=admin.id,
+            )
+            db.add(farm)
+            db.commit()
+            db.refresh(farm)
+            print(f"✅ Finca creada: {farm.name} (ID: {farm.id})")
+        else:
+            print(f"ℹ️ Finca ya existe: {farm.name} (ID: {farm.id})")
+
+        # Vincular la finca al usuario admin si no la tiene asignada
+        if admin.farm_id != farm.id:
+            admin.farm_id = farm.id
+            db.commit()
+
+        # 3. Crear Usuario Trabajador
         worker = db.query(User).filter(User.email == "worker@ganadera.com").first()
         if not worker:
             worker = User(
@@ -41,27 +55,32 @@ def seed():
                 hashed_password=hash_password("Password123Secure!"),
                 role="MAYORDOMO",
                 farm_id=farm.id,
-                is_active=True
+                is_active=True,
             )
             db.add(worker)
+            db.commit()
             print("✅ Usuario Trabajador creado: worker@ganadera.com / Password123Secure!")
 
-        db.commit()
-
-        # 3. Crear Potreros (Lotes) - Al menos 2
+        # 4. Crear Potreros (Lotes) - Al menos 2
         lotes_nombres = ["Lote Norte", "Lote Sur"]
         lote_objs = []
         for nombre in lotes_nombres:
             lote = db.query(Lot).filter(Lot.farm_id == farm.id, Lot.name == nombre).first()
             if not lote:
-                lote = Lot(farm_id=farm.id, name=nombre, description=f"Potrero de prueba {nombre}", area_hectares=10.5, is_active=True)
+                lote = Lot(
+                    farm_id=farm.id,
+                    name=nombre,
+                    description=f"Potrero de prueba {nombre}",
+                    area_hectares=10.5,
+                    is_active=True,
+                )
                 db.add(lote)
                 db.commit()
                 db.refresh(lote)
                 print(f"✅ Potrero creado: {nombre}")
             lote_objs.append(lote)
 
-        # 4. Crear Animales - Al menos 2
+        # 5. Crear Animales - Al menos 2
         animales_data = [
             {"tag_id": "B-001", "name": "Margarita", "gender": "HEMBRA", "breed": "Holstein", "weight": 420.0, "lote_id": lote_objs[0].id},
             {"tag_id": "B-002", "name": "El Rayo", "gender": "MACHO", "breed": "Brahman", "weight": 510.0, "lote_id": lote_objs[1].id},
@@ -80,7 +99,7 @@ def seed():
                     color="Blanco",
                     current_weight=data["weight"],
                     status="ACTIVO",
-                    lote_id=data["lote_id"]
+                    lote_id=data["lote_id"],
                 )
                 db.add(animal)
                 db.commit()
@@ -88,22 +107,34 @@ def seed():
                 print(f"✅ Animal creado: {data['name']} ({data['tag_id']})")
             animal_objs.append(animal)
 
-        # 5. Crear Insumos / Inventario - Al menos 2
+        # 6. Crear Insumos / Inventario - Al menos 2
         insumos_data = [
-            {"name": "Sal Mineralizada", "quantity": 10.0, "unit": "bultos"},
-            {"name": "Vacuna Aftosa", "quantity": 50.0, "unit": "dosis"},
+            {"name": "Sal Mineralizada", "category": "Suplementos", "quantity": 10.0, "unit": "bultos"},
+            {"name": "Vacuna Aftosa", "category": "Medicamentos", "quantity": 50.0, "unit": "dosis"},
         ]
         for ins in insumos_data:
-            existente = db.query(InventoryItem).filter(InventoryItem.farm_id == farm.id, InventoryItem.name == ins["name"]).first()
-            if not existente:
+            item = db.query(InventoryItem).filter(InventoryItem.farm_id == farm.id, InventoryItem.name == ins["name"]).first()
+            if not item:
                 item = InventoryItem(
                     farm_id=farm.id,
                     name=ins["name"],
-                    quantity=ins["quantity"],
+                    category=ins["category"],
                     unit=ins["unit"],
-                    min_stock=5.0
+                    minimum_quantity=5.0,
+                    is_active=True,
                 )
                 db.add(item)
+                db.commit()
+                db.refresh(item)
+
+                movimiento = InventoryMovement(
+                    item_id=item.id,
+                    movement_type="IN",
+                    quantity=ins["quantity"],
+                    recorded_at=datetime.now(timezone.utc),
+                    notes="Carga inicial de prueba",
+                )
+                db.add(movimiento)
                 db.commit()
                 print(f"✅ Insumo creado: {ins['name']} ({ins['quantity']} {ins['unit']})")
 
@@ -114,6 +145,7 @@ def seed():
         raise
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     seed()

@@ -11,6 +11,8 @@ class DashboardTopBar extends StatelessWidget {
     this.alertCount = 0,
     this.hasHighAlert = false,
     this.onAlerts,
+    this.onToggleSidebar,
+    this.isSidebarCollapsed = false,
   });
 
   final bool isCompact;
@@ -18,6 +20,8 @@ class DashboardTopBar extends StatelessWidget {
   // Hay al menos una alarma de gravedad alta (contador en rojo).
   final bool hasHighAlert;
   final VoidCallback? onAlerts;
+  final VoidCallback? onToggleSidebar;
+  final bool isSidebarCollapsed;
 
   static String initials(String name) {
     final parts = name
@@ -53,7 +57,11 @@ class DashboardTopBar extends StatelessWidget {
               icon: const Icon(Icons.menu, color: GavacColors.primary),
             )
           else
-            const Icon(Icons.menu, color: GavacColors.primary, size: 24),
+            IconButton(
+              tooltip: isSidebarCollapsed ? 'Expandir menú' : 'Contraer menú',
+              onPressed: onToggleSidebar,
+              icon: const Icon(Icons.menu, color: GavacColors.primary, size: 24),
+            ),
           SizedBox(width: isCompact ? 4 : 16),
           Expanded(
             child: Text(

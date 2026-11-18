@@ -1,0 +1,32 @@
+# Build & Flutter caches
+**/build/
+**/.dart_tool/
+**/.pub-cache/
+**/.pub/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+
+# Native platform folders
+**/android/
+**/ios/
+**/windows/
+**/linux/
+**/macos/
+
+# Python virtualenvs & backend caches
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# IDE files
+.idea/
+.vscode/
+
+# Vercel & Node
+.vercel/
+node_modules/
+
+# Environment files
+.env*
+!.env.example

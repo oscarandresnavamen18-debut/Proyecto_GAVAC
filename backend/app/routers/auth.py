@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.core.deps import current_user
 from app.services.mailer import send_alternate_email_verification, send_password_reset_email
-from app.models import AlternateEmailVerificationCode, PasswordResetCode, User, UserRole
+from app.models import AlternateEmailVerificationCode, Farm, PasswordResetCode, User, UserRole
 from app.core.permissions import effective_permissions
 from app.services.recaptcha import RecaptchaRejectedError, RecaptchaUnavailableError, verify_recaptcha
 from app.schemas import (
@@ -63,16 +63,35 @@ def deliver_password_reset_email(email: str, code: str) -> None:
 
 @router.post("/register", response_model=TokenOut, status_code=status.HTTP_201_CREATED)
 def register(data: RegisterIn, db: Session = Depends(get_db)):
+    farm_id = None
+    role = UserRole.ADMIN
+
+    if data.finca_nombre and data.finca_nombre.strip():
+        farm_name = data.finca_nombre.strip()
+        existing_farm = db.scalar(select(Farm).where(Farm.name == farm_name))
+        if existing_farm:
+            farm_id = existing_farm.id
+            role = UserRole.MAYORDOMO
+
     user = User(
         full_name=data.nombre.strip(),
         email=str(data.email).lower(),
         hashed_password=hash_password(data.password),
-        # El registro público lo realiza el administrador de la finca; los
-        # veterinarios y trabajadores de campo los crea él desde Administración.
-        role=UserRole.ADMIN,
+        role=role,
+        farm_id=farm_id,
     )
     db.add(user)
     try:
+        db.flush()
+        if farm_id is None and data.finca_nombre and data.finca_nombre.strip():
+            farm = Farm(
+                name=data.finca_nombre.strip(),
+                location="",
+                owner_id=user.id,
+            )
+            db.add(farm)
+            db.flush()
+            user.farm_id = farm.id
         db.commit()
         db.refresh(user)
     except IntegrityError:

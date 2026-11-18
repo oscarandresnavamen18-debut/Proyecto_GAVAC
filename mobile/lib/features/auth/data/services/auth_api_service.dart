@@ -45,6 +45,7 @@ abstract interface class AuthRepository {
     required String nombre,
     required String email,
     required String password,
+    String? fincaNombre,
   });
   Future<void> requestPasswordReset(String email);
   Future<void> confirmPasswordReset({
@@ -93,11 +94,13 @@ class AuthApiService implements AuthRepository {
     required String nombre,
     required String email,
     required String password,
+    String? fincaNombre,
   }) async => AuthResult.fromJson(
     await ApiClient.post('$_base/register', {
       'nombre': nombre,
       'email': email,
       'password': password,
+      if (fincaNombre != null && fincaNombre.isNotEmpty) 'finca_nombre': fincaNombre,
     }),
   );
 

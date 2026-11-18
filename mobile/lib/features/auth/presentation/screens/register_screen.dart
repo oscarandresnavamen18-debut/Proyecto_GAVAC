@@ -4,7 +4,6 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/gavac_colors.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/session/app_session.dart';
-import '../../../administracion/data/services/admin_api_service.dart';
 import '../../data/services/auth_api_service.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -69,28 +68,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
         nombre: _nombreController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        fincaNombre: _fincaController.text.trim(),
       );
-      AppSession.accessToken = result.accessToken;
+      await AppSession.saveSession(result.accessToken);
       AppSession.role = result.role ?? 'ADMIN';
       AppSession.userName = _nombreController.text.trim();
+      try {
+        await AppSession.loadProfile();
+      } catch (_) {}
 
-      // La primera finca del administrador queda como su finca activa.
-      final farmName = _fincaController.text.trim();
-      var farmCreated = farmName.isEmpty;
-      if (farmName.isNotEmpty) {
-        try {
-          final farm = await AdminApiService.crearFinca(farmName, '');
-          AppSession.farmName = farm.nombre;
-          AppSession.farmId = farm.id;
-          farmCreated = true;
-        } on ApiException catch (error) {
-          debugPrint('No se pudo registrar la finca: ${error.message}');
-        }
-      }
-
-      _showMessage(
-        farmCreated ? 'Cuenta creada correctamente.' : 'Cuenta creada, pero no se pudo registrar la finca. Puedes intentarlo desde Administración.',
-      );
+      _showMessage('Cuenta creada correctamente.');
       if (mounted) {
         Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
       }

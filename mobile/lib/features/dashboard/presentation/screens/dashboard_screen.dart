@@ -30,6 +30,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = DashboardModules.inicio;
+  bool _isSidebarCollapsed = false;
   // Aumenta al volver al inicio para que recargue los indicadores.
   int _inicioRefresh = 0;
   // Alarmas de la campana (null = cargando o sin respuesta).
@@ -154,6 +155,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           alertCount: _alertas?.length ?? 0,
           hasHighAlert: _alertas?.any((a) => a.esAlta) ?? false,
           onAlerts: _openAlerts,
+          isSidebarCollapsed: _isSidebarCollapsed,
+          onToggleSidebar: () => setState(() => _isSidebarCollapsed = !_isSidebarCollapsed),
         ),
         Expanded(
           child: IndexedStack(
@@ -175,7 +178,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ? SafeArea(child: content)
           : Row(
               children: [
-                _sidebar(isDrawer: false),
+                if (!_isSidebarCollapsed) _sidebar(isDrawer: false),
                 Expanded(child: content),
               ],
             ),

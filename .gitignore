@@ -45,3 +45,5 @@ mobile/build/
 .DS_Store
 Thumbs.db
 node_modules/
+.vercel
+.env*

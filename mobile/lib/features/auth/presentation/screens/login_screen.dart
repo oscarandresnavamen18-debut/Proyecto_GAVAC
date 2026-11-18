@@ -58,7 +58,9 @@ class _LoginScreenState extends State<LoginScreen> {
       final prefs = await SharedPreferences.getInstance();
       final savedEmail = prefs.getString('gavac_saved_email');
       if (savedEmail != null && savedEmail.isNotEmpty && mounted) {
-        _emailController.text = savedEmail;
+        setState(() {
+          _emailController.text = savedEmail;
+        });
       }
     } catch (_) {}
   }
