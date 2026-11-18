@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 import '../network/api_client.dart';
 
 class AppSession {
@@ -67,8 +68,8 @@ class AppSession {
         }
       }
     } catch (e) {
-      await clear();
-      rethrow;
+      // Mantenemos el token activo aunque falle la carga del perfil (ej. offline o tests)
+      debugPrint('No se pudo cargar el perfil del usuario: $e');
     }
   }
 

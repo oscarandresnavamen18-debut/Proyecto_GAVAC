@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gestion_ganadera/core/network/api_client.dart';
 import 'package:gestion_ganadera/core/session/app_session.dart';
 import 'package:gestion_ganadera/features/auth/data/services/auth_api_service.dart';
@@ -26,6 +27,7 @@ class _FakeAuthRepository implements AuthRepository {
     required String nombre,
     required String email,
     required String password,
+    String? fincaNombre,
   }) => throw UnimplementedError();
 
   @override
@@ -62,6 +64,10 @@ Future<void> _fillAndSubmit(WidgetTester tester, String userType) async {
 }
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   tearDown(AppSession.clear);
 
   Future<void> pumpLogin(WidgetTester tester, AuthRepository repository) async {
