@@ -16,7 +16,7 @@ class ApiException implements Exception {
 class ApiClient {
   static const _webBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8001',
+    defaultValue: 'https://proyectogavac-production.up.railway.app',
   );
 
   static String get baseUrl {

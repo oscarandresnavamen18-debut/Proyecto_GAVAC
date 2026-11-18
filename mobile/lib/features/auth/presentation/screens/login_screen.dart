@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/gavac_colors.dart';
@@ -46,6 +47,22 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _captchaToken;
   VoidCallback? _resetCaptcha;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedEmail();
+  }
+
+  Future<void> _loadSavedEmail() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedEmail = prefs.getString('gavac_saved_email');
+      if (savedEmail != null && savedEmail.isNotEmpty && mounted) {
+        _emailController.text = savedEmail;
+      }
+    } catch (_) {}
+  }
+
   static const String welcomeTitle = 'Bienvenido';
   static const String welcomeSubtitle =
       'Ingresa tus credenciales para acceder.';
@@ -86,13 +103,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
     try {
+      final email = _emailController.text.trim().replaceAll(' ', '');
       final result = await widget.repository.login(
-        email: _emailController.text.trim().replaceAll(' ', ''),
+        email: email,
         password: _passwordController.text,
         role: _userType!.apiValue,
         captchaToken: kIsWeb ? _captchaToken : null,
       );
-      AppSession.accessToken = result.accessToken;
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('gavac_saved_email', email);
+      } catch (_) {}
+      await AppSession.saveSession(result.accessToken);
       AppSession.role = result.role ?? _userType!.apiValue;
       try {
         await AppSession.loadProfile();
