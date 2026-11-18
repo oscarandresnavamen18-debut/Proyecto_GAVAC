@@ -15,6 +15,7 @@ if [ ! -x "${FLUTTER_DIR}/bin/flutter" ]; then
   curl -fsSL "https://storage.googleapis.com/flutter_infra_release/releases/${ARCHIVE}" -o /tmp/flutter-sdk.tar.xz
   tar -xf /tmp/flutter-sdk.tar.xz -C "${HOME}/.cache"
   rm -f /tmp/flutter-sdk.tar.xz
+  git config --global --add safe.directory "${FLUTTER_DIR}"
 fi
 
 export PATH="${FLUTTER_DIR}/bin:${PATH}"
