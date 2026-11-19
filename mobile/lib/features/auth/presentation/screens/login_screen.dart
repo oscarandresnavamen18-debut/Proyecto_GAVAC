@@ -281,11 +281,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 768;
 
-    return Theme(
-      data: GavacTheme.lightTheme,
-      child: Scaffold(
-        body: isDesktop ? _buildDesktopLayout() : _buildMobileLayout(),
-      ),
+    return Scaffold(
+      body: isDesktop ? _buildDesktopLayout() : _buildMobileLayout(),
     );
   }
 

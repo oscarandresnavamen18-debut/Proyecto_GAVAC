@@ -29,7 +29,8 @@ void main() {
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(find.byKey(const ValueKey('theme-toggle')), findsNothing);
     expect(app.theme?.colorScheme.primary, const Color(0xFF2E6B57));
-    expect(app.darkTheme, isNull);
+    expect(app.darkTheme, isNotNull);
+    expect(app.themeMode, ThemeMode.system);
   });
 
   testWidgets('login text remains readable when the system theme is dark', (
