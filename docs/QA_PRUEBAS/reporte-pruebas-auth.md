@@ -44,3 +44,11 @@
 - **Comportamiento esperado:** Los formularios de vacunas, tratamientos y eventos reproductivos deben leer la lista de animales/hembras activos de la finca y permitir su registro.
 - **Comportamiento actual:** El estado de animales registrados no se comparte o no se consulta correctamente desde los módulos de Salud y Reproducción, impidiendo registrar novedades sanitarias y reproductivas.
 - **Severidad:** Alta (bloquea flujos operativos principales de sanidad y reproducción).
+
+
+### 6. Problemas de contraste, legibilidad y visualización en el modal "Registrar Animal"
+- **Módulo:** Registro de Animales (Modal de creación)
+- **Descripción:** Al abrir el formulario modal **Registrar Animal**, se evidencian problemas de legibilidad y visualización en campos y menús desplegables (sin relación con la paleta de colores del tema): el placeholder de **Fecha de Nacimiento** tiene bajo contraste, el botón de cerrar (`X`) es poco visible y las opciones del selector de potrero (*Sin potrero*, *La candelaria*, *La pesquera*) presentan bajo contraste / desborde visual al desplegarse.
+- **Comportamiento esperado:** Todos los textos de ayuda/placeholders, controles de cierre y listas desplegables del modal deben tener buen contraste, alineación y legibilidad clara al interactuar con ellos.
+- **Comportamiento actual:** Ciertos textos y elementos del modal resultan difíciles de leer o se visualizan con poco contraste/desborde al abrir el selector de potrero.
+- **Severidad:** Media (afecta usabilidad y legibilidad al registrar animales).
