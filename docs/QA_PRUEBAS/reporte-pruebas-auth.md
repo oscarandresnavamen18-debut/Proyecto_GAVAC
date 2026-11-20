@@ -20,3 +20,10 @@
 - **Descripción:** Debido al fallo en el proceso de registro, no se inserta ni persiste ningún registro de usuario nuevo en la base de datos.
 - **Resultado esperado:** Almacenar el registro del usuario recién creado en la tabla correspondiente de la base de datos.
 - **Resultado actual:** La base de datos no guarda ningún usuario nuevo.
+
+### 4. Visualización de finca incorrecta al iniciar sesión como usuario (posible fallo de filtrado por usuario / sesión)
+- **Módulo:** Fincas / Perfil de usuario
+- **Descripción:** Al iniciar sesión con una cuenta de usuario, el sistema no muestra la finca registrada por ese usuario, sino una finca diferente llamada **"Hacienda el paraiso"**., debe salir la que registra el usuario mas no esa.
+- **Comportamiento esperado:** Cada usuario autenticado debe visualizar únicamente las fincas asociadas a su propio ID de usuario o permisos asignados.
+- **Comportamiento actual:** Se carga o muestra una finca de otro registro/usuario ("Hacienda el paraiso") en lugar de la propia.
+- **Severidad:** Alta (problema de integridad y privacidad de datos entre usuarios).
