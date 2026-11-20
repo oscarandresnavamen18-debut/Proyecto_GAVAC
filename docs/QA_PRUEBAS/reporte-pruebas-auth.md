@@ -52,3 +52,11 @@
 - **Comportamiento esperado:** Todos los textos de ayuda/placeholders, controles de cierre y listas desplegables del modal deben tener buen contraste, alineación y legibilidad clara al interactuar con ellos.
 - **Comportamiento actual:** Ciertos textos y elementos del modal resultan difíciles de leer o se visualizan con poco contraste/desborde al abrir el selector de potrero.
 - **Severidad:** Media (afecta usabilidad y legibilidad al registrar animales).
+
+
+### 7. Mensaje de estado vacío confuso al filtrar por "Vendidos y muertos"
+- **Módulo:** Registro de Animales (Filtros de inventario)
+- **Descripción:** Al activar el filtro **Vendidos y muertos** (cuando la tarjeta de **Salidas** muestra `0 vendidos · 0 muertos` y **En la finca** muestra `3` animales activos), el sistema muestra el mensaje genérico *"No hay animales registrados en el sistema"* en lugar de indicar que no existen registros bajo ese filtro específico[cite: 21].
+- **Comportamiento esperado:** Al filtrar por **Vendidos y muertos** sin registros coincidentes, debe mostrarse un mensaje contextual claro (por ejemplo, *"No hay animales vendidos o muertos registrados"*) y evitar contradicción visual frente al conteo de animales activos[cite: 21].
+- **Comportamiento actual:** Se muestra *"No hay animales registrados en el sistema"*, generando confusión sobre si existen o no animales cargados en la plataforma[cite: 21].
+- **Severidad:** Baja / Usabilidad (confusión en la lectura del estado del inventario).
