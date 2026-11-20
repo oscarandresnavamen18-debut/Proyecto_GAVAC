@@ -60,3 +60,11 @@
 - **Comportamiento esperado:** Al filtrar por **Vendidos y muertos** sin registros coincidentes, debe mostrarse un mensaje contextual claro (por ejemplo, *"No hay animales vendidos o muertos registrados"*) y evitar contradicción visual frente al conteo de animales activos[cite: 21].
 - **Comportamiento actual:** Se muestra *"No hay animales registrados en el sistema"*, generando confusión sobre si existen o no animales cargados en la plataforma[cite: 21].
 - **Severidad:** Baja / Usabilidad (confusión en la lectura del estado del inventario).
+
+
+### 8. Error de respuesta del servidor en Módulo de Producción ("El servidor devolvió una respuesta no válida")
+- **Módulo:** Producción vs. Panel Principal (Inicio)
+- **Descripción:** Mientras el **Panel Principal (Inicio)** sí carga métricas reales de la finca (*Peso promedio del hato: 25 kg*, *Promedio por ordeño: 13,3 L*, *Leche producida: 26,5 L*)[cite: 22], al ingresar al **Módulo de Producción** o intentar registrar producción aparece el mensaje de error **`"El servidor devolvió una respuesta no válida."`**, dejando las tarjetas en `0 L` / `0 kg` y el historial vacío (*"No hay registros de producción"*)[cite: 21].
+- **Comportamiento esperado:** El endpoint consumido por el Módulo de Producción debe responder con un JSON/esquema válido, sincronizado con los datos de la finca, permitiendo listar el historial y crear nuevos registros[cite: 21, 22].
+- **Comportamiento actual:** El cliente Flutter recibe una respuesta no válida desde el backend en el módulo de Producción, bloqueando tanto la consulta del historial como el registro diario[cite: 21].
+- **Severidad:** Alta (fallo de integración/contrato entre frontend y backend en Producción).
