@@ -45,8 +45,10 @@ abstract interface class AuthRepository {
     required String nombre,
     required String email,
     required String password,
-    String? fincaNombre,
+    required String role,
+    int? farmId,
   });
+  Future<List<Map<String, dynamic>>> listPublicFarms();
   Future<void> requestPasswordReset(String email);
   Future<void> confirmPasswordReset({
     required String email,
@@ -94,15 +96,22 @@ class AuthApiService implements AuthRepository {
     required String nombre,
     required String email,
     required String password,
-    String? fincaNombre,
+    required String role,
+    int? farmId,
   }) async => AuthResult.fromJson(
     await ApiClient.post('$_base/register', {
       'nombre': nombre,
       'email': email,
       'password': password,
-      if (fincaNombre != null && fincaNombre.isNotEmpty) 'finca_nombre': fincaNombre,
+      'role': role,
+      if (farmId != null) 'farm_id': farmId,
     }),
   );
+
+  @override
+  Future<List<Map<String, dynamic>>> listPublicFarms() async =>
+      (await ApiClient.get('/api/v1/farms/public') as List)
+          .cast<Map<String, dynamic>>();
 
   @override
   Future<void> requestPasswordReset(String email) =>

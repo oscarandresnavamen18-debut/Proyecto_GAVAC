@@ -23,7 +23,7 @@ def test_alembic_migrations_upgrade_and_downgrade_on_isolated_sqlite(tmp_path):
         JWT_SECRET_KEY="test-only-secret-key-with-at-least-32-characters",
     )
 
-    assert scripts.get_heads() == ["e8b4f6a2c0d1"]
+    assert scripts.get_heads() == ["f1a2b3c4d5e6"]
     assert scripts.get_revision("e8b4f6a2c0d1").down_revision == "d7a3e5c9b1f2"
     assert scripts.get_revision("d7a3e5c9b1f2").down_revision == "c4e8a1b2d3f5"
     assert scripts.get_revision("c4e8a1b2d3f5").down_revision == "b7d4e2f1a9c3"
@@ -77,7 +77,7 @@ def test_alembic_migrations_upgrade_and_downgrade_on_isolated_sqlite(tmp_path):
             current_revision = connection.execute(
                 text("SELECT version_num FROM alembic_version")
             ).scalar_one()
-            assert current_revision == "e8b4f6a2c0d1"
+            assert current_revision == "f1a2b3c4d5e6"
             user_columns = {column["name"] for column in inspector.get_columns("usuarios")}
             assert {"auth_provider", "provider_subject"} <= user_columns
     finally:

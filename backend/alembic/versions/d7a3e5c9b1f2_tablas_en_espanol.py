@@ -1,22 +1,20 @@
+
 """Renombrar las tablas al español.
 
-Las columnas y el API no cambian. En PostgreSQL las llaves foráneas apuntan a la
-tabla (no a su nombre), así que se mantienen; en SQLite se actualizan al renombrar.
-
+Las columnas y el API no cambian.
 Revision ID: d7a3e5c9b1f2
 Revises: c4e8a1b2d3f5
 """
 from typing import Sequence, Union
 
 from alembic import op
-
+import sqlalchemy as sa
 
 revision: str = "d7a3e5c9b1f2"
-down_revision: Union[str, Sequence[str], None] = "c4e8a1b2d3f5"
+down_revision: Union[str, None] = "c4e8a1b2d3f5"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-# nombre anterior -> nombre nuevo
 TABLAS = {
     "users": "usuarios",
     "farms": "fincas",
@@ -33,11 +31,28 @@ TABLAS = {
 }
 
 
+def renombrar_tabla(origen: str, destino: str) -> None:
+    inspector = sa.inspect(op.get_bind())
+    tablas = set(inspector.get_table_names())
+
+    if origen in tablas and destino not in tablas:
+        op.rename_table(origen, destino)
+    elif origen in tablas and destino in tablas:
+        raise RuntimeError(
+            f"Existen ambas tablas '{origen}' y '{destino}'. "
+            "Se requiere revisar el esquema antes de continuar."
+        )
+    elif origen not in tablas and destino not in tablas:
+        raise RuntimeError(
+            f"No existe ninguna de las tablas '{origen}' o '{destino}'."
+        )
+
+
 def upgrade() -> None:
     for anterior, nuevo in TABLAS.items():
-        op.rename_table(anterior, nuevo)
+        renombrar_tabla(anterior, nuevo)
 
 
 def downgrade() -> None:
     for anterior, nuevo in reversed(list(TABLAS.items())):
-        op.rename_table(nuevo, anterior)
+        renombrar_tabla(nuevo, anterior)

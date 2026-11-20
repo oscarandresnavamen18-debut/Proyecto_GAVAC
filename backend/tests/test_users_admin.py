@@ -48,7 +48,7 @@ def test_admin_creates_veterinarian_who_logs_in_with_role_defaults(client):
     body = created.json()
     assert body["role"] == "VETERINARIO"
     assert body["farm_id"] == farm_id
-    assert body["permissions"] == ["registro", "sanidad", "reproduccion", "reportes"]
+    assert body["permissions"] == ["registro", "sanidad", "reproduccion"]
 
     login = _login(client, "vet@ganadera.com", "VETERINARIO")
     assert login.status_code == 200

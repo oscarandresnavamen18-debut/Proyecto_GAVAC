@@ -27,8 +27,12 @@ class _FakeAuthRepository implements AuthRepository {
     required String nombre,
     required String email,
     required String password,
-    String? fincaNombre,
+    required String role,
+    int? farmId,
   }) => throw UnimplementedError();
+
+  @override
+  Future<List<Map<String, dynamic>>> listPublicFarms() async => [];
 
   @override
   Future<void> requestPasswordReset(String email) async {}

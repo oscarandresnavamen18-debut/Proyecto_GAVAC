@@ -1,3 +1,4 @@
+
 from datetime import date
 from typing import Literal
 
@@ -5,9 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.core.deps import require_module
-from app.models import Farm, User
-from app.core.permissions import has_module
+from app.core.deps import current_user
+from app.models import Farm, User, UserRole
 from app.services.reports import (
     REPORTS,
     build_general,
@@ -32,30 +32,46 @@ def download_report(
                     "produccion", "insumos"],
     formato: Literal["pdf", "xlsx"] = Query("pdf"),
     db: Session = Depends(get_db),
-    user: User = Depends(require_module("reportes")),
+    user: User = Depends(current_user),
 ):
-    """Exporta en PDF o Excel un módulo, o el resumen general de la finca activa.
+    """Exporta reportes PDF o Excel exclusivamente para administradores."""
+    if user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Los reportes administrativos son exclusivos del administrador",
+        )
 
-    El resumen general incluye solo los módulos que el usuario tiene habilitados.
-    """
     farm = db.get(Farm, user.farm_id) if user.farm_id is not None else None
     if farm is None:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "No estás asociado a ninguna finca")
+        farm = db.scalar(
+            Session.query(Farm).filter(Farm.owner_id == user.id)
+        ) if False else None
+
+    if farm is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No estás asociado a ninguna finca",
+        )
 
     if report == "general":
-        reports = build_general(db, farm.id, lambda module: has_module(user, module))
+        reports = build_general(db, farm.id, lambda module: True)
         if not reports:
             raise HTTPException(
-                status.HTTP_403_FORBIDDEN, "No tienes módulos habilitados para el resumen")
-        content = (render_general_pdf(reports, farm.name) if formato == "pdf"
-                   else render_general_xlsx(reports, farm.name))
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No hay reportes disponibles",
+            )
+        content = (
+            render_general_pdf(reports, farm.name)
+            if formato == "pdf"
+            else render_general_xlsx(reports, farm.name)
+        )
     else:
-        module = REPORTS[report][0]
-        if not has_module(user, module):
-            raise HTTPException(
-                status.HTTP_403_FORBIDDEN, f"No tienes permiso para el módulo de {module}")
         data = build_report(db, report, farm.id)
-        content = render_pdf(data, farm.name) if formato == "pdf" else render_xlsx(data, farm.name)
+        content = (
+            render_pdf(data, farm.name)
+            if formato == "pdf"
+            else render_xlsx(data, farm.name)
+        )
 
     filename = f"gavac_{report}_{date.today().isoformat()}.{formato}"
     return Response(

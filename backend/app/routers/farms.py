@@ -46,6 +46,13 @@ def list_farms(db: Session = Depends(get_db), user: User = Depends(current_user)
     return db.scalars(query).all()
 
 
+@router.get("/public", response_model=list[FarmRead])
+def list_public_farms(db: Session = Depends(get_db)):
+    """Lista todas las fincas disponibles para selección al registrarse."""
+    query = select(Farm).order_by(Farm.id)
+    return db.scalars(query).all()
+
+
 @router.post("", response_model=FarmRead, status_code=status.HTTP_201_CREATED)
 def create_farm(data: FarmCreate, db: Session = Depends(get_db), user: User = Depends(require_admin)):
     farm = Farm(

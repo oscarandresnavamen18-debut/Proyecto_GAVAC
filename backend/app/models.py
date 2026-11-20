@@ -1,8 +1,8 @@
-﻿
+
 from datetime import date, datetime, timezone
 from enum import Enum
 from typing import Optional
-from sqlalchemy import JSON, Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Numeric, String, Text, UniqueConstraint, func, text
+from sqlalchemy import ForeignKeyConstraint, JSON, Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Numeric, String, Text, UniqueConstraint, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.db import Base
 
@@ -100,7 +100,7 @@ class Animal(Base):
         default=CattleStatus.ACTIVO, server_default="ACTIVO", nullable=False)
     # Potrero o lote donde está el animal (null = sin asignar).
     lote_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("lotes.id", ondelete="SET NULL"), nullable=True, index=True)
+        nullable=True, index=True)
     is_active: Mapped[bool] = mapped_column(
         Boolean, default=True, server_default=text("true"), index=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -110,6 +110,12 @@ class Animal(Base):
     deleted_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, nullable=True)
     __table_args__ = (
+        ForeignKeyConstraint(
+            ["lote_id", "finca_id"],
+            ["lotes.id", "lotes.farm_id"],
+            name="fk_animales_lote_finca",
+            ondelete="RESTRICT",
+        ),
         Index("idx_animal_finca_active", "finca_id", "is_active"),
         Index("idx_animal_status_active", "status", "is_active"),
         Index("ix_animals_finca_status", "finca_id", "status"),
@@ -128,7 +134,10 @@ class Lot(Base):
         Boolean, default=True, server_default=text("true"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False)
-    __table_args__ = (UniqueConstraint("farm_id", "name", name="uq_lotes_finca_nombre"),)
+    __table_args__ = (
+        UniqueConstraint("farm_id", "name", name="uq_lotes_finca_nombre"),
+        UniqueConstraint("id", "farm_id", name="uq_lotes_id_farm"),
+    )
 
 
 class LotMovement(Base):

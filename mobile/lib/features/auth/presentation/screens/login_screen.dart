@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/gavac_colors.dart';
-import '../../../../core/theme/gavac_theme.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/session/app_session.dart';
 import '../../data/services/auth_api_service.dart';

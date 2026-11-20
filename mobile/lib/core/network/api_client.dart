@@ -12,14 +12,28 @@ class ApiException implements Exception {
 }
 
 class ApiClient {
-  static const _baseUrl = String.fromEnvironment(
+  static const _defaultProductionUrl =
+      'https://proyectogavac-production.up.railway.app';
+
+  static const _configuredBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://proyectogavac-production.up.railway.app',
+    defaultValue: '',
   );
 
   static String get baseUrl {
-    if (kIsWeb) return _baseUrl;
-    if (defaultTargetPlatform == TargetPlatform.android) return _baseUrl;
+    if (_configuredBaseUrl.isNotEmpty) {
+      return _configuredBaseUrl;
+    }
+    if (kIsWeb) {
+      final host = Uri.base.host;
+      if (host == 'localhost' || host == '127.0.0.1') {
+        return 'http://localhost:8001';
+      }
+      return _defaultProductionUrl;
+    }
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return _defaultProductionUrl;
+    }
     return 'http://localhost:8001';
   }
 

@@ -12,7 +12,8 @@ class RegisterIn(BaseModel):
     nombre: str = Field(..., min_length=1, max_length=100)
     email: EmailStr
     password: str = Field(..., min_length=8)
-    finca_nombre: Optional[str] = None
+    role: UserRole = UserRole.ADMIN
+    farm_id: Optional[int] = None
 
 
 class LoginIn(BaseModel):
