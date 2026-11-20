@@ -54,3 +54,62 @@ def test_native_login_does_not_require_recaptcha(client, monkeypatch):
     )
 
     assert login.status_code == 200
+
+
+def _register_admin(client):
+    response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "nombre": "Admin Finca",
+            "email": "admin@ganadera.com",
+            "password": "Password123Secure!",
+        },
+    )
+    assert response.status_code == 201
+    assert response.json()["role"] == "ADMIN"
+
+
+def test_login_with_matching_role(client):
+    _register_admin(client)
+    response = client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": "admin@ganadera.com",
+            "password": "Password123Secure!",
+            "role": "ADMIN",
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["role"] == "ADMIN"
+
+
+@pytest.mark.parametrize("role", ["VETERINARIO", "MAYORDOMO"])
+def test_login_rejects_mismatched_role(client, role):
+    _register_admin(client)
+    response = client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": "admin@ganadera.com",
+            "password": "Password123Secure!",
+            "role": role,
+        },
+    )
+    assert response.status_code == 403
+
+
+def test_login_role_check_does_not_bypass_password(client):
+    _register_admin(client)
+    response = client.post(
+        "/api/v1/auth/login",
+        json={"email": "admin@ganadera.com", "password": "incorrecta", "role": "VETERINARIO"},
+    )
+    assert response.status_code == 401
+
+
+def test_login_rejects_unknown_role(client):
+    _register_admin(client)
+    response = client.post(
+        "/api/v1/auth/login",
+        json={"email": "admin@ganadera.com", "password": "Password123Secure!", "role": "DUEÑO"},
+    )
+    assert response.status_code == 422

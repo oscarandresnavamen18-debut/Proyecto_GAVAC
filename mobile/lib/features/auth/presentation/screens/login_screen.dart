@@ -1,17 +1,36 @@
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/gavac_colors.dart';
-import '../../../../core/theme/gavac_theme.dart';
-import '../../../../core/utils/app_session.dart';
+import '../../../../core/routing/app_routes.dart';
+import '../../../../core/session/app_session.dart';
+import '../../data/services/auth_api_service.dart';
 import '../widgets/captcha_widget.dart';
 
-String get _apiBaseUrl => ApiClient.baseUrl;
+/// Tipos de usuario que pueden iniciar sesión. El valor coincide con el enum
+/// `UserRole` del backend; "Trabajador de campo" corresponde a `MAYORDOMO`.
+enum LoginUserType {
+  admin('ADMIN', 'Administrador', Icons.admin_panel_settings_outlined),
+  trabajadorCampo(
+    'MAYORDOMO',
+    'Trabajador de campo',
+    Icons.agriculture_outlined,
+  ),
+  veterinario('VETERINARIO', 'Veterinario', Icons.medical_services_outlined);
+
+  const LoginUserType(this.apiValue, this.label, this.icon);
+
+  final String apiValue;
+  final String label;
+  final IconData icon;
+}
+
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.repository = const AuthApiService()});
+
+  final AuthRepository repository;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -23,21 +42,51 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
+  LoginUserType? _userType;
   String? _captchaToken;
   VoidCallback? _resetCaptcha;
 
-  static const String appName = 'GAVAC';
-  static const String appSlogan =
-      'Tecnología inteligente\npara la gestión del campo.';
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedEmail();
+  }
+
+  Future<void> _loadSavedEmail() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedEmail = prefs.getString('gavac_saved_email');
+      if (savedEmail != null && savedEmail.isNotEmpty && mounted) {
+        setState(() {
+          _emailController.text = savedEmail;
+        });
+      }
+    } catch (_) {}
+  }
+
   static const String welcomeTitle = 'Bienvenido';
   static const String welcomeSubtitle =
       'Ingresa tus credenciales para acceder.';
+  static const String userTypeLabel = 'Tipo de usuario';
+  static const String userTypeHint = 'Selecciona tu tipo de usuario';
   static const String emailLabel = 'Correo Electrónico';
-  static const String emailHint = 'usuario@gavac.pro';
+  static const String emailHint = 'correo@ejemplo.com';
   static const String passwordLabel = 'Contraseña';
   static const String passwordHint = '••••••••';
   static const String buttonText = 'Entrar al Sistema';
   static const String registerText = '¿No tienes cuenta? Regístrate aquí';
+
+  bool get _isDarkMode => Theme.of(context).brightness == Brightness.dark;
+  Color get _formBackground =>
+      _isDarkMode ? const Color(0xFF0F172A) : Colors.white;
+  Color get _formText =>
+      _isDarkMode ? const Color(0xFFF1F5F9) : GavacColors.textPrimary;
+  Color get _mutedText =>
+      _isDarkMode ? const Color(0xFFCBD5E1) : GavacColors.textSecondary;
+  Color get _fieldBackground =>
+      _isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC);
+  Color get _fieldBorder =>
+      _isDarkMode ? const Color(0xFF334155) : const Color(0xFFD1D5DB);
 
   @override
   void dispose() {
@@ -55,39 +104,40 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final response = await http.post(
-        Uri.parse('$_apiBaseUrl/api/v1/auth/login'),
-        headers: const {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': _emailController.text.trim().replaceAll(' ', ''),
-          'password': _passwordController.text,
-          if (kIsWeb) 'captcha_token': _captchaToken,
-        }),
+      final email = _emailController.text.trim().replaceAll(' ', '');
+      final result = await widget.repository.login(
+        email: email,
+        password: _passwordController.text,
+        role: _userType!.apiValue,
+        captchaToken: kIsWeb ? _captchaToken : null,
       );
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('gavac_saved_email', email);
+      } catch (_) {}
+      await AppSession.saveSession(result.accessToken);
+      AppSession.role = result.role ?? _userType!.apiValue;
+      try {
+        await AppSession.loadProfile();
+      } catch (error) {
+        // El dashboard funciona sin el perfil; el backend sigue validando permisos.
+        debugPrint('No se pudo cargar el perfil: $error');
+      }
       if (!mounted) return;
-      if (response.statusCode == 200) {
-        AppSession.accessToken = (jsonDecode(response.body)
-            as Map<String, dynamic>)['access_token'] as String;
-        Navigator.pushReplacementNamed(context, '/dashboard');
-      } else {
-        _resetCaptcha?.call();
-        _showMessage(
-          response.statusCode == 401
-              ? 'Correo o contraseña incorrectos.'
-              : 'No se pudo iniciar sesión. Inténtalo de nuevo.',
-        );
-      }
-    } on http.ClientException {
-      if (mounted) {
-        _showMessage(
-          'No se pudo conectar con el servicio. Inténtalo de nuevo.',
-        );
-      }
+      Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      _resetCaptcha?.call();
+      _showMessage(switch (error.statusCode) {
+        0 => 'No se pudo conectar con el servicio. Inténtalo de nuevo.',
+        401 => 'Correo o contraseña incorrectos.',
+        403 =>
+          'Esta cuenta no está registrada como ${_userType!.label.toLowerCase()}.',
+        _ => 'No se pudo iniciar sesión. Inténtalo de nuevo.',
+      });
     } on FormatException {
       if (mounted) {
-        _showMessage(
-          'El servicio respondió con un formato no válido.',
-        );
+        _showMessage('El servicio respondió con un formato no válido.');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -100,13 +150,14 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildCaptcha() => CaptchaWidget(
-        onToken: (token) => setState(() => _captchaToken = token),
-        onResetReady: (reset) => _resetCaptcha = reset,
-      );
+    onToken: (token) => setState(() => _captchaToken = token),
+    onResetReady: (reset) => _resetCaptcha = reset,
+  );
 
   Future<void> _showPasswordResetDialog() async {
-    final emailController =
-        TextEditingController(text: _emailController.text.trim());
+    final emailController = TextEditingController(
+      text: _emailController.text.trim(),
+    );
     final codeController = TextEditingController();
     final passwordController = TextEditingController();
     var codeSent = false;
@@ -134,14 +185,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: codeController,
                     keyboardType: TextInputType.number,
                     maxLength: 8,
-                    decoration:
-                        const InputDecoration(labelText: 'Código de 8 dígitos'),
+                    decoration: const InputDecoration(
+                      labelText: 'Código de 8 dígitos',
+                    ),
                   ),
                   TextField(
                     controller: passwordController,
                     obscureText: true,
-                    decoration:
-                        const InputDecoration(labelText: 'Nueva contraseña'),
+                    decoration: const InputDecoration(
+                      labelText: 'Nueva contraseña',
+                    ),
                   ),
                 ],
               ],
@@ -163,55 +216,48 @@ class _LoginScreenState extends State<LoginScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text(
-                                'Ingresa el código y una contraseña de al menos 10 caracteres.'),
+                              'Ingresa el código y una contraseña de al menos 10 caracteres.',
+                            ),
                           ),
                         );
                         return;
                       }
                       setDialogState(() => busy = true);
+                      final email = emailController.text.trim();
                       try {
-                        final response = await http.post(
-                          Uri.parse(
-                            '$_apiBaseUrl/api/v1/auth/password-reset/${codeSent ? 'confirm' : 'request'}',
-                          ),
-                          headers: const {'Content-Type': 'application/json'},
-                          body: jsonEncode(
-                            codeSent
-                                ? {
-                                    'email': emailController.text.trim(),
-                                    'code': codeController.text.trim(),
-                                    'new_password': passwordController.text,
-                                  }
-                                : {'email': emailController.text.trim()},
-                          ),
-                        );
-                        if (!context.mounted) return;
-                        if (response.statusCode == 204) {
+                        if (codeSent) {
+                          await widget.repository.confirmPasswordReset(
+                            email: email,
+                            code: codeController.text.trim(),
+                            newPassword: passwordController.text,
+                          );
+                          if (!context.mounted) return;
                           Navigator.pop(dialogContext);
                           _showMessage(
-                              'Contraseña restablecida. Ya puedes iniciar sesión.');
-                        } else if (response.statusCode == 202) {
+                            'Contraseña restablecida. Ya puedes iniciar sesión.',
+                          );
+                        } else {
+                          await widget.repository.requestPasswordReset(email);
+                          if (!context.mounted) return;
                           setDialogState(() => codeSent = true);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text(
-                                  'Si el correo está asociado, recibirás un código de verificación.'),
-                            ),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                  'No se pudo completar la solicitud. Revisa el código e inténtalo de nuevo.'),
+                                'Si el correo está asociado, recibirás un código de verificación.',
+                              ),
                             ),
                           );
                         }
-                      } on http.ClientException {
+                      } on ApiException catch (error) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text(
-                                    'No se pudo conectar con el servicio.')),
+                            SnackBar(
+                              content: Text(
+                                error.statusCode == 0
+                                    ? 'No se pudo conectar con el servicio.'
+                                    : 'No se pudo completar la solicitud. Revisa el código e inténtalo de nuevo.',
+                              ),
+                            ),
                           );
                         }
                       } finally {
@@ -234,74 +280,72 @@ class _LoginScreenState extends State<LoginScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 768;
 
-    return Theme(
-      data: GavacTheme.lightTheme,
-      child: Scaffold(
-        body: isDesktop ? _buildDesktopLayout() : _buildMobileLayout(),
-      ),
+    return Scaffold(
+      body: isDesktop ? _buildDesktopLayout() : _buildMobileLayout(),
     );
   }
 
   Widget _buildDesktopLayout() {
     return Row(
       children: [
-        // LADO IZQUIERDO - Imagen de fondo con texto
+        // LADO IZQUIERDO - Imagen de fondo con Buey Nelore blanco (imagenLoginNuevo.jpg)
         Expanded(
           flex: 1,
           child: Container(
-            color: const Color(0xFF6B8E85),
-            child: const Stack(
+            color: const Color(0xFF1A3A32),
+            child: Stack(
               children: [
                 Positioned.fill(
-                  child: Opacity(
-                    opacity: 0.3,
-                    child: Image(
-                      image: AssetImage('assets/imagenes/imagenlogin.png'),
-                      fit: BoxFit.cover,
-                    ),
+                  child: Image.asset(
+                    'assets/imagenes/imagenLoginNuevo.jpg',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const SizedBox(),
                   ),
                 ),
                 Positioned.fill(
-                  child: ColoredBox(color: Color(0x33000000)),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.25),
+                          Colors.black.withValues(alpha: 0.55),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
                 Center(
                   child: Padding(
-                    padding: EdgeInsets.all(48.0),
+                    padding: const EdgeInsets.all(48.0),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          appName,
-                          style: TextStyle(
-                            fontSize: 72,
-                            fontWeight: FontWeight.w900,
-                            color: Color.fromARGB(255, 29, 28, 28),
-                            letterSpacing: -2,
-                            shadows: [
-                              Shadow(
-                                color: Color(0x80000000),
-                                offset: Offset(0, 4),
-                                blurRadius: 8,
+                        Image.asset(
+                          'assets/imagenes/imagenLogoNuevo.png',
+                          height: 110,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Text(
+                                'GAVAC',
+                                style: TextStyle(
+                                  fontSize: 64,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                ),
                               ),
-                            ],
-                          ),
                         ),
-                        SizedBox(height: 16),
-                        Text(
-                          appSlogan,
+                        const SizedBox(height: 24),
+                        const Text(
+                          'Tecnología inteligente\npara la gestión del campo.',
+                          textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w400,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w500,
                             color: Colors.white,
                             height: 1.4,
-                            shadows: [
-                              Shadow(
-                                color: Color(0x80000000),
-                                offset: Offset(0, 2),
-                                blurRadius: 4,
-                              ),
-                            ],
                           ),
                         ),
                       ],
@@ -317,33 +361,37 @@ class _LoginScreenState extends State<LoginScreen> {
         Expanded(
           flex: 1,
           child: Container(
-            color: Colors.white,
+            color: _formBackground,
             child: Center(
               child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 64, vertical: 48),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 64,
+                  vertical: 48,
+                ),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         welcomeTitle,
                         style: TextStyle(
                           fontSize: 36,
                           fontWeight: FontWeight.w800,
-                          color: GavacColors.primary,
+                          color: _isDarkMode
+                              ? const Color(0xFFB7D8CC)
+                              : GavacColors.primary,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         welcomeSubtitle,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF757575),
-                        ),
+                        style: TextStyle(fontSize: 16, color: _mutedText),
                       ),
                       const SizedBox(height: 48),
+
+                      _buildUserTypeField(),
+                      const SizedBox(height: 24),
 
                       _buildTextField(
                         label: emailLabel,
@@ -358,8 +406,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed:
-                              _isLoading ? null : _showPasswordResetDialog,
+                          onPressed: _isLoading
+                              ? null
+                              : _showPasswordResetDialog,
                           child: const Text('¿Olvidaste tu contraseña?'),
                         ),
                       ),
@@ -378,8 +427,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             backgroundColor: GavacColors.primary,
                             foregroundColor: Colors.white,
                             elevation: 8,
-                            shadowColor:
-                                GavacColors.primary.withValues(alpha: 0.3),
+                            shadowColor: GavacColors.primary.withValues(
+                              alpha: 0.3,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -391,7 +441,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2.5,
                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white),
+                                      Colors.white,
+                                    ),
                                   ),
                                 )
                               : const Text(
@@ -405,16 +456,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // ✅ CAMBIO INTEGRADO: Navegación al Registro (Escritorio)
                       Center(
                         child: TextButton(
                           onPressed: () {
-                            Navigator.pushNamed(context, '/register');
+                            Navigator.pushNamed(context, AppRoutes.register);
                           },
-                          child: const Text(
+                          child: Text(
                             registerText,
                             style: TextStyle(
-                              color: GavacColors.primary,
+                              color: _isDarkMode
+                                  ? const Color(0xFFB7D8CC)
+                                  : GavacColors.primary,
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
                             ),
@@ -441,45 +493,51 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 48),
+              const SizedBox(height: 32),
               Center(
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: GavacColors.primary,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'G',
-                      style: TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
+                child: Image.asset(
+                  'assets/imagenes/imagenLogoNuevo.png',
+                  height: 80,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    width: 90,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      color: GavacColors.primary,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'G',
+                        style: TextStyle(
+                          fontSize: 44,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 welcomeTitle,
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w800,
-                  color: GavacColors.primary,
+                  color: _isDarkMode
+                      ? const Color(0xFFB7D8CC)
+                      : GavacColors.primary,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 welcomeSubtitle,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF757575),
-                ),
+                style: TextStyle(fontSize: 14, color: _mutedText),
               ),
               const SizedBox(height: 40),
+
+              _buildUserTypeField(),
+              const SizedBox(height: 20),
 
               _buildTextField(
                 label: emailLabel,
@@ -499,10 +557,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              if (kIsWeb) ...[
-                _buildCaptcha(),
-                const SizedBox(height: 20),
-              ],
+              if (kIsWeb) ...[_buildCaptcha(), const SizedBox(height: 20)],
 
               SizedBox(
                 width: double.infinity,
@@ -523,8 +578,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: 22,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Text(
@@ -538,16 +594,17 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 20),
 
-              // ✅ CAMBIO INTEGRADO: Navegación al Registro (Móvil)
               Center(
                 child: TextButton(
                   onPressed: () {
-                    Navigator.pushNamed(context, '/register');
+                    Navigator.pushNamed(context, AppRoutes.register);
                   },
-                  child: const Text(
+                  child: Text(
                     registerText,
                     style: TextStyle(
-                      color: GavacColors.primary,
+                      color: _isDarkMode
+                          ? const Color(0xFFB7D8CC)
+                          : GavacColors.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -557,6 +614,64 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  InputBorder _fieldBorderStyle({Color? color, double width = 1}) =>
+      OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: color ?? _fieldBorder, width: width),
+      );
+
+  Widget _buildUserTypeField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          userTypeLabel,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: _formText,
+          ),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<LoginUserType>(
+          key: const Key('login_user_type'),
+          initialValue: _userType,
+          isExpanded: true,
+          dropdownColor: _formBackground,
+          style: TextStyle(color: _formText, fontSize: 16),
+          hint: Text(userTypeHint, style: TextStyle(color: _mutedText)),
+          decoration: InputDecoration(
+            prefixIcon: Icon(
+              _userType?.icon ?? Icons.badge_outlined,
+              color: _mutedText,
+            ),
+            filled: true,
+            fillColor: _fieldBackground,
+            border: _fieldBorderStyle(),
+            enabledBorder: _fieldBorderStyle(),
+            focusedBorder: _fieldBorderStyle(
+              color: GavacColors.primary,
+              width: 2,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+          items: [
+            for (final type in LoginUserType.values)
+              DropdownMenuItem(value: type, child: Text(type.label)),
+          ],
+          onChanged: _isLoading
+              ? null
+              : (value) => setState(() => _userType = value),
+          validator: (value) =>
+              value == null ? 'Selecciona el tipo de usuario' : null,
+        ),
+      ],
     );
   }
 
@@ -572,39 +687,43 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: GavacColors.textPrimary,
+            color: _formText,
           ),
         ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
-          style: const TextStyle(color: GavacColors.textPrimary),
+          style: TextStyle(color: _formText),
           cursorColor: GavacColors.primary,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: GavacColors.textMuted),
-            prefixIcon: Icon(prefixIcon, color: GavacColors.textMuted),
+            hintStyle: TextStyle(color: _mutedText),
+            prefixIcon: Icon(prefixIcon, color: _mutedText),
             filled: true,
-            fillColor: const Color(0xFFF8FAFC),
+            fillColor: _fieldBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+              borderSide: BorderSide(color: _fieldBorder),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+              borderSide: BorderSide(color: _fieldBorder),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: GavacColors.primary, width: 2),
+              borderSide: const BorderSide(
+                color: GavacColors.primary,
+                width: 2,
+              ),
             ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
@@ -621,53 +740,56 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           passwordLabel,
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: GavacColors.textPrimary,
+            color: _formText,
           ),
         ),
         const SizedBox(height: 8),
         TextFormField(
           controller: _passwordController,
           obscureText: _obscurePassword,
-          style: const TextStyle(color: GavacColors.textPrimary),
+          style: TextStyle(color: _formText),
           cursorColor: GavacColors.primary,
           decoration: InputDecoration(
             hintText: passwordHint,
-            hintStyle: const TextStyle(color: GavacColors.textMuted),
-            prefixIcon:
-                const Icon(Icons.lock_outline, color: GavacColors.textMuted),
+            hintStyle: TextStyle(color: _mutedText),
+            prefixIcon: Icon(Icons.lock_outline, color: _mutedText),
             suffixIcon: IconButton(
               icon: Icon(
                 _obscurePassword
                     ? Icons.visibility_outlined
                     : Icons.visibility_off_outlined,
-                color: GavacColors.textMuted,
+                color: _mutedText,
               ),
               onPressed: () {
                 setState(() => _obscurePassword = !_obscurePassword);
               },
             ),
             filled: true,
-            fillColor: const Color(0xFFF8FAFC),
+            fillColor: _fieldBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+              borderSide: BorderSide(color: _fieldBorder),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+              borderSide: BorderSide(color: _fieldBorder),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: GavacColors.primary, width: 2),
+              borderSide: const BorderSide(
+                color: GavacColors.primary,
+                width: 2,
+              ),
             ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {

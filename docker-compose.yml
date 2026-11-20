@@ -13,7 +13,7 @@ services:
       timeout: 5s
       retries: 10
     ports:
-      - "5433:5432"
+      - "5438:5432"
     volumes:
       - postgres_api_data:/var/lib/postgresql/data
 

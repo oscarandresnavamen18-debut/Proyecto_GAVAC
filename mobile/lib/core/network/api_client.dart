@@ -1,73 +1,195 @@
+
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+class ApiException implements Exception {
+  const ApiException(this.statusCode, this.message);
+  final int statusCode;
+  final String message;
+  @override
+  String toString() => message;
+}
+
 class ApiClient {
-  static const _webBaseUrl = String.fromEnvironment(
+  static const _defaultProductionUrl =
+      'https://proyectogavac-production.up.railway.app';
+
+  static const _configuredBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8001',
+    defaultValue: '',
   );
 
   static String get baseUrl {
-    if (kIsWeb) {
-      return _webBaseUrl;
-    } else if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:8001';
-    } else {
-      return 'http://localhost:8001';
+    if (_configuredBaseUrl.isNotEmpty) {
+      return _configuredBaseUrl;
     }
+    if (kIsWeb) {
+      final host = Uri.base.host;
+      if (host == 'localhost' || host == '127.0.0.1') {
+        return 'http://localhost:8001';
+      }
+      return _defaultProductionUrl;
+    }
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return _defaultProductionUrl;
+    }
+    return 'http://localhost:8001';
   }
 
   static Future<Map<String, dynamic>> post(
-    String endpoint,
-    Map<String, dynamic> body, {
-    String? token,
-  }) async {
-    final url = Uri.parse('$baseUrl$endpoint');
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-        },
+      String endpoint,
+      Map<String, dynamic> body, {
+        String? token,
+      }) async {
+    final response = await _send(
+          () => http.post(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: _headers(token, json: true),
         body: jsonEncode(body),
+      ),
+    );
+    final data = _decodeResponse(response);
+    if (data is Map<String, dynamic>) return data;
+    throw const FormatException('El servidor devolvió una respuesta no válida.');
+  }
+
+  static Future<dynamic> postAction(
+      String endpoint,
+      Map<String, dynamic> body, {
+        String? token,
+      }) async {
+    final response = await _send(
+          () => http.post(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: _headers(token, json: true),
+        body: jsonEncode(body),
+      ),
+    );
+    return _decodeResponse(response, allowEmptyBody: true);
+  }
+
+  static Future<Map<String, dynamic>> patch(
+      String endpoint,
+      Map<String, dynamic> body, {
+        String? token,
+      }) async {
+    final response = await _send(
+          () => http.patch(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: _headers(token, json: true),
+        body: jsonEncode(body),
+      ),
+    );
+    final data = _decodeResponse(response);
+    if (data is Map<String, dynamic>) return data;
+    throw const FormatException('El servidor devolvió una respuesta no válida.');
+  }
+
+  static Future<Uint8List> getBytes(
+      String endpoint, {
+        String? token,
+      }) async {
+    final response = await _send(
+          () => http.get(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: _headers(token),
+      ),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      _decodeResponse(response);
+      throw ApiException(
+        response.statusCode,
+        'Error del servidor (${response.statusCode}).',
       );
+    }
+    return response.bodyBytes;
+  }
 
-      final data = jsonDecode(response.body);
+  static Future<dynamic> get(
+      String endpoint, {
+        String? token,
+      }) async {
+    final response = await _send(
+          () => http.get(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: _headers(token),
+      ),
+    );
+    return _decodeResponse(response);
+  }
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return data as Map<String, dynamic>;
-      } else {
-        throw Exception(data['detail'] ?? 'Error en el servidor');
-      }
-    } catch (e) {
-      throw Exception('Error de conexión: $e');
+  static Future<void> delete(
+      String endpoint, {
+        String? token,
+      }) async {
+    final response = await _send(
+          () => http.delete(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: _headers(token),
+      ),
+    );
+    _decodeResponse(response, allowEmptyBody: true);
+  }
+
+  static Map<String, String> _headers(
+      String? token, {
+        bool json = false,
+      }) => {
+    if (json) 'Content-Type': 'application/json',
+    if (token != null) 'Authorization': 'Bearer $token',
+  };
+
+  static Future<http.Response> _send(
+      Future<http.Response> Function() request,
+      ) async {
+    try {
+      return await request();
+    } on http.ClientException catch (error) {
+      throw ApiException(
+        0,
+        'No se pudo conectar con el servidor: $error',
+      );
     }
   }
 
-  static Future<dynamic> get(String endpoint, {String? token}) async {
-    final url = Uri.parse('$baseUrl$endpoint');
+  static dynamic _decodeResponse(
+      http.Response response, {
+        bool allowEmptyBody = false,
+      }) {
+    final body = response.body.trim();
+    dynamic data;
 
-    try {
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-        },
-      );
-
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return data;
-      } else {
-        throw Exception(data['detail'] ?? 'Error en el servidor');
+    if (body.isNotEmpty) {
+      try {
+        data = jsonDecode(body);
+      } on FormatException {
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          throw ApiException(
+            response.statusCode,
+            'Error del servidor (${response.statusCode}).',
+          );
+        }
+        throw const FormatException(
+          'El servidor devolvió una respuesta no válida.',
+        );
       }
-    } catch (e) {
-      throw Exception('Error de conexión: $e');
+    } else if (!allowEmptyBody &&
+        response.statusCode >= 200 &&
+        response.statusCode < 300) {
+      throw const FormatException(
+        'El servidor devolvió una respuesta vacía.',
+      );
     }
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final detail = data is Map<String, dynamic> ? data['detail'] : null;
+      throw ApiException(
+        response.statusCode,
+        detail?.toString() ?? 'Error del servidor (${response.statusCode}).',
+      );
+    }
+
+    return data;
   }
 }

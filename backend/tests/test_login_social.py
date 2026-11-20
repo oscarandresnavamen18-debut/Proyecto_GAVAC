@@ -1,6 +1,6 @@
 import pytest
 
-from app.auth_providers import InvalidProviderToken, ProviderIdentity
+from app.services.auth_providers import InvalidProviderToken, ProviderIdentity
 from app.routers import social_auth
 
 

@@ -23,7 +23,11 @@ def test_alembic_migrations_upgrade_and_downgrade_on_isolated_sqlite(tmp_path):
         JWT_SECRET_KEY="test-only-secret-key-with-at-least-32-characters",
     )
 
-    assert scripts.get_heads() == ["a3f1c9d27b44"]
+    assert scripts.get_heads() == ["f1a2b3c4d5e6"]
+    assert scripts.get_revision("e8b4f6a2c0d1").down_revision == "d7a3e5c9b1f2"
+    assert scripts.get_revision("d7a3e5c9b1f2").down_revision == "c4e8a1b2d3f5"
+    assert scripts.get_revision("c4e8a1b2d3f5").down_revision == "b7d4e2f1a9c3"
+    assert scripts.get_revision("b7d4e2f1a9c3").down_revision == "a3f1c9d27b44"
     social_revision = scripts.get_revision("a3f1c9d27b44")
     assert social_revision.down_revision == "8f2c1a6d4e90"
     assert "idx_animal_finca_active" in {index.name for index in Animal.__table__.indexes}
@@ -43,31 +47,38 @@ def test_alembic_migrations_upgrade_and_downgrade_on_isolated_sqlite(tmp_path):
     try:
         inspector = inspect(engine)
         assert {
-            "users",
-            "farms",
-            "animals",
-            "cattle_events",
-            "password_reset_codes",
-            "alternate_email_verification_codes",
-            "health_records",
-            "breeding_records",
-            "production_records",
-            "inventory_items",
-            "inventory_movements",
-            "audit_logs",
-        } <= set(inspector.get_table_names())
+            "usuarios",
+            "fincas",
+            "animales",
+            "eventos_animales",
+            "codigos_recuperacion_contrasena",
+            "codigos_verificacion_correo",
+            "registros_sanitarios",
+            "registros_reproductivos",
+            "registros_produccion",
+            "insumos",
+            "movimientos_insumos",
+            "auditoria",
+            "lotes",
+            "movimientos_lote",
+            "salidas_animales",
+        } == set(inspector.get_table_names()) - {"alembic_version"}
+        assert "lote_id" in {column["name"] for column in inspector.get_columns("animales")}
+        assert "module_permissions" in {
+            column["name"] for column in inspector.get_columns("usuarios")
+        }
         assert "ix_animals_finca_status" in {
-            index["name"] for index in inspector.get_indexes("animals")
+            index["name"] for index in inspector.get_indexes("animales")
         }
         assert "ix_cattle_events_animal_fecha" in {
-            index["name"] for index in inspector.get_indexes("cattle_events")
+            index["name"] for index in inspector.get_indexes("eventos_animales")
         }
         with engine.connect() as connection:
             current_revision = connection.execute(
                 text("SELECT version_num FROM alembic_version")
             ).scalar_one()
-            assert current_revision == "a3f1c9d27b44"
-            user_columns = {column["name"] for column in inspector.get_columns("users")}
+            assert current_revision == "f1a2b3c4d5e6"
+            user_columns = {column["name"] for column in inspector.get_columns("usuarios")}
             assert {"auth_provider", "provider_subject"} <= user_columns
     finally:
         engine.dispose()
@@ -82,6 +93,7 @@ def test_alembic_migrations_upgrade_and_downgrade_on_isolated_sqlite(tmp_path):
     )
     engine = create_engine(database_url)
     try:
-        assert "users" not in inspect(engine).get_table_names()
+        remaining = set(inspect(engine).get_table_names())
+        assert not remaining & {"users", "usuarios", "fincas", "animales"}
     finally:
         engine.dispose()

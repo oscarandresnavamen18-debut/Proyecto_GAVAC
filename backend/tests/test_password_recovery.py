@@ -3,9 +3,9 @@ from datetime import datetime, timedelta, timezone
 import jwt
 from sqlalchemy import select
 
-from app.config import settings
+from app.core.config import settings
 from app.models import PasswordResetCode, User
-from app.security import create_access_token
+from app.core.security import create_access_token
 
 
 EMAIL = "recover@ganadera.com"

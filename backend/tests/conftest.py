@@ -11,13 +11,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.config import settings
+from app.core.config import settings
 if not settings.database_url.startswith("sqlite:"):
     raise RuntimeError("Backend tests must never use a remote database")
 settings.database_url = "sqlite:///:memory:"
 
-import app.db as db_module
-from app.db import Base, get_db
+import app.core.db as db_module
+from app.core.db import Base, get_db
 
 test_engine = create_engine(
     "sqlite:///:memory:",

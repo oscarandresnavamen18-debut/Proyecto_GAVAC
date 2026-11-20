@@ -1,15 +1,25 @@
-import 'package:flutter/material.dart';
-import 'core/theme/gavac_theme.dart';
-import 'features/auth/presentation/screens/login_screen.dart';
-import 'features/dashboard/presentation/screens/dashboard_screen.dart';
-import 'features/auth/presentation/screens/register_screen.dart';
+import 'package:material_ui/material_ui.dart';
 
-void main() {
-  runApp(const GAVACApp());
+import 'core/routing/app_routes.dart';
+import 'core/session/app_session.dart';
+import 'core/theme/gavac_theme.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  bool isLoggedIn = false;
+  try {
+    isLoggedIn = await AppSession.tryRestoreSession();
+  } catch (_) {}
+  runApp(GAVACApp(initialRoute: isLoggedIn ? AppRoutes.dashboard : AppRoutes.initial));
 }
 
 class GAVACApp extends StatelessWidget {
-  const GAVACApp({super.key});
+  const GAVACApp({super.key, this.initialRoute = AppRoutes.initial});
+
+  final String initialRoute;
+
+  /// Español de Colombia: calendarios, meses y botones del sistema.
+  static const locale = Locale('es', 'CO');
 
   @override
   Widget build(BuildContext context) {
@@ -19,12 +29,11 @@ class GAVACApp extends StatelessWidget {
       theme: GavacTheme.lightTheme,
       darkTheme: GavacTheme.darkTheme,
       themeMode: ThemeMode.system,
-      initialRoute: '/login',
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegisterScreen(), // <-- Agregado
-        '/dashboard': (context) => const DashboardScreen(),
-      },
+      locale: locale,
+      supportedLocales: const [locale, Locale('es')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      initialRoute: initialRoute,
+      routes: AppRoutes.routes,
     );
   }
 }
