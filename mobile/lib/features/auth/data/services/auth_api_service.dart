@@ -1,44 +1,143 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../../../../core/network/api_client.dart';
+import '../../../../core/session/app_session.dart';
 
-class AuthApiService {
-  // POST /api/v1/auth/login
-  static Future<Map<String, dynamic>> login(String email, String password) async {
-    return await ApiClient.post('/api/v1/auth/login', {
-      'email': email,
-      'password': password,
-    });
+/// Resultado de iniciar sesión o registrarse.
+class AuthResult {
+  const AuthResult({required this.accessToken, required this.role});
+
+  factory AuthResult.fromJson(Map<String, dynamic> json) => AuthResult(
+    accessToken: json['access_token'] as String,
+    role: json['role'] as String?,
+  );
+
+  final String accessToken;
+  // ADMIN, VETERINARIO o MAYORDOMO.
+  final String? role;
+}
+
+/// Estado del correo alternativo de la cuenta.
+class AlternateEmailStatus {
+  const AlternateEmailStatus({this.email, this.verified = false});
+
+  factory AlternateEmailStatus.fromJson(Map<String, dynamic> json) =>
+      AlternateEmailStatus(
+        email: json['email'] as String?,
+        verified: json['verified'] as bool? ?? false,
+      );
+
+  final String? email;
+  final bool verified;
+
+  /// Correo ya verificado, o `null` si aún no hay uno.
+  String? get verifiedEmail => verified ? email : null;
+}
+
+/// Autenticación y datos de la cuenta. Los errores llegan como
+/// [ApiException]; `statusCode == 0` indica que no hubo conexión.
+abstract interface class AuthRepository {
+  Future<AuthResult> login({
+    required String email,
+    required String password,
+    required String role,
+    String? captchaToken,
+  });
+  Future<AuthResult> register({
+    required String nombre,
+    required String email,
+    required String password,
+    String? fincaNombre,
+  });
+  Future<void> requestPasswordReset(String email);
+  Future<void> confirmPasswordReset({
+    required String email,
+    required String code,
+    required String newPassword,
+  });
+  Future<AlternateEmailStatus> alternateEmailStatus();
+  Future<void> requestAlternateEmail(String email);
+  Future<AlternateEmailStatus> confirmAlternateEmail(String code);
+}
+
+class AuthApiService implements AuthRepository {
+  const AuthApiService();
+
+  static const _base = '/api/v1/auth';
+
+  String get _token {
+    final token = AppSession.accessToken;
+    if (token == null || token.isEmpty) {
+      throw const ApiException(
+        401,
+        'La sesión venció. Inicia sesión de nuevo.',
+      );
+    }
+    return token;
   }
 
-  // POST /api/v1/auth/register
-  static Future<Map<String, dynamic>> register(String nombre, String email, String password) async {
-    return await ApiClient.post('/api/v1/auth/register', {
+  @override
+  Future<AuthResult> login({
+    required String email,
+    required String password,
+    required String role,
+    String? captchaToken,
+  }) async => AuthResult.fromJson(
+    await ApiClient.post('$_base/login', {
+      'email': email,
+      'password': password,
+      'role': role,
+      if (captchaToken != null) 'captcha_token': captchaToken,
+    }),
+  );
+
+  @override
+  Future<AuthResult> register({
+    required String nombre,
+    required String email,
+    required String password,
+    String? fincaNombre,
+  }) async => AuthResult.fromJson(
+    await ApiClient.post('$_base/register', {
       'nombre': nombre,
       'email': email,
       'password': password,
-    });
-  }
+      if (fincaNombre != null && fincaNombre.isNotEmpty) 'finca_nombre': fincaNombre,
+    }),
+  );
 
-  // GET /api/v1/auth/me
-  static Future<Map<String, dynamic>> getMe(String token) async {
-    final url = Uri.parse('${ApiClient.baseUrl}/api/v1/auth/me');
-    try {
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+  @override
+  Future<void> requestPasswordReset(String email) =>
+      ApiClient.postAction('$_base/password-reset/request', {'email': email});
+
+  @override
+  Future<void> confirmPasswordReset({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) => ApiClient.postAction('$_base/password-reset/confirm', {
+    'email': email,
+    'code': code,
+    'new_password': newPassword,
+  });
+
+  @override
+  Future<AlternateEmailStatus> alternateEmailStatus() async =>
+      AlternateEmailStatus.fromJson(
+        await ApiClient.get('$_base/alternate-email', token: _token)
+            as Map<String, dynamic>,
       );
-      final data = jsonDecode(response.body);
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return data;
-      } else {
-        throw Exception(data['detail'] ?? 'Error al obtener usuario');
-      }
-    } catch (e) {
-      throw Exception('Error de conexión: $e');
-    }
-  }
+
+  @override
+  Future<void> requestAlternateEmail(String email) => ApiClient.postAction(
+    '$_base/alternate-email/request',
+    {'email': email},
+    token: _token,
+  );
+
+  @override
+  Future<AlternateEmailStatus> confirmAlternateEmail(String code) async =>
+      AlternateEmailStatus.fromJson(
+        await ApiClient.post('$_base/alternate-email/confirm', {
+          'code': code,
+        }, token: _token),
+      );
 }

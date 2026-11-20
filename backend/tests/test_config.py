@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.config import Settings
+from app.core.config import Settings
 
 
 def make_settings(**overrides):
@@ -27,11 +27,36 @@ def test_jwt_secret_must_be_configured_and_long_enough():
 
 def test_database_url_is_required_and_postgres_urls_are_normalized(monkeypatch):
     monkeypatch.delenv("DATABASE_URL", raising=False)
-    with pytest.raises(ValidationError):
-        Settings(_env_file=None, jwt_secret_key="test-secret-with-at-least-32-characters")
+    settings = Settings(
+        _env_file=None,
+        environment="test",
+        jwt_secret_key="test-secret-with-at-least-32-characters",
+    )
+    assert settings.database_url == "sqlite:///./app.db"
 
-    settings = make_settings(database_url="postgresql://user:password@localhost/database")
-    assert settings.database_url == "postgresql+psycopg://user:password@localhost/database"
+    settings = make_settings(database_url="postgresql://localhost/database")
+    assert settings.database_url == "postgresql+psycopg://localhost/database"
+
+
+def test_database_url_falls_back_to_sqlite_for_non_production_environments(monkeypatch):
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    settings = Settings(
+        _env_file=None,
+        environment="development",
+        jwt_secret_key="test-secret-with-at-least-32-characters",
+    )
+    assert settings.database_url == "sqlite:///./app.db"
+
+
+def test_database_url_is_required_in_production_when_missing_or_blank():
+    for database_url in (None, ""):
+        with pytest.raises(ValidationError, match="DATABASE_URL is required"):
+            Settings(
+                _env_file=None,
+                environment="production",
+                database_url=database_url,
+                jwt_secret_key="test-secret-with-at-least-32-characters",
+            )
 
 
 def test_cors_accepts_exact_https_and_local_origins():
@@ -67,3 +92,21 @@ def test_cors_defaults_to_no_origins():
 def test_cors_rejects_wildcards_and_non_origin_urls(origins):
     with pytest.raises(ValidationError):
         make_settings(cors_origins=origins)
+
+
+@pytest.mark.parametrize("secret", [
+    "change-this-to-a-secure-secret-key-in-production",
+    "cambiar_esta_clave_por_una_segura_en_produccion",
+])
+def test_placeholder_jwt_secret_is_rejected_in_production(secret):
+    with pytest.raises(ValidationError, match="texto de ejemplo"):
+        make_settings(environment="production", jwt_secret_key=secret)
+
+    # En desarrollo y pruebas se permite para no bloquear el trabajo local.
+    assert make_settings(environment="development", jwt_secret_key=secret)
+
+
+def test_random_jwt_secret_is_accepted_in_production():
+    assert make_settings(
+        environment="production", jwt_secret_key="Qm9iL2xhX3ZhY2FfZXN0YV9lbl9lbF9jb3JyYWw"
+    )

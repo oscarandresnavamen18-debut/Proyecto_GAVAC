@@ -8,11 +8,12 @@ from sqlalchemy import and_, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.db import get_db
-from app.deps import current_user
-from app.mailer import send_alternate_email_verification, send_password_reset_email
-from app.models import AlternateEmailVerificationCode, PasswordResetCode, User
-from app.recaptcha import RecaptchaRejectedError, RecaptchaUnavailableError, verify_recaptcha
+from app.core.db import get_db
+from app.core.deps import current_user
+from app.services.mailer import send_alternate_email_verification, send_password_reset_email
+from app.models import AlternateEmailVerificationCode, Farm, PasswordResetCode, User, UserRole
+from app.core.permissions import effective_permissions
+from app.services.recaptcha import RecaptchaRejectedError, RecaptchaUnavailableError, verify_recaptcha
 from app.schemas import (
     AlternateEmailConfirm,
     AlternateEmailRequest,
@@ -24,7 +25,7 @@ from app.schemas import (
     TokenOut,
     UserRead,
 )
-from app.security import (
+from app.core.security import (
     create_access_token,
     hash_one_time_code,
     hash_password,
@@ -33,6 +34,12 @@ from app.security import (
 )
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Autenticación"])
+
+
+def user_read(user: User) -> UserRead:
+    data = UserRead.model_validate(user)
+    data.permissions = effective_permissions(user)
+    return data
 
 logger = logging.getLogger(__name__)
 PASSWORD_RESET_RESPONSE = {
@@ -56,20 +63,45 @@ def deliver_password_reset_email(email: str, code: str) -> None:
 
 @router.post("/register", response_model=TokenOut, status_code=status.HTTP_201_CREATED)
 def register(data: RegisterIn, db: Session = Depends(get_db)):
+    farm_id = None
+    role = UserRole.ADMIN
+
+    if data.finca_nombre and data.finca_nombre.strip():
+        farm_name = data.finca_nombre.strip()
+        existing_farm = db.scalar(select(Farm).where(Farm.name == farm_name))
+        if existing_farm:
+            farm_id = existing_farm.id
+            role = UserRole.MAYORDOMO
+
     user = User(
         full_name=data.nombre.strip(),
         email=str(data.email).lower(),
         hashed_password=hash_password(data.password),
+        role=role,
+        farm_id=farm_id,
     )
     db.add(user)
     try:
+        db.flush()
+        if farm_id is None and data.finca_nombre and data.finca_nombre.strip():
+            farm = Farm(
+                name=data.finca_nombre.strip(),
+                location="",
+                owner_id=user.id,
+            )
+            db.add(farm)
+            db.flush()
+            user.farm_id = farm.id
         db.commit()
         db.refresh(user)
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail="El correo ya está registrado")
-    return TokenOut(access_token=create_access_token(user.id, user.token_version))
+    return TokenOut(
+        access_token=create_access_token(user.id, user.token_version),
+        role=user.role,
+    )
 
 
 @router.post("/login", response_model=TokenOut)
@@ -104,7 +136,20 @@ def login(data: LoginIn, db: Session = Depends(get_db)):
     if user is None or user.hashed_password is None or not verify_password(data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales inválidas")
-    return TokenOut(access_token=create_access_token(user.id, user.token_version))
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tu cuenta está desactivada. Contacta al administrador.",
+        )
+    if data.role is not None and user.role != data.role:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="El tipo de usuario seleccionado no corresponde a esta cuenta",
+        )
+    return TokenOut(
+        access_token=create_access_token(user.id, user.token_version),
+        role=user.role,
+    )
 
 
 @router.post(
@@ -369,4 +414,4 @@ def confirm_alternate_email(
 
 @router.get("/me", response_model=UserRead)
 def get_me(user: User = Depends(current_user)):
-    return user
+    return user_read(user)
