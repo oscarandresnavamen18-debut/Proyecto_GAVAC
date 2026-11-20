@@ -68,3 +68,11 @@
 - **Comportamiento esperado:** El endpoint consumido por el Módulo de Producción debe responder con un JSON/esquema válido, sincronizado con los datos de la finca, permitiendo listar el historial y crear nuevos registros[cite: 21, 22].
 - **Comportamiento actual:** El cliente Flutter recibe una respuesta no válida desde el backend en el módulo de Producción, bloqueando tanto la consulta del historial como el registro diario[cite: 21].
 - **Severidad:** Alta (fallo de integración/contrato entre frontend y backend en Producción).
+
+
+### 9. Inconsistencia en asignación de rol Administrador tras registro de usuario y finca
+- **Módulo:** Autenticación / Registro de Usuarios y Fincas
+- **Descripción:** Tras registrar una cuenta nueva (`samuel2@gmail.com`) y crear una finca, el sistema no permite iniciar sesión seleccionando el tipo de usuario **Administrador** (mostrando *"No se pudo iniciar sesión. Inténtalo de nuevo."*)[cite: 24].
+- **Comportamiento esperado:** El usuario que registra una finca debe contar con permisos de administración sobre su predio o recibir retroalimentación clara sobre el rol asignado durante el registro.
+- **Comportamiento actual:** El registro asigna un rol distinto a Administrador (o el selector de rol en login bloquea el acceso), impidiendo ingresar como Administrador con la cuenta recién creada[cite: 24].
+- **Severidad:** Alta (bloquea gestión administrativa de la finca recién creada).
