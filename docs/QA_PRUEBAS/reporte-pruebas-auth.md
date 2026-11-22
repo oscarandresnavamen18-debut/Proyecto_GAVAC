@@ -76,3 +76,11 @@
 - **Comportamiento esperado:** El usuario que registra una finca debe contar con permisos de administración sobre su predio o recibir retroalimentación clara sobre el rol asignado durante el registro.
 - **Comportamiento actual:** El registro asigna un rol distinto a Administrador (o el selector de rol en login bloquea el acceso), impidiendo ingresar como Administrador con la cuenta recién creada[cite: 24].
 - **Severidad:** Alta (bloquea gestión administrativa de la finca recién creada).
+
+
+### 10. Error al Inicio de seccion en el login
+El encargado del login por favor corregir el inicio de seccion, no deja loguearse a la pagina.
+## Descripcion:
+Error en el servidor.
+##
+solucinar la problematica para continuar haciendo pruebas.
