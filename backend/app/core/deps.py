@@ -63,10 +63,10 @@ def current_user(
 
 
 def require_admin(user: User = Depends(current_user)) -> User:
-    if user.role != UserRole.ADMIN:
+    if user.role not in (UserRole.DUENO, UserRole.ADMIN):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Solo el administrador puede realizar esta acción",
+            detail="Solo el dueño o administrador puede realizar esta acción",
         )
     return user
 
