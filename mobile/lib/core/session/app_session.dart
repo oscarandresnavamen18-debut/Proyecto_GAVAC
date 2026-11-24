@@ -1,27 +1,21 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
+
 import '../network/api_client.dart';
 
 class AppSession {
-  // Datos del usuario (por defecto)
   static String userName = 'Admin';
   static String farmName = 'Hacienda El Paraíso';
   static String? accessToken;
-  // Rol devuelto por el backend: ADMIN, VETERINARIO o MAYORDOMO.
   static String? role;
   static int? farmId;
-  // Módulos habilitados (registro, sanidad, reproduccion, produccion,
-  // insumos, reportes). null = perfil aún no cargado.
   static List<String>? permissions;
 
   static bool get isAdmin => role == null || role == 'ADMIN';
 
-  /// Filtro visual del menú. El backend valida los permisos en cada petición,
-  /// así que mientras no haya perfil cargado se muestran todos los módulos.
   static bool canAccess(String module) =>
       permissions == null || permissions!.contains(module);
 
-  /// Guarda el token en SharedPreferences para persistencia.
   static Future<void> saveSession(String token) async {
     accessToken = token;
     try {
@@ -30,25 +24,32 @@ class AppSession {
     } catch (_) {}
   }
 
-  /// Intenta restaurar la sesión desde SharedPreferences al iniciar la app.
   static Future<bool> tryRestoreSession() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('gavac_access_token');
-      if (token == null || token.isEmpty) return false;
+      if (token == null || token.isEmpty) {
+        await clear();
+        return false;
+      }
       accessToken = token;
       await loadProfile();
-      return true;
+      return accessToken != null;
+    } on ApiException catch (error) {
+      if (error.statusCode == 401 || error.statusCode == 403) {
+        await clear();
+        return false;
+      }
+      return accessToken != null;
     } catch (_) {
       await clear();
       return false;
     }
   }
 
-  /// Carga nombre, rol, permisos y finca activa del usuario autenticado.
   static Future<void> loadProfile() async {
     final token = accessToken;
-    if (token == null) return;
+    if (token == null || token.isEmpty) return;
     try {
       final me = await ApiClient.get(
         '/api/v1/auth/me',
@@ -67,13 +68,16 @@ class AppSession {
           if (farm['id'] == farmId) farmName = farm['name'] as String;
         }
       }
-    } catch (e) {
-      // Mantenemos el token activo aunque falle la carga del perfil (ej. offline o tests)
-      debugPrint('No se pudo cargar el perfil del usuario: $e');
+    } catch (error) {
+      if (error is ApiException &&
+          (error.statusCode == 401 || error.statusCode == 403)) {
+        await clear();
+        rethrow;
+      }
+      debugPrint('No se pudo cargar el perfil del usuario: $error');
     }
   }
 
-  // Método para limpiar la sesión (para cuando cierre sesión)
   static Future<void> clear() async {
     userName = 'Admin';
     farmName = 'Hacienda El Paraíso';
@@ -87,3 +91,4 @@ class AppSession {
     } catch (_) {}
   }
 }
+

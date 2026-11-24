@@ -48,7 +48,7 @@ def create_user(
         hashed_password=hash_password(data.password),
         role=UserRole(data.role),
         farm_id=farm.id,
-        module_permissions=list(data.permisos) if data.permisos is not None else None,
+        module_permissions=[p.value for p in data.permisos] if data.permisos is not None else None,
     )
     db.add(user)
     try:
@@ -76,7 +76,7 @@ def update_user(
     if data.farm_id is not None:
         user.farm_id = get_owned_farm(db, admin, data.farm_id).id
     if "permisos" in data.model_fields_set:
-        user.module_permissions = list(data.permisos) if data.permisos is not None else None
+        user.module_permissions = [p.value for p in data.permisos] if data.permisos is not None else None
     if data.is_active is not None:
         user.is_active = data.is_active
     if data.password is not None:
