@@ -84,3 +84,11 @@ El encargado del login por favor corregir el inicio de seccion, no deja loguears
 Error en el servidor.
 ##
 solucinar la problematica para continuar haciendo pruebas.
+
+### 11. Error en la conexión de la base de datos con el servidor
+- **Módulo:** Base de Datos / Backend (Autenticación)
+- **Responsable:** Encargado de Base de Datos / Backend
+- **Descripción:** El servidor no logra establecer conexión con la base de datos (PostgreSQL / `DATABASE_URL` o migraciones pendientes), lo que impide validar credenciales y completar el inicio de sesión.
+- **Comportamiento esperado:** La base de datos debe estar conectada y operativa junto con el servidor para permitir el registro y el inicio de sesión de los usuarios.
+- **Comportamiento actual:** Falla la conexión entre el servidor y la base de datos, bloqueando el acceso al sistema y la continuidad de las pruebas QA.
+- **Severidad:** Crítica (bloquea completamente el acceso y las pruebas funcionales).
