@@ -6,6 +6,22 @@ import '../../../../core/routing/app_routes.dart';
 import '../../../../core/session/app_session.dart';
 import '../../data/services/auth_api_service.dart';
 
+enum RegisterUserType {
+  admin('ADMIN', 'Administrador', Icons.admin_panel_settings_outlined),
+  trabajadorCampo(
+    'MAYORDOMO',
+    'Trabajador de campo',
+    Icons.agriculture_outlined,
+  ),
+  veterinario('VETERINARIO', 'Veterinario', Icons.medical_services_outlined);
+
+  const RegisterUserType(this.apiValue, this.label, this.icon);
+
+  final String apiValue;
+  final String label;
+  final IconData icon;
+}
+
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key, this.repository = const AuthApiService()});
 
@@ -19,9 +35,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nombreController = TextEditingController();
   final _emailController = TextEditingController();
-  final _fincaController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+
+  RegisterUserType _selectedRole = RegisterUserType.admin;
+  List<Map<String, dynamic>> _farms = [];
+  int? _selectedFarmId;
+  bool _isLoadingFarms = false;
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -47,10 +67,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void dispose() {
     _nombreController.dispose();
     _emailController.dispose();
-    _fincaController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadFarms() async {
+    setState(() => _isLoadingFarms = true);
+    try {
+      final farms = await widget.repository.listPublicFarms();
+      if (mounted) {
+        setState(() {
+          _farms = farms;
+          if (_farms.isNotEmpty && _selectedFarmId == null) {
+            _selectedFarmId = _farms.first['id'] as int?;
+          }
+        });
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _isLoadingFarms = false);
+    }
   }
 
   Future<void> _handleRegister() async {
@@ -61,6 +98,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    if (_selectedRole != RegisterUserType.admin && _selectedFarmId == null) {
+      _showMessage('Debe seleccionar una finca asignada.');
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -68,10 +110,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         nombre: _nombreController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
-        fincaNombre: _fincaController.text.trim(),
+        role: _selectedRole.apiValue,
+        farmId: _selectedRole == RegisterUserType.admin ? null : _selectedFarmId,
       );
       await AppSession.saveSession(result.accessToken);
-      AppSession.role = result.role ?? 'ADMIN';
+      AppSession.role = result.role ?? _selectedRole.apiValue;
       AppSession.userName = _nombreController.text.trim();
       try {
         await AppSession.loadProfile();
@@ -85,6 +128,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _showMessage(switch (error.statusCode) {
         0 => 'No se pudo conectar con el servidor. Revisa tu conexión.',
         409 => 'El correo electrónico ya se encuentra registrado.',
+        404 => 'La finca seleccionada no fue encontrada.',
         _ => 'No se pudo registrar la cuenta. Inténtalo de nuevo.',
       });
     } on FormatException {
@@ -109,6 +153,158 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       body: isDesktop ? _buildDesktopLayout() : _buildMobileLayout(),
     );
+  }
+
+  List<Widget> _buildFormFields(bool isDesktop) {
+    final spacing = isDesktop ? 20.0 : 16.0;
+    return [
+      _buildTextField(
+        'Nombre completo',
+        'Ingresa tu nombre completo',
+        _nombreController,
+        Icons.person_outline,
+      ),
+      SizedBox(height: spacing),
+      _buildTextField(
+        'Correo electrónico',
+        'correo@ejemplo.com',
+        _emailController,
+        Icons.email_outlined,
+        TextInputType.emailAddress,
+      ),
+      SizedBox(height: spacing),
+      Text(
+        'Tipo de usuario',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: _formText,
+        ),
+      ),
+      const SizedBox(height: 8),
+      DropdownButtonFormField<RegisterUserType>(
+        initialValue: _selectedRole,
+        isExpanded: true,
+        dropdownColor: _formBackground,
+        style: TextStyle(color: _formText, fontSize: 15),
+        decoration: InputDecoration(
+          prefixIcon: Icon(_selectedRole.icon, color: _mutedText),
+          filled: true,
+          fillColor: _fieldBackground,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: _fieldBorder),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: _fieldBorder),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: GavacColors.primary,
+              width: 2,
+            ),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+        ),
+        items: [
+          for (final type in RegisterUserType.values)
+            DropdownMenuItem(value: type, child: Text(type.label)),
+        ],
+        onChanged: _isLoading
+            ? null
+            : (value) {
+                if (value != null) {
+                  setState(() {
+                    _selectedRole = value;
+                  });
+                  if (value != RegisterUserType.admin && _farms.isEmpty) {
+                    _loadFarms();
+                  }
+                }
+              },
+      ),
+      if (_selectedRole != RegisterUserType.admin) ...[
+        SizedBox(height: spacing),
+        Text(
+          'Finca Asignada',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: _formText,
+          ),
+        ),
+        const SizedBox(height: 8),
+        _isLoadingFarms
+            ? const Center(child: CircularProgressIndicator())
+            : _farms.isEmpty
+                ? const Text(
+                    'No hay fincas registradas. El administrador debe crear una finca primero.',
+                    style: TextStyle(color: Colors.red, fontSize: 13),
+                  )
+                : DropdownButtonFormField<int>(
+                    initialValue: _selectedFarmId,
+                    isExpanded: true,
+                    dropdownColor: _formBackground,
+                    style: TextStyle(color: _formText, fontSize: 15),
+                    decoration: InputDecoration(
+                      prefixIcon: Icon(Icons.agriculture_outlined, color: _mutedText),
+                      filled: true,
+                      fillColor: _fieldBackground,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: _fieldBorder),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: _fieldBorder),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: GavacColors.primary,
+                          width: 2,
+                        ),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                    ),
+                    items: [
+                      for (final farm in _farms)
+                        DropdownMenuItem<int>(
+                          value: farm['id'] as int,
+                          child: Text(farm['name'] as String),
+                        ),
+                    ],
+                    onChanged: _isLoading
+                        ? null
+                        : (value) => setState(() => _selectedFarmId = value),
+                    validator: (v) => v == null ? 'Selecciona una finca' : null,
+                  ),
+      ],
+      SizedBox(height: spacing),
+      _buildPasswordField(
+        'Contraseña',
+        _passwordController,
+        _obscurePassword,
+        () => setState(() => _obscurePassword = !_obscurePassword),
+      ),
+      SizedBox(height: spacing),
+      _buildPasswordField(
+        'Confirmar contraseña',
+        _confirmPasswordController,
+        _obscureConfirmPassword,
+        () => setState(
+          () => _obscureConfirmPassword = !_obscureConfirmPassword,
+        ),
+      ),
+    ];
   }
 
   Widget _buildDesktopLayout() {
@@ -146,46 +342,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         style: TextStyle(fontSize: 16, color: _mutedText),
                       ),
                       const SizedBox(height: 32),
-                      _buildTextField(
-                        'Nombre completo',
-                        'Ingresa tu nombre completo',
-                        _nombreController,
-                        Icons.person_outline,
-                      ),
-                      const SizedBox(height: 20),
-                      _buildTextField(
-                        'Correo electrónico',
-                        'correo@ejemplo.com',
-                        _emailController,
-                        Icons.email_outlined,
-                        TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 20),
-                      _buildTextField(
-                        'Nombre de la finca',
-                        'Nombre de tu finca',
-                        _fincaController,
-                        Icons.agriculture_outlined,
-                      ),
-                      const SizedBox(height: 20),
-                      _buildPasswordField(
-                        'Contraseña',
-                        _passwordController,
-                        _obscurePassword,
-                        () => setState(
-                          () => _obscurePassword = !_obscurePassword,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      _buildPasswordField(
-                        'Confirmar contraseña',
-                        _confirmPasswordController,
-                        _obscureConfirmPassword,
-                        () => setState(
-                          () => _obscureConfirmPassword =
-                              !_obscureConfirmPassword,
-                        ),
-                      ),
+                      ..._buildFormFields(true),
                       const SizedBox(height: 32),
                       SizedBox(
                         width: double.infinity,
@@ -357,43 +514,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 style: TextStyle(fontSize: 14, color: _mutedText),
               ),
               const SizedBox(height: 32),
-              _buildTextField(
-                'Nombre completo',
-                'Ingresa tu nombre completo',
-                _nombreController,
-                Icons.person_outline,
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                'Correo electrónico',
-                'correo@ejemplo.com',
-                _emailController,
-                Icons.email_outlined,
-                TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                'Nombre de la finca',
-                'Nombre de tu finca',
-                _fincaController,
-                Icons.agriculture_outlined,
-              ),
-              const SizedBox(height: 16),
-              _buildPasswordField(
-                'Contraseña',
-                _passwordController,
-                _obscurePassword,
-                () => setState(() => _obscurePassword = !_obscurePassword),
-              ),
-              const SizedBox(height: 16),
-              _buildPasswordField(
-                'Confirmar contraseña',
-                _confirmPasswordController,
-                _obscureConfirmPassword,
-                () => setState(
-                  () => _obscureConfirmPassword = !_obscureConfirmPassword,
-                ),
-              ),
+              ..._buildFormFields(false),
               const SizedBox(height: 28),
               SizedBox(
                 width: double.infinity,

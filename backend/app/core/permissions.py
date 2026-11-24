@@ -1,10 +1,5 @@
 
-"""Permisos por módulo de GAVAC.
-
-El administrador tiene acceso total. Para veterinarios y trabajadores de campo
-(rol MAYORDOMO), el administrador elige los módulos habilitados. Si nunca los ha
-configurado (columna en NULL), se aplican los permisos por defecto del rol.
-"""
+"""Permisos por módulo de GAVAC."""
 
 from app.models import User, UserRole
 
@@ -19,7 +14,7 @@ MODULES: tuple[str, ...] = (
 
 DEFAULT_PERMISSIONS: dict[UserRole, tuple[str, ...]] = {
     UserRole.ADMIN: MODULES,
-    UserRole.VETERINARIO: ("registro", "sanidad", "reproduccion", "reportes"),
+    UserRole.VETERINARIO: ("registro", "sanidad", "reproduccion"),
     UserRole.MAYORDOMO: ("registro", "produccion", "insumos"),
 }
 
@@ -36,10 +31,12 @@ def effective_permissions(user: User) -> list[str]:
     if not isinstance(user.module_permissions, (list, tuple, set)):
         return list(default_permissions)
 
+    valid_permissions = set(user.module_permissions)
+
     return [
         module
         for module in MODULES
-        if module in user.module_permissions
+        if module in valid_permissions
     ]
 
 

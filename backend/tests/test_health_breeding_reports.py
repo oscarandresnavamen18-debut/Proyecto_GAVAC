@@ -342,12 +342,8 @@ def test_general_report_combines_permitted_modules(client):
     vet = client.post(
         "/api/v1/auth/login", json={"email": "vet2@ganadera.com", "password": PASSWORD}
     ).json()["access_token"]
-    vet_book = load_workbook(BytesIO(client.get(
-        "/api/v1/reports/general?formato=xlsx", headers=_auth(vet)).content))
-    assert vet_book.sheetnames == [
-        "Resumen", "Registro animal", "Potreros", "Salidas", "Sanidad", "Reproducción"]
-
-
+    vet_response = client.get("/api/v1/reports/general?formato=xlsx", headers=_auth(vet))
+    assert vet_response.status_code == 403
 def test_reports_require_permission_for_report_and_module(client):
     token, farm_id = _admin_farm(client)
     vet_id = client.post(
@@ -363,7 +359,7 @@ def test_reports_require_permission_for_report_and_module(client):
     ).json()["access_token"]
 
     # Veterinario por defecto: reportes + sanidad, pero no insumos.
-    assert client.get("/api/v1/reports/sanidad", headers=_auth(vet)).status_code == 200
+    assert client.get("/api/v1/reports/sanidad", headers=_auth(vet)).status_code == 403
     assert client.get("/api/v1/reports/insumos", headers=_auth(vet)).status_code == 403
 
     client.patch(f"/api/v1/users/{vet_id}", json={"permisos": ["sanidad"]}, headers=_auth(token))

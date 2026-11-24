@@ -63,15 +63,25 @@ def deliver_password_reset_email(email: str, code: str) -> None:
 
 @router.post("/register", response_model=TokenOut, status_code=status.HTTP_201_CREATED)
 def register(data: RegisterIn, db: Session = Depends(get_db)):
+    role = data.role
     farm_id = None
-    role = UserRole.ADMIN
 
-    if data.finca_nombre and data.finca_nombre.strip():
-        farm_name = data.finca_nombre.strip()
-        existing_farm = db.scalar(select(Farm).where(Farm.name == farm_name))
-        if existing_farm:
-            farm_id = existing_farm.id
-            role = UserRole.MAYORDOMO
+    if role in (UserRole.MAYORDOMO, UserRole.VETERINARIO):
+        if data.farm_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Debe seleccionar una finca para este tipo de usuario",
+            )
+        farm = db.get(Farm, data.farm_id)
+        if farm is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Finca no encontrada",
+            )
+        farm_id = farm.id
+    else:
+        role = UserRole.ADMIN
+        farm_id = None
 
     user = User(
         full_name=data.nombre.strip(),
@@ -82,16 +92,6 @@ def register(data: RegisterIn, db: Session = Depends(get_db)):
     )
     db.add(user)
     try:
-        db.flush()
-        if farm_id is None and data.finca_nombre and data.finca_nombre.strip():
-            farm = Farm(
-                name=data.finca_nombre.strip(),
-                location="",
-                owner_id=user.id,
-            )
-            db.add(farm)
-            db.flush()
-            user.farm_id = farm.id
         db.commit()
         db.refresh(user)
     except IntegrityError:

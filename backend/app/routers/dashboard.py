@@ -6,6 +6,7 @@ from app.core.deps import current_user
 from app.models import Farm, User
 from app.schemas import DashboardSummary
 from app.services.dashboard import build_dashboard_summary
+from app.core.permissions import effective_permissions
 
 router = APIRouter(prefix="/api/v1/dashboard", tags=["Dashboard"])
 
@@ -16,4 +17,4 @@ def dashboard_summary(db: Session = Depends(get_db), user: User = Depends(curren
     farm = db.get(Farm, user.farm_id) if user.farm_id is not None else None
     if farm is None:
         return DashboardSummary()
-    return build_dashboard_summary(db, farm)
+    return build_dashboard_summary(db, farm, allowed_modules=set(effective_permissions(user)))

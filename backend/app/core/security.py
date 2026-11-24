@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 import jwt
 from pwdlib import PasswordHash
+
 from app.core.config import settings
 
 password_hash = PasswordHash.recommended()
@@ -19,19 +20,28 @@ def _get_jwt_secret() -> str:
 
 
 def hash_password(password: str) -> str:
+    if not password:
+        raise ValueError("La contraseña no puede estar vacía.")
     return password_hash.hash(password)
 
 
 def verify_password(password: str, hashed: str) -> bool:
+    if not password or not hashed:
+        return False
     return password_hash.verify(password, hashed)
 
 
 def create_access_token(user_id: int, token_version: int = 0) -> str:
-    if user_id <= 0:
+    if not isinstance(user_id, int) or user_id <= 0:
         raise ValueError("El identificador del usuario no es válido.")
+
+    if not isinstance(token_version, int) or token_version < 0:
+        raise ValueError("La versión del token no es válida.")
+
     expires = datetime.now(timezone.utc) + timedelta(
         minutes=settings.jwt_expire_minutes
     )
+
     return jwt.encode(
         {"sub": str(user_id), "ver": token_version, "exp": expires},
         _get_jwt_secret(),
@@ -44,8 +54,17 @@ def hash_password_reset_code(user_id: int, code: str) -> str:
 
 
 def hash_one_time_code(purpose: str, user_id: int, code: str) -> str:
-    if not purpose or not code or user_id <= 0:
+    if (
+        not isinstance(purpose, str)
+        or not purpose.strip()
+        or not isinstance(code, str)
+        or not code.strip()
+        or not isinstance(user_id, int)
+        or user_id <= 0
+    ):
         raise ValueError("Los datos del código de un solo uso no son válidos.")
-    payload = f"{purpose}:{user_id}:{code}".encode()
+
+    payload = f"{purpose.strip()}:{user_id}:{code.strip()}".encode()
     secret = _get_jwt_secret().encode()
+
     return hmac.new(secret, payload, hashlib.sha256).hexdigest()
