@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from datetime import date, datetime, timezone
+from enum import Enum
 from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -31,8 +34,18 @@ class TokenOut(BaseModel):
     role: Optional[UserRole] = None
 
 
-ModuleName = Literal["registro", "sanidad", "reproduccion", "produccion", "insumos", "reportes"]
-StaffRole = Literal["VETERINARIO", "MAYORDOMO"]
+class ModuleName(str, Enum):
+    REGISTRO = "registro"
+    SANIDAD = "sanidad"
+    REPRODUCCION = "reproduccion"
+    PRODUCCION = "produccion"
+    INSUMOS = "insumos"
+    REPORTES = "reportes"
+
+
+class StaffRole(str, Enum):
+    VETERINARIO = "VETERINARIO"
+    MAYORDOMO = "MAYORDOMO"
 
 
 class UserRead(BaseModel):
@@ -297,7 +310,9 @@ class ProductionRead(BaseModel):
 
 # SANIDAD
 
-HealthRecordType = Literal["VACUNA", "TRATAMIENTO"]
+class HealthRecordType(str, Enum):
+    VACUNA = "VACUNA"
+    TRATAMIENTO = "TRATAMIENTO"
 
 
 class HealthRecordCreate(BaseModel):
@@ -334,7 +349,11 @@ class HealthRecordRead(BaseModel):
 
 # REPRODUCCION
 
-BreedingRecordType = Literal["CELO", "INSEMINACION", "PRENEZ", "PARTO"]
+class BreedingRecordType(str, Enum):
+    CELO = "CELO"
+    INSEMINACION = "INSEMINACION"
+    PRENEZ = "PRENEZ"
+    PARTO = "PARTO"
 
 
 class BreedingRecordCreate(BaseModel):

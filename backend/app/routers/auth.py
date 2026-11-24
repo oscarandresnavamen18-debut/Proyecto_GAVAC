@@ -80,8 +80,9 @@ def register(data: RegisterIn, db: Session = Depends(get_db)):
             )
         farm_id = farm.id
     else:
-        role = UserRole.ADMIN
-        farm_id = None
+        if role not in (UserRole.DUENO, UserRole.ADMIN):
+            role = UserRole.ADMIN
+        farm_id = data.farm_id if data.farm_id is not None else None
 
     user = User(
         full_name=data.nombre.strip(),

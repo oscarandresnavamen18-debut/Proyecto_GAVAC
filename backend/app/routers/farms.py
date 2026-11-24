@@ -15,8 +15,8 @@ def get_authorized_farm(db: Session, user: User, farm_id: int) -> Farm:
     if farm is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Finca no encontrada")
-    # El administrador puede operar en cualquiera de las fincas de las que es dueño.
-    if user.role == UserRole.ADMIN and farm.owner_id == user.id:
+    # El dueño o administrador puede operar en cualquiera de las fincas de las que es dueño.
+    if user.role in (UserRole.DUENO, UserRole.ADMIN) and farm.owner_id == user.id:
         return farm
     if user.farm_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
@@ -37,7 +37,7 @@ def get_owned_farm(db: Session, admin: User, farm_id: int) -> Farm:
 
 @router.get("", response_model=list[FarmRead])
 def list_farms(db: Session = Depends(get_db), user: User = Depends(current_user)):
-    if user.role == UserRole.ADMIN:
+    if user.role in (UserRole.DUENO, UserRole.ADMIN):
         query = select(Farm).where(Farm.owner_id == user.id).order_by(Farm.id)
         return db.scalars(query).all()
     if user.farm_id is None:

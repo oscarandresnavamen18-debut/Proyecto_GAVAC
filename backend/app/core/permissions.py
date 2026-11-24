@@ -13,6 +13,7 @@ MODULES: tuple[str, ...] = (
 )
 
 DEFAULT_PERMISSIONS: dict[UserRole, tuple[str, ...]] = {
+    UserRole.DUENO: MODULES,
     UserRole.ADMIN: MODULES,
     UserRole.VETERINARIO: ("registro", "sanidad", "reproduccion"),
     UserRole.MAYORDOMO: ("registro", "produccion", "insumos"),
@@ -20,7 +21,7 @@ DEFAULT_PERMISSIONS: dict[UserRole, tuple[str, ...]] = {
 
 
 def effective_permissions(user: User) -> list[str]:
-    if user.role == UserRole.ADMIN:
+    if user.role in (UserRole.DUENO, UserRole.ADMIN):
         return list(MODULES)
 
     default_permissions = DEFAULT_PERMISSIONS.get(user.role, ())
