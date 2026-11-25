@@ -1,3 +1,5 @@
+import os
+import sys
 from datetime import date, datetime, timezone
 
 from app.core.db import SessionLocal
@@ -5,18 +7,47 @@ from app.core.security import hash_password
 from app.models import Animal, Farm, InventoryItem, InventoryMovement, Lot, User
 
 
+def _config():
+    """Lee la configuración del seed desde variables de entorno.
+
+    En desarrollo usa credenciales de prueba. En producción exige una
+    contraseña explícita y una confirmación, y no carga datos de ejemplo.
+    """
+    production = os.getenv("ENVIRONMENT", "development").lower() == "production"
+    admin_email = os.getenv("SEED_ADMIN_EMAIL", "admin@ganadera.com")
+    admin_password = os.getenv("SEED_ADMIN_PASSWORD")
+    worker_password = os.getenv("SEED_WORKER_PASSWORD")
+
+    if production:
+        if os.getenv("ALLOW_SEED_IN_PRODUCTION") != "1":
+            sys.exit("Seed bloqueado en produccion. Define ALLOW_SEED_IN_PRODUCTION=1 para continuar.")
+        if not admin_password or len(admin_password) < 12:
+            sys.exit("En produccion define SEED_ADMIN_PASSWORD (minimo 12 caracteres).")
+    else:
+        admin_password = admin_password or "Password123Secure!"
+        worker_password = worker_password or "Password123Secure!"
+
+    return {
+        "production": production,
+        "admin_email": admin_email,
+        "admin_password": admin_password,
+        "worker_password": worker_password,
+    }
+
+
 def seed():
+    cfg = _config()
     db = SessionLocal()
     try:
         print("🌱 Iniciando inserción de datos de prueba...")
 
         # 1. Crear / Obtener Usuario Admin primero (para usar su ID como owner_id de la finca)
-        admin = db.query(User).filter(User.email == "admin@ganadera.com").first()
+        admin = db.query(User).filter(User.email == cfg["admin_email"]).first()
         if not admin:
             admin = User(
-                email="admin@ganadera.com",
+                email=cfg["admin_email"],
                 full_name="Administrador GAVAC",
-                hashed_password=hash_password("Password123Secure!"),
+                hashed_password=hash_password(cfg["admin_password"]),
                 role="ADMIN",
                 farm_id=None,
                 is_active=True,
@@ -24,7 +55,7 @@ def seed():
             db.add(admin)
             db.commit()
             db.refresh(admin)
-            print("✅ Usuario ADMIN creado: admin@ganadera.com / Password123Secure!")
+            print(f"✅ Usuario ADMIN creado: {cfg['admin_email']}")
 
         # 2. Crear Finca de prueba vinculada al admin como dueño
         farm = db.query(Farm).filter(Farm.name == "Hacienda El Paraíso").first()
@@ -46,20 +77,24 @@ def seed():
             admin.farm_id = farm.id
             db.commit()
 
+        if cfg["production"]:
+            print("🎉 Datos base listos (admin y finca). No se cargan datos de ejemplo en produccion.")
+            return
+
         # 3. Crear Usuario Trabajador
         worker = db.query(User).filter(User.email == "worker@ganadera.com").first()
         if not worker:
             worker = User(
                 email="worker@ganadera.com",
                 full_name="Trabajador de Campo",
-                hashed_password=hash_password("Password123Secure!"),
+                hashed_password=hash_password(cfg["worker_password"]),
                 role="MAYORDOMO",
                 farm_id=farm.id,
                 is_active=True,
             )
             db.add(worker)
             db.commit()
-            print("✅ Usuario Trabajador creado: worker@ganadera.com / Password123Secure!")
+            print("✅ Usuario Trabajador creado: worker@ganadera.com")
 
         # 4. Crear Potreros (Lotes) - Al menos 2
         lotes_nombres = ["Lote Norte", "Lote Sur"]
