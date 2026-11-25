@@ -92,3 +92,12 @@ solucinar la problematica para continuar haciendo pruebas.
 - **Comportamiento esperado:** La base de datos debe estar conectada y operativa junto con el servidor para permitir el registro y el inicio de sesión de los usuarios.
 - **Comportamiento actual:** Falla la conexión entre el servidor y la base de datos, bloqueando el acceso al sistema y la continuidad de las pruebas QA.
 - **Severidad:** Crítica (bloquea completamente el acceso y las pruebas funcionales).
+
+
+### 12. Bloqueo total en el inicio de sesión (Login)
+- **Módulo:** Autenticación / Login
+- **Responsable:** Encargado de Autenticación / Backend
+- **Descripción:** Al ingresar credenciales válidas en la pantalla de inicio de sesión y presionar **Entrar al Sistema**, la aplicación no permite acceder al sistema (muestra error de autenticación y reinicia la verificación).
+- **Comportamiento esperado:** Validar las credenciales correctamente, mantener la sesión iniciada y redirigir al usuario al Panel Principal según su rol.
+- **Comportamiento actual:** El inicio de sesión falla de forma persistente, impidiendo el ingreso a la plataforma y bloqueando la ejecución de pruebas funcionales.
+- **Severidad:** Crítica (bloquea completamente el acceso al sistema).
