@@ -38,7 +38,6 @@ abstract interface class AuthRepository {
   Future<AuthResult> login({
     required String email,
     required String password,
-    required String role,
     String? captchaToken,
   });
   Future<AuthResult> register({
@@ -80,13 +79,11 @@ class AuthApiService implements AuthRepository {
   Future<AuthResult> login({
     required String email,
     required String password,
-    required String role,
     String? captchaToken,
   }) async => AuthResult.fromJson(
     await ApiClient.post('$_base/login', {
       'email': email,
       'password': password,
-      'role': role,
       if (captchaToken != null) 'captcha_token': captchaToken,
     }),
   );
