@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/session/app_session.dart';
 import '../../../administracion/presentation/screens/administracion_screen.dart';
+import '../../../dueno/presentation/screens/dueno_screen.dart';
 import '../../../animales/presentation/screens/animales_screen.dart';
 import '../../../auth/presentation/widgets/alternate_email_dialog.dart';
 import '../../data/services/alerts_api_service.dart';
@@ -50,6 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     () => const InventarioScreen(),
     () => const ReportesScreen(),
     () => const AdministracionScreen(),
+    () => const DuenoScreen(),
   ];
   late final List<Widget?> _pages = List<Widget?>.filled(
     _pageBuilders.length,
