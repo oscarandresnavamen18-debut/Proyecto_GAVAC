@@ -142,11 +142,6 @@ def login(data: LoginIn, db: Session = Depends(get_db)):
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Tu cuenta está desactivada. Contacta al administrador.",
         )
-    if data.role is not None and user.role != data.role:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="El tipo de usuario seleccionado no corresponde a esta cuenta",
-        )
     return TokenOut(
         access_token=create_access_token(user.id, user.token_version),
         role=user.role,

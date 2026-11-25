@@ -9,24 +9,6 @@ import '../../../../core/session/app_session.dart';
 import '../../data/services/auth_api_service.dart';
 import '../widgets/captcha_widget.dart';
 
-/// Tipos de usuario que pueden iniciar sesión. El valor coincide con el enum
-/// `UserRole` del backend; "Trabajador de campo" corresponde a `MAYORDOMO`.
-enum LoginUserType {
-  admin('ADMIN', 'Administrador', Icons.admin_panel_settings_outlined),
-  trabajadorCampo(
-    'MAYORDOMO',
-    'Trabajador de campo',
-    Icons.agriculture_outlined,
-  ),
-  veterinario('VETERINARIO', 'Veterinario', Icons.medical_services_outlined);
-
-  const LoginUserType(this.apiValue, this.label, this.icon);
-
-  final String apiValue;
-  final String label;
-  final IconData icon;
-}
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, this.repository = const AuthApiService()});
 
@@ -42,7 +24,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
-  LoginUserType? _userType;
   String? _captchaToken;
   VoidCallback? _resetCaptcha;
 
@@ -67,8 +48,6 @@ class _LoginScreenState extends State<LoginScreen> {
   static const String welcomeTitle = 'Bienvenido';
   static const String welcomeSubtitle =
       'Ingresa tus credenciales para acceder.';
-  static const String userTypeLabel = 'Tipo de usuario';
-  static const String userTypeHint = 'Selecciona tu tipo de usuario';
   static const String emailLabel = 'Correo Electrónico';
   static const String emailHint = 'correo@ejemplo.com';
   static const String passwordLabel = 'Contraseña';
@@ -108,7 +87,6 @@ class _LoginScreenState extends State<LoginScreen> {
       final result = await widget.repository.login(
         email: email,
         password: _passwordController.text,
-        role: _userType!.apiValue,
         captchaToken: kIsWeb ? _captchaToken : null,
       );
       try {
@@ -116,11 +94,10 @@ class _LoginScreenState extends State<LoginScreen> {
         await prefs.setString('gavac_saved_email', email);
       } catch (_) {}
       await AppSession.saveSession(result.accessToken);
-      AppSession.role = result.role ?? _userType!.apiValue;
+      AppSession.role = result.role ?? 'ADMIN';
       try {
         await AppSession.loadProfile();
       } catch (error) {
-        // El dashboard funciona sin el perfil; el backend sigue validando permisos.
         debugPrint('No se pudo cargar el perfil: $error');
       }
       if (!mounted) return;
@@ -131,8 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _showMessage(switch (error.statusCode) {
         0 => 'No se pudo conectar con el servicio. Inténtalo de nuevo.',
         401 => 'Correo o contraseña incorrectos.',
-        403 =>
-          'Esta cuenta no está registrada como ${_userType!.label.toLowerCase()}.',
+        403 => 'Tu cuenta no está activa o no tiene acceso.',
         _ => 'No se pudo iniciar sesión. Inténtalo de nuevo.',
       });
     } on FormatException {
@@ -288,7 +264,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildDesktopLayout() {
     return Row(
       children: [
-        // LADO IZQUIERDO - Imagen de fondo con Buey Nelore blanco (imagenLoginNuevo.jpg)
         Expanded(
           flex: 1,
           child: Container(
@@ -356,8 +331,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
-
-        // LADO DERECHO - Formulario de Login
         Expanded(
           flex: 1,
           child: Container(
@@ -389,10 +362,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: TextStyle(fontSize: 16, color: _mutedText),
                       ),
                       const SizedBox(height: 48),
-
-                      _buildUserTypeField(),
-                      const SizedBox(height: 24),
-
                       _buildTextField(
                         label: emailLabel,
                         hint: emailHint,
@@ -401,7 +370,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         prefixIcon: Icons.email_outlined,
                       ),
                       const SizedBox(height: 24),
-
                       _buildPasswordField(),
                       Align(
                         alignment: Alignment.centerRight,
@@ -417,7 +385,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         _buildCaptcha(),
                         const SizedBox(height: 20),
                       ],
-
                       SizedBox(
                         width: double.infinity,
                         height: 56,
@@ -455,7 +422,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-
                       Center(
                         child: TextButton(
                           onPressed: () {
@@ -535,10 +501,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: TextStyle(fontSize: 14, color: _mutedText),
               ),
               const SizedBox(height: 40),
-
-              _buildUserTypeField(),
-              const SizedBox(height: 20),
-
               _buildTextField(
                 label: emailLabel,
                 hint: emailHint,
@@ -547,7 +509,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 prefixIcon: Icons.email_outlined,
               ),
               const SizedBox(height: 20),
-
               _buildPasswordField(),
               Align(
                 alignment: Alignment.centerRight,
@@ -558,7 +519,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 32),
               if (kIsWeb) ...[_buildCaptcha(), const SizedBox(height: 20)],
-
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -593,7 +553,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-
               Center(
                 child: TextButton(
                   onPressed: () {
@@ -614,64 +573,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  InputBorder _fieldBorderStyle({Color? color, double width = 1}) =>
-      OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: color ?? _fieldBorder, width: width),
-      );
-
-  Widget _buildUserTypeField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          userTypeLabel,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: _formText,
-          ),
-        ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<LoginUserType>(
-          key: const Key('login_user_type'),
-          initialValue: _userType,
-          isExpanded: true,
-          dropdownColor: _formBackground,
-          style: TextStyle(color: _formText, fontSize: 16),
-          hint: Text(userTypeHint, style: TextStyle(color: _mutedText)),
-          decoration: InputDecoration(
-            prefixIcon: Icon(
-              _userType?.icon ?? Icons.badge_outlined,
-              color: _mutedText,
-            ),
-            filled: true,
-            fillColor: _fieldBackground,
-            border: _fieldBorderStyle(),
-            enabledBorder: _fieldBorderStyle(),
-            focusedBorder: _fieldBorderStyle(
-              color: GavacColors.primary,
-              width: 2,
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-          ),
-          items: [
-            for (final type in LoginUserType.values)
-              DropdownMenuItem(value: type, child: Text(type.label)),
-          ],
-          onChanged: _isLoading
-              ? null
-              : (value) => setState(() => _userType = value),
-          validator: (value) =>
-              value == null ? 'Selecciona el tipo de usuario' : null,
-        ),
-      ],
     );
   }
 
