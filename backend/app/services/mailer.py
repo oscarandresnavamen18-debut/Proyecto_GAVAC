@@ -1,4 +1,3 @@
-
 import smtplib
 import ssl
 from email.message import EmailMessage
@@ -11,13 +10,21 @@ def _send_email(recipient: str, subject: str, code: str, purpose: str) -> None:
         raise RuntimeError(f"{purpose} email delivery is not configured")
 
     message = EmailMessage()
-    message["Subject"] = subject
+    message["Subject"] = f"GAVAC — {subject}"
     message["From"] = settings.smtp_from_email
     message["To"] = recipient
     message.set_content(
-        f"Tu código es: {code}\n\n"
-        "El código vence en 10 minutos y solo puede utilizarse una vez. "
-        "Si no solicitaste esta operación, ignora este correo."
+        "========================================\n"
+        "   GAVAC - Gestión Ganadera Inteligente\n"
+        "========================================\n\n"
+        "Hola,\n\n"
+        f"Has solicitado un código de verificación ({purpose}) para tu cuenta en GAVAC.\n\n"
+        f"Tu código de seguridad es: {code}\n\n"
+        "Este código vence en 10 minutos y solo puede utilizarse una vez.\n"
+        "Si no solicitaste esta operación, por favor ignora este mensaje.\n\n"
+        "Atentamente,\n"
+        "Equipo de Soporte y Operaciones GAVAC\n"
+        "https://proyecto-gavac.vercel.app"
     )
 
     context = ssl.create_default_context()
@@ -40,16 +47,16 @@ def _send_email(recipient: str, subject: str, code: str, purpose: str) -> None:
 def send_password_reset_email(recipient: str, code: str) -> None:
     _send_email(
         recipient,
-        "Código para recuperar tu contraseña",
+        "Recuperación de Contraseña",
         code,
-        "Password reset",
+        "Recuperación de contraseña",
     )
 
 
 def send_alternate_email_verification(recipient: str, code: str) -> None:
     _send_email(
         recipient,
-        "Verifica tu correo alternativo de GAVAC",
+        "Verificación de Correo Alternativo",
         code,
-        "Alternate email verification",
+        "Verificación de correo alternativo",
     )
