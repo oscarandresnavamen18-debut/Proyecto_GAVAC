@@ -11,7 +11,8 @@ class AppSession {
   static int? farmId;
   static List<String>? permissions;
 
-  static bool get isAdmin => role == null || role == 'ADMIN';
+  static bool get isDueno => role == 'DUENO';
+  static bool get isAdmin => role == null || role == 'ADMIN' || role == 'DUENO';
 
   static bool canAccess(String module) =>
       permissions == null || permissions!.contains(module);

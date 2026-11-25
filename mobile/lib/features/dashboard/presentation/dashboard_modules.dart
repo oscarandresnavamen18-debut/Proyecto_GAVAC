@@ -35,6 +35,7 @@ abstract final class DashboardModules {
   static const insumos = 5;
   static const reportes = 6;
   static const administracion = 7;
+  static const dueno = 8;
 
   static const all = [
     DashboardModule(icon: Icons.dashboard_outlined, label: 'Inicio'),
@@ -71,6 +72,11 @@ abstract final class DashboardModules {
     DashboardModule(
       icon: Icons.admin_panel_settings_outlined,
       label: 'Administración',
+      adminOnly: true,
+    ),
+    DashboardModule(
+      icon: Icons.workspace_premium_outlined,
+      label: 'Dueño / Ganadero',
       adminOnly: true,
     ),
   ];
