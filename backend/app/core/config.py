@@ -1,6 +1,7 @@
 import json
 from urllib.parse import urlsplit
 
+from typing import Optional
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import URL
@@ -13,7 +14,7 @@ PLACEHOLDER_SECRET_MARKERS = (
 
 
 class Settings(BaseSettings):
-    database_url: str = ""
+    database_url: Optional[str] = None
     postgres_user: str = ""
     postgres_password: SecretStr = SecretStr("")
     postgres_db: str = ""
@@ -49,6 +50,10 @@ class Settings(BaseSettings):
         if isinstance(database_url, str):
             database_url = database_url.strip().strip("'\"")
         if database_url:
+            if database_url.startswith("postgres://"):
+                database_url = database_url.replace("postgres://", "postgresql+psycopg://", 1)
+            elif database_url.startswith("postgresql://") and not database_url.startswith("postgresql+"):
+                database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
             values["database_url"] = database_url
             return values
 
