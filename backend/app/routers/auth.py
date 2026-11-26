@@ -80,8 +80,9 @@ def register(data: RegisterIn, db: Session = Depends(get_db)):
             )
         farm_id = farm.id
     else:
-        role = UserRole.ADMIN
-        farm_id = None
+        if role not in (UserRole.DUENO, UserRole.ADMIN):
+            role = UserRole.ADMIN
+        farm_id = data.farm_id if data.farm_id is not None else None
 
     user = User(
         full_name=data.nombre.strip(),
@@ -140,11 +141,6 @@ def login(data: LoginIn, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Tu cuenta está desactivada. Contacta al administrador.",
-        )
-    if data.role is not None and user.role != data.role:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="El tipo de usuario seleccionado no corresponde a esta cuenta",
         )
     return TokenOut(
         access_token=create_access_token(user.id, user.token_version),

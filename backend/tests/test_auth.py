@@ -27,6 +27,7 @@ def test_register_and_login(client):
     )
     assert login_res.status_code == 200
     assert "access_token" in login_res.json()
+    assert login_res.json()["role"] == "ADMIN"
 
     me_res = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert me_res.status_code == 200
@@ -54,6 +55,7 @@ def test_native_login_does_not_require_recaptcha(client, monkeypatch):
     )
 
     assert login.status_code == 200
+    assert login.json()["role"] == "ADMIN"
 
 
 def _register_admin(client):
@@ -69,47 +71,23 @@ def _register_admin(client):
     assert response.json()["role"] == "ADMIN"
 
 
-def test_login_with_matching_role(client):
+def test_login_automatically_identifies_role(client):
     _register_admin(client)
     response = client.post(
         "/api/v1/auth/login",
         json={
             "email": "admin@ganadera.com",
             "password": "Password123Secure!",
-            "role": "ADMIN",
         },
     )
     assert response.status_code == 200
     assert response.json()["role"] == "ADMIN"
 
 
-@pytest.mark.parametrize("role", ["VETERINARIO", "MAYORDOMO"])
-def test_login_rejects_mismatched_role(client, role):
+def test_login_invalid_password_returns_401(client):
     _register_admin(client)
     response = client.post(
         "/api/v1/auth/login",
-        json={
-            "email": "admin@ganadera.com",
-            "password": "Password123Secure!",
-            "role": role,
-        },
-    )
-    assert response.status_code == 403
-
-
-def test_login_role_check_does_not_bypass_password(client):
-    _register_admin(client)
-    response = client.post(
-        "/api/v1/auth/login",
-        json={"email": "admin@ganadera.com", "password": "incorrecta", "role": "VETERINARIO"},
+        json={"email": "admin@ganadera.com", "password": "incorrecta"},
     )
     assert response.status_code == 401
-
-
-def test_login_rejects_unknown_role(client):
-    _register_admin(client)
-    response = client.post(
-        "/api/v1/auth/login",
-        json={"email": "admin@ganadera.com", "password": "Password123Secure!", "role": "DUEÑO"},
-    )
-    assert response.status_code == 422

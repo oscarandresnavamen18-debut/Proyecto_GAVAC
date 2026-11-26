@@ -33,11 +33,11 @@ def _create_user(client, admin_token, farm_id, role="VETERINARIO", email="vet@ga
     )
 
 
-def _login(client, email, role):
-    return client.post(
-        "/api/v1/auth/login",
-        json={"email": email, "password": PASSWORD, "role": role},
-    )
+def _login(client, email, role=None):
+    payload = {"email": email, "password": PASSWORD}
+    if role:
+        payload["role"] = role
+    return client.post("/api/v1/auth/login", json=payload)
 
 
 def test_admin_creates_veterinarian_who_logs_in_with_role_defaults(client):
@@ -50,7 +50,7 @@ def test_admin_creates_veterinarian_who_logs_in_with_role_defaults(client):
     assert body["farm_id"] == farm_id
     assert body["permissions"] == ["registro", "sanidad", "reproduccion"]
 
-    login = _login(client, "vet@ganadera.com", "VETERINARIO")
+    login = _login(client, "vet@ganadera.com")
     assert login.status_code == 200
     me = client.get("/api/v1/auth/me", headers=_auth(login.json()["access_token"]))
     assert me.json()["farm_id"] == farm_id
@@ -63,8 +63,9 @@ def test_field_worker_maps_to_mayordomo_role(client):
     admin_token, farm_id = _admin_with_farm(client)
     _create_user(client, admin_token, farm_id, role="MAYORDOMO", email="campo@ganadera.com")
 
-    assert _login(client, "campo@ganadera.com", "VETERINARIO").status_code == 403
-    assert _login(client, "campo@ganadera.com", "MAYORDOMO").status_code == 200
+    login_res = _login(client, "campo@ganadera.com")
+    assert login_res.status_code == 200
+    assert login_res.json()["role"] == "MAYORDOMO"
 
 
 def test_admin_cannot_create_other_admins_or_duplicates(client):
